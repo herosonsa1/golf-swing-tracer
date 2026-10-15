@@ -133,6 +133,13 @@ function loadDemoPreset(preset) {
   appState.sourceMode = 'demo';
   appState.demoPreset = preset;
   appState.videoReady = false;
+  appState.canvasWidth = 1280;
+  appState.canvasHeight = 720;
+  const mainCanvas = $('stageCanvas');
+  if (mainCanvas) {
+    mainCanvas.width = appState.canvasWidth;
+    mainCanvas.height = appState.canvasHeight;
+  }
   appState.videoFileName = preset === 'iron-dtl'
     ? '내장 프로 스윙 시뮬레이션 (Iron DTL 측면 뷰 60fps)'
     : '내장 프로 스윙 시뮬레이션 (Driver 정면 뷰 60fps)';
@@ -278,6 +285,214 @@ async function loadVideoFromAndroidGalleryUrl(videoUrl, displayName = 'gallery_s
     setStatusMessage(`갤러리 영상 로드 오류: ${err.message}`);
   } finally {
     appState.busy = false;
+  }
+}
+
+function loadFrameImageSafely(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`프레임 이미지를 불러올 수 없습니다: ${url}`));
+    img.src = url;
+  });
+}
+
+async function loadAndAnalyzeAndroidDecodedFrames(payloadInput) {
+  if (!payloadInput) return;
+  stopPlayback();
+  appState.busy = true;
+
+  const progressWrap = $('analysisProgressWrap');
+  const progressBar = $('analysisProgressBar');
+  if (progressWrap) progressWrap.hidden = false;
+  if (progressBar) progressBar.value = 45;
+
+  try {
+    const payload = typeof payloadInput === 'string' ? JSON.parse(payloadInput) : payloadInput;
+    const frameUrls = Array.isArray(payload.frameUrls) ? payload.frameUrls : [];
+    if (!frameUrls.length) {
+      throw new Error('추출된 비디오 프레임이 없습니다.');
+    }
+
+    const displayName = payload.displayName || 'gallery_swing.mp4';
+    const duration = clamp(Number(payload.duration || 2.5), 0.4, 12.0);
+    const width = Math.max(240, Number(payload.width || 720));
+    const height = Math.max(240, Number(payload.height || 1280));
+    const fps = Math.max(15, Number(payload.fps || 24));
+
+    appState.sourceMode = 'video';
+    appState.videoReady = false; // HTML5 <video> 대신 네이티브 하드웨어 디코딩된 frameCanvas 시퀀스 직접 사용
+    appState.videoFileName = displayName;
+    appState.duration = duration;
+    appState.fps = fps;
+    appState.canvasWidth = width;
+    appState.canvasHeight = height;
+
+    const mainCanvas = $('stageCanvas');
+    if (mainCanvas) {
+      mainCanvas.width = width;
+      mainCanvas.height = height;
+    }
+
+    if ($('activeFileLabel')) {
+      $('activeFileLabel').textContent = `${displayName} (${width}×${height} · HEVC/HDR 하드웨어 디코딩)`;
+    }
+    if ($('timelineRange')) {
+      $('timelineRange').max = String(duration);
+    }
+
+    setStatusMessage('온디바이스 AI 포즈 및 클럽 헤드 모션 분석 준비 중...');
+    const landmarker = await ensurePoseLandmarker();
+
+    const procCanvas = document.createElement('canvas');
+    procCanvas.width = width;
+    procCanvas.height = height;
+    const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+
+    const rawSamples = [];
+    let prevImageData = null;
+    const totalFrames = frameUrls.length;
+
+    for (let i = 0; i < totalFrames; i++) {
+      const t = Number(((i / Math.max(1, totalFrames - 1)) * duration).toFixed(3));
+      const img = await loadFrameImageSafely(frameUrls[i]);
+      procCtx.clearRect(0, 0, width, height);
+      procCtx.drawImage(img, 0, 0, width, height);
+      const currImageData = procCtx.getImageData(0, 0, width, height).data;
+
+      let posePoints = null;
+      if (landmarker) {
+        try {
+          const res = landmarker.detectForVideo(procCanvas, Math.round(t * 1000) + i + 1);
+          if (res?.landmarks?.[0]) {
+            posePoints = res.landmarks[0].map(p => ({
+              x: p.x,
+              y: p.y,
+              z: p.z ?? 0,
+              visibility: p.visibility ?? 0.9
+            }));
+          }
+        } catch {
+          posePoints = null;
+        }
+      }
+
+      const fallbackSynth = buildFallbackKinematicPose(t, duration, appState.hand);
+      const activePoints = posePoints || fallbackSynth.points;
+
+      const prevSample = rawSamples.at(-1) || null;
+      const tempGrip = {
+        x: (activePoints[15].x + activePoints[16].x) * 0.5,
+        y: (activePoints[15].y + activePoints[16].y) * 0.5
+      };
+      const motionCand = prevImageData
+        ? detectClubHeadMotionPeak(currImageData, prevImageData, width, height, tempGrip)
+        : null;
+
+      const { grip, clubHead } = estimateClubPosition(
+        activePoints,
+        prevSample,
+        t,
+        duration,
+        appState.hand,
+        motionCand
+      );
+
+      let clubSpeed = 0;
+      if (prevSample?.clubHead && clubHead) {
+        const dt = Math.max(0.01, t - prevSample.time);
+        const dist = Math.hypot(clubHead.x - prevSample.clubHead.x, clubHead.y - prevSample.clubHead.y);
+        clubSpeed = Math.min(125, Math.round((dist / dt) * 28.5));
+      }
+
+      const frameSnap = document.createElement('canvas');
+      frameSnap.width = width;
+      frameSnap.height = height;
+      frameSnap.getContext('2d').drawImage(procCanvas, 0, 0);
+
+      rawSamples.push({
+        time: t,
+        points: activePoints,
+        grip: grip || fallbackSynth.grip,
+        clubHead: clubHead || fallbackSynth.clubHead,
+        clubHeadBase: { ...(clubHead || fallbackSynth.clubHead) },
+        clubSpeed,
+        frameCanvas: frameSnap
+      });
+
+      prevImageData = currImageData;
+      const pct = Math.min(99, 45 + Math.round(((i + 1) / totalFrames) * 54));
+      if (progressBar) progressBar.value = pct;
+      setStatusMessage(`프레임별 클럽 헤드 궤적 및 포즈 추출 중... (${i + 1}/${totalFrames} 프레임, ${pct}%)`);
+    }
+
+    appState.samples = smoothSamples(rawSamples);
+    appState.keyMoments = detectSwingMoments(appState.samples, 0, duration);
+
+    const addrMoment = appState.keyMoments.find(m => m.key === 'address');
+    const addrSample = findNearestSample(appState.samples, addrMoment ? addrMoment.time : 0.45) || appState.samples[0];
+
+    if (addrSample?.frameCanvas && addrSample?.grip) {
+      try {
+        const fCtx = addrSample.frameCanvas.getContext('2d');
+        const addrImgData = fCtx.getImageData(0, 0, addrSample.frameCanvas.width, addrSample.frameCanvas.height).data;
+        const detectedAddrClub = detectAddressGolfClub(
+          addrImgData,
+          addrSample.frameCanvas.width,
+          addrSample.frameCanvas.height,
+          addrSample.grip,
+          0.22,
+          appState.hand,
+          addrSample.points
+        );
+        if (detectedAddrClub.grip) {
+          addrSample.grip = detectedAddrClub.grip;
+        }
+        addrSample.clubHead = detectedAddrClub.clubHead;
+        addrSample.clubHeadBase = { ...detectedAddrClub.clubHead };
+      } catch {
+        // 픽셀 접근 예외 시 기본 추정치 유지
+      }
+    }
+
+    appState.addressClub = createAddressClubTemplate(
+      addrSample,
+      appState.canvasWidth,
+      appState.canvasHeight,
+      {
+        clubType: 'driver',
+        hand: appState.hand
+      }
+    );
+
+    appState.samples = regularizeSwingWithAddressClub(
+      appState.samples,
+      appState.keyMoments,
+      appState.addressClub,
+      appState.hand
+    );
+
+    const fin = appState.keyMoments.find(m => m.key === 'finish') || appState.keyMoments.find(m => m.key === 'impact');
+    appState.currentTime = fin ? fin.time : duration * 0.82;
+    appState.selectedPhaseKey = fin ? fin.key : 'finish';
+    appState.clipStartTime = 0;
+    appState.clipEndTime = appState.duration;
+    appState.clipPreset = 'all';
+    if ($('timelineRange')) $('timelineRange').value = String(appState.currentTime);
+    syncClipRangeUI(true);
+
+    if (progressWrap) progressWrap.hidden = true;
+    appState.busy = false;
+    setStatusMessage(`분석 완료: ${displayName} (${width}×${height}) 골프채 인식 및 스윙 잔상 궤도 정합을 완료했습니다.`);
+
+    renderMainStage();
+    await renderPhaseFilmstrip();
+    updateMetricsAndCoachingUI();
+  } catch (err) {
+    if (progressWrap) progressWrap.hidden = true;
+    appState.busy = false;
+    setStatusMessage(`갤러리 비디오 분석 오류: ${err.message}`);
   }
 }
 
@@ -884,9 +1099,32 @@ function showNativeSaveToast(mediaType, fileName, galleryPath) {
   }, 6000);
 }
 
-// 안드로이드 네이티브 갤러리 피커 및 MediaStore 저장 완료 콜백 등록
+// 안드로이드 네이티브 갤러리 피커, HEVC/HDR10+ 하드웨어 디코더 및 MediaStore 저장 콜백 등록
 window.onAndroidVideoPicked = (videoUrl, displayName) => {
   void loadVideoFromAndroidGalleryUrl(videoUrl, displayName);
+};
+
+window.onAndroidVideoDecodeProgress = (pct, message) => {
+  const progressWrap = $('analysisProgressWrap');
+  const progressBar = $('analysisProgressBar');
+  if (progressWrap) progressWrap.hidden = false;
+  if (progressBar && Number.isFinite(Number(pct))) {
+    progressBar.value = Math.max(2, Math.min(48, Math.round(Number(pct) * 0.45)));
+  }
+  if (message) {
+    setStatusMessage(message);
+  }
+};
+
+window.onAndroidNativeVideoDecoded = payloadJson => {
+  void loadAndAnalyzeAndroidDecodedFrames(payloadJson);
+};
+
+window.onAndroidVideoDecodeError = errMsg => {
+  const progressWrap = $('analysisProgressWrap');
+  if (progressWrap) progressWrap.hidden = true;
+  appState.busy = false;
+  setStatusMessage(`갤러리 영상 하드웨어 디코딩 오류: ${errMsg}`);
 };
 
 window.onAndroidMediaSaved = (mediaType, fileName, galleryPath) => {

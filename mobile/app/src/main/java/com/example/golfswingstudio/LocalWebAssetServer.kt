@@ -31,7 +31,26 @@ object LocalWebAssetServer {
                 val videoFile = File(context.cacheDir, fileName)
                 serveLocalVideoWithRange(videoFile, request)
             }
+            path.startsWith("/native-frame/") -> {
+                val fileName = path.removePrefix("/native-frame/").trimStart('/')
+                val frameFile = File(File(context.cacheDir, "decoded_frames"), fileName)
+                serveDecodedFrameFile(frameFile)
+            }
             else -> null
+        }
+    }
+
+    private fun serveDecodedFrameFile(file: File): WebResourceResponse? {
+        if (!file.exists() || !file.isFile) return null
+        return try {
+            val fis = FileInputStream(file)
+            val headers = mapOf(
+                "Access-Control-Allow-Origin" to "*",
+                "Cache-Control" to "max-age=3600"
+            )
+            WebResourceResponse("image/jpeg", null, 200, "OK", headers, fis)
+        } catch (_: Exception) {
+            null
         }
     }
 

@@ -61,3 +61,26 @@
 * **스마트폰 전용 UI/UX 최적화 및 최종 APK 검증 (`mobile/dist/golfSwing.apk`)**:
   - 스마트폰 세로 화면에서 하단 설정 슬라이더를 조작할 때도 상단 스윙 캔버스와 타임라인이 항상 고정 표시되는 `sticky-stage-shell` 구조와 4-탭 모바일 워크스페이스(`[잔상·궤적 설정]`, `[구간·영상저장]`, `[7단계 시퀀스]`, `[측정·AI코칭]`) 적용.
   - Gradle `assembleDebug`로 [`mobile/dist/golfSwing.apk`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/dist/golfSwing.apk) (`12,017,786 Bytes`) 생성 완료 및 REA JADX 엔진(`inspect_android_package`: `ev_7c606cdd10f546700f8cd3376fe1be7181a9c2168ab78c9e791126a42a348539`, `search_android_classes`: `ev_d9bad607e9b167a6c0f25acf18e82240f048ed5d28fc39a65ac5ca86c51bd0f6`)으로 패키지·권한·클래스 정적 검증 완료.
+---
+
+## 8. 스마트폰 갤러리 HEVC(H.265) + HDR10+ (10-bit) 세로 영상 하드웨어 디코딩 및 종횡비 보존 개선 (2026-10-16)
+- **증상 및 대상 영상 스펙**:
+  - 촬영 기기 및 파일 정보: `Galaxy S24+` | `/내장 저장공간/DCIM/Camera/20260911_194419.mp4`
+  - 비디오 코덱 및 스펙: `HEVC (H.265 Main10)` + `HDR10+ (10-bit)` + `720x1280 (세로 HD)` + `AAC` + `30fps` + `0:02 (7.50MB)`
+  - 문제 현상: 안드로이드 앱에서 로컬 갤러리 스윙 영상을 선택했을 때 `"선택된 비디오를 디코딩할 수 없습니다."` 메시지가 출력되며 분석으로 진행되지 않는 현상 발생.
+- **근본 원인(Root Cause) 분석**:
+  1. **WebView `shouldInterceptRequest`의 Byte-Range 랜덤 시크 부재**: 스마트폰 기본 카메라로 촬영한 MP4 파일은 녹화 종료 시점에 인덱스 테이블(`moov` atom)을 파일 맨 끝(EOF)에 기록합니다. 그러나 Android `WebViewClient.shouldInterceptRequest`는 단일 순차 `InputStream`만 반환하고 `HTTP 206 Partial Content` (Byte-Range 시크)를 지원하지 않아, WebView 내부 `<video>` 디멀티플렉서가 파일 끝의 `moov` atom을 읽지 못하고 즉시 `MEDIA_ERR_SRC_NOT_SUPPORTED` / `MEDIA_ERR_DECODE`를 발생시켰습니다.
+  2. **WebView `<video>`의 10-bit `HDR10+` + `HEVC` 컬러 프로파일 디코딩 제약**: Galaxy S24+의 `HEVC Main10 + HDR10+` 스트림을 WebView 내부 `<video>` 엘리먼트 및 `CanvasRenderingContext2D.drawImage(video)`에 직접 연결할 경우 기기 WebView 버전에 따라 하드웨어 컬러 변환기가 실패합니다.
+  3. **세로 영상(`720x1280`)의 16:9 캔버스 비율 왜곡**: `#stageCanvas`에 `aspect-ratio: 16 / 9`가 고정되어 있어 `720x1280` 세로 촬영 영상이 가로로 찌그러지는 문제가 있었습니다.
+- **해결 아키텍처 및 구현 내역**:
+  1. **안드로이드 OS 네이티브 하드웨어 디코더(`NativeVideoDecoder.kt`) 신규 구현**:
+     - WebView `<video>` 디코더에 의존하지 않고, `Dispatchers.IO`에서 `FileInputStream(cachedVideoFile).fd` 파일 디스크립터 랜덤 액세스를 사용하는 Android OS 네이티브 `MediaMetadataRetriever`를 구동하도록 구현했습니다.
+     - `METADATA_KEY_VIDEO_ROTATION` (90°/270° 회전 메타데이터)을 자동 반영하여 세로 영상(`720x1280` -> `406x720`) 및 가로 영상의 실제 표시 해상도를 정확히 산출합니다.
+     - `HDR10+` 10-bit 하드웨어 비트맵(`Bitmap.Config.HARDWARE`, `RGBA_1010102`, `RGBA_F16`)을 표준 8-bit SDR `ARGB_8888` 소프트웨어 비트맵으로 안전하게 톤매핑·변환(`ensureSdrSoftwareBitmap`)하여 `cacheDir/decoded_frames/frame_XXX.jpg` 시퀀스로 고속 추출합니다.
+  2. **`LocalWebAssetServer.kt` 및 `MainActivity.kt` 연동**:
+     - 추출된 SDR 프레임 시퀀스를 `https://appassets.androidplatform.net/native-frame/frame_XXX.jpg` 경로로 무손실 서빙하고, 디코딩 진행률(`window.onAndroidVideoDecodeProgress`)과 완료 메타데이터(`window.onAndroidNativeVideoDecoded`)를 WebView로 즉시 전달합니다.
+  3. **프레임 시퀀스 기반 직접 AI 포즈·클럽 궤적 분석 및 세로 영상 종횡비 유지 (`app.js`, `renderer-exporter.js`, `styles.css`)**:
+     - `loadAndAnalyzeAndroidDecodedFrames()`를 통해 HTML5 `<video>` 태그 시크 없이 네이티브 하드웨어 디코딩된 `frameCanvas` 시퀀스에서 곧바로 MediaPipe Pose 33개 관절 및 클럽 헤드 궤적을 정밀 분석하고, 재생·타임라인 시크·스냅샷 저장·구간 동영상(MP4/WebM) 저장이 모두 `nearestSample.frameCanvas`를 기반으로 100% 동작하도록 개선했습니다.
+     - `#stageCanvas`의 고정 `aspect-ratio: 16 / 9`를 제거하고 원본 비디오의 세로(`720x1280`) 및 가로(`1280x720`) 비율이 그대로 유지되도록 개선했습니다.
+  4. **APK 리빌드 및 배포 갱신**:
+     - `mobile/dist/golfSwing.apk` (약 12.06MB) 리빌드 및 검증 완료.

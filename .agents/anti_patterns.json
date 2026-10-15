@@ -1,0 +1,18 @@
+{
+  "version": "1.1.0",
+  "categories": {
+    "android": [
+      {
+        "id": "AP-ANDROID-WEBVIEW-HEVC-HDR10-DECODE-FAIL",
+        "name": "Android WebView shouldInterceptRequest 단일 스트림 전달 시 스마트폰 HEVC(H.265) + HDR10+(10-bit) 영상 디코딩 실패 및 세로 영상 비율 왜곡 패턴",
+        "description": "Galaxy S24+ 등 최신 스마트폰 카메라로 촬영된 HEVC(H.265 Main10) + HDR10+(10-bit) + moov atom 후행 배치(파일 끝단 위치) MP4 비디오를 Android WebView의 shouldInterceptRequest 단일 순차 InputStream을 통해 HTML5 <video> 태그로 직접 로드하면, HTTP Byte-Range(206 Partial Content) 랜덤 시크 부재 및 WebView 10-bit HDR 컬러 프로파일 디멀티플렉싱 실패로 즉시 video.onerror('선택한 갤러리 비디오를 디코딩할 수 없습니다.')가 발생하고, 세로(720x1280) 영상이 고정 16:9 캔버스에 찌그러지는 패턴",
+        "checklist": [
+          "갤러리 비디오(HEVC/H.265, HDR10+, HLG, 10-bit, 30/60fps) 선택 시 WebView <video> 디코더에만 의존하지 않고 Android OS 네이티브 하드웨어 MediaMetadataRetriever(FileInputStream.fd 랜덤 액세스)로 프레임을 직접 추출하였는가?",
+          "HDR10+ 10-bit 하드웨어 비트맵(Bitmap.Config.HARDWARE, RGBA_1010102, RGBA_F16)을 표준 8-bit SDR ARGB_8888 소프트웨어 비트맵으로 안전 변환(ensureSdrSoftwareBitmap)하여 Canvas 2D 픽셀 연산 및 JPEG 인코딩 호환성을 100% 보장하였는가?",
+          "METADATA_KEY_VIDEO_ROTATION(90/270도 회전 메타데이터)을 반영하여 세로 스윙 영상(720x1280)과 가로 영상을 정확히 판별하고 #stageCanvas에서 고정 16:9 비율 강제를 제거하여 원본 세로 비율을 유지하였는가?"
+        ],
+        "solution": "NativeVideoDecoder(MediaMetadataRetriever + FileDescriptor 랜덤 액세스 + HDR10+ to SDR ARGB_8888 변환) 하드웨어 프레임 시퀀스 추출기 및 LocalWebAssetServer(/native-frame/) 서빙 파이프라인 구축, WebView <video> 의존 배제 및 세로/가로 원본 종횡비 적응형 캔버스 렌더링 적용"
+      }
+    ]
+  }
+}

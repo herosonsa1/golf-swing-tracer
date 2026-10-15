@@ -195,8 +195,9 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 갤러리에서 선택된 동영상 URI를 Dispatchers.IO 백그라운드 스레드에서
-     * 로컬 Range 스트리밍 캐시로 복사한 후 WebView 스윙 분석 엔진으로 전달합니다.
+     * 갤러리에서 선택된 동영상(HEVC / HDR10+ / 세로 720x1280 등)을 Dispatchers.IO 백그라운드 스레드에서
+     * 안드로이드 OS 네이티브 하드웨어 디코더(MediaMetadataRetriever)로 직접 프레임 디코딩한 뒤
+     * WebView 스윙 분석 엔진으로 전달합니다.
      */
     private fun handlePickedGalleryVideo(uri: Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -207,18 +208,40 @@ class MainActivity : ComponentActivity() {
                     uri = uri,
                     targetFile = targetFile
                 )
-                val streamUrl = "https://appassets.androidplatform.net/local-video/picked_swing_video.mp4?t=${System.currentTimeMillis()}"
 
+                withContext(Dispatchers.Main) {
+                    val qName = JSONObject.quote(displayName)
+                    webViewRef?.evaluateJavascript(
+                        "window.onAndroidVideoDecodeProgress && window.onAndroidVideoDecodeProgress(2, 0, 1, $qName);",
+                        null
+                    )
+                }
+
+                val decodedPayload = NativeVideoDecoder.decodeGalleryVideoToFrames(
+                    context = applicationContext,
+                    uri = uri,
+                    cachedVideoFile = targetFile,
+                    displayName = displayName
+                ) { pct, cur, total ->
+                    withContext(Dispatchers.Main) {
+                        val qName = JSONObject.quote(displayName)
+                        webViewRef?.evaluateJavascript(
+                            "window.onAndroidVideoDecodeProgress && window.onAndroidVideoDecodeProgress($pct, $cur, $total, $qName);",
+                            null
+                        )
+                    }
+                }
+
+                val payloadJson = decodedPayload.toJsonString()
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         this@MainActivity,
-                        "갤러리 스윙 영상 불러오기 완료: $displayName",
+                        "갤러리 영상 하드웨어 디코딩 완료: $displayName (${decodedPayload.width}×${decodedPayload.height})",
                         Toast.LENGTH_SHORT
                     ).show()
-                    val safeUrl = JSONObject.quote(streamUrl)
-                    val safeName = JSONObject.quote(displayName)
+                    val safeJson = JSONObject.quote(payloadJson)
                     webViewRef?.evaluateJavascript(
-                        "window.onAndroidVideoPicked && window.onAndroidVideoPicked($safeUrl, $safeName);",
+                        "window.onAndroidNativeVideoDecoded && window.onAndroidNativeVideoDecoded($safeJson);",
                         null
                     )
                 }
@@ -226,9 +249,14 @@ class MainActivity : ComponentActivity() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         this@MainActivity,
-                        "갤러리 비디오 로드 실패: ${e.message}",
+                        "갤러리 비디오 디코딩 오류: ${e.message}",
                         Toast.LENGTH_LONG
                     ).show()
+                    val safeErr = JSONObject.quote(e.message ?: "알 수 없는 오류")
+                    webViewRef?.evaluateJavascript(
+                        "window.onAndroidVideoDecodeError && window.onAndroidVideoDecodeError($safeErr);",
+                        null
+                    )
                 }
             }
         }

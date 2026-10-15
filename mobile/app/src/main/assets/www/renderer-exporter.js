@@ -991,21 +991,26 @@ export function renderCompositeFrame(ctx, width, height, state, time, overrideOp
   const nearestSample = findNearestSample(state.samples, time) || state.samples[0];
   let effectiveTime = time;
 
-  if (state.sourceMode === 'video' && state.videoElement && state.videoReady) {
+  if (state.sourceMode === 'video') {
     const video = state.videoElement;
     const isVideoSynced =
+      Boolean(state.videoReady) &&
+      Boolean(video) &&
       video.readyState >= 2 &&
       !video.seeking &&
       Math.abs(video.currentTime - time) <= 0.085;
 
-    if (isVideoSynced) {
+    if (nearestSample?.frameCanvas && (!state.videoReady || !isVideoSynced)) {
+      // 안드로이드 네이티브 하드웨어 디코더(HEVC/HDR10+ 완벽 지원) 프레임 또는 사전 디코딩 프레임 즉시 렌더링
+      ctx.drawImage(nearestSample.frameCanvas, 0, 0, width, height);
+      effectiveTime = time;
+    } else if (isVideoSynced && video) {
       ctx.drawImage(video, 0, 0, width, height);
       effectiveTime = time;
     } else if (nearestSample?.frameCanvas) {
-      // 비동기 시크 중이거나 초저속(0.1x) 재생 중일 때도 사전 디코딩된 실제 비디오 프레임을 끊김 없이 즉시 렌더링
       ctx.drawImage(nearestSample.frameCanvas, 0, 0, width, height);
       effectiveTime = time;
-    } else {
+    } else if (video && state.videoReady) {
       ctx.drawImage(video, 0, 0, width, height);
       effectiveTime = time;
     }
