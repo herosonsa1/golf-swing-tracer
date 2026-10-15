@@ -84,3 +84,16 @@
      - `#stageCanvas`의 고정 `aspect-ratio: 16 / 9`를 제거하고 원본 비디오의 세로(`720x1280`) 및 가로(`1280x720`) 비율이 그대로 유지되도록 개선했습니다.
   4. **APK 리빌드 및 배포 갱신**:
      - `mobile/dist/golfSwing.apk` (약 12.06MB) 리빌드 및 검증 완료.
+---
+
+### [2026-10-16] Phase 11: 프로젝트 안티패턴 지식화(`AP-ANDROID-WEBVIEW-HEVC-HDR10-DECODE-FAIL`) 및 전체 수정 파일 요약
+* **안티패턴 등록 (`.agents/anti_patterns.json`)**:
+  - `AP-ANDROID-WEBVIEW-HEVC-HDR10-DECODE-FAIL`: Android WebView `shouldInterceptRequest` 단일 스트림 전달 시 스마트폰 `HEVC(H.265) + HDR10+ (10-bit)` 영상 디코딩 실패 및 세로 영상 비율 왜곡 패턴을 정의하고, `MediaMetadataRetriever(FileDescriptor)` + `HDR10+ to SDR ARGB_8888` 변환 + 원본 종횡비 보존 체크리스트를 영구 지식화.
+* **수정 및 생성된 주요 파일 목록**:
+  - [`mobile/app/src/main/java/com/example/golfswingstudio/NativeVideoDecoder.kt`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/java/com/example/golfswingstudio/NativeVideoDecoder.kt): OS 하드웨어 코덱 기반 HEVC/HDR10+ 프레임 추출 및 SDR `ARGB_8888` 변환 엔진.
+  - [`mobile/app/src/main/java/com/example/golfswingstudio/LocalWebAssetServer.kt`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/java/com/example/golfswingstudio/LocalWebAssetServer.kt): `/native-frame/` 라우트를 통한 디코딩 프레임 시퀀스 서빙.
+  - [`mobile/app/src/main/java/com/example/golfswingstudio/MainActivity.kt`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/java/com/example/golfswingstudio/MainActivity.kt): 갤러리 영상 선택 시 `NativeVideoDecoder` 비동기 실행 및 WebView 진행률·완료 콜백 전달.
+  - [`mobile/app/src/main/assets/www/app.js`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/assets/www/app.js): `loadAndAnalyzeAndroidDecodedFrames` 파이프라인 및 `onAndroidVideoDecodeProgress` / `onAndroidNativeVideoDecoded` / `onAndroidVideoDecodeError` 핸들러 연동, 데모 복귀 시 `1280×720` 해상도 복원.
+  - [`mobile/app/src/main/assets/www/renderer-exporter.js`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/assets/www/renderer-exporter.js) & [`renderer-exporter.js`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/renderer-exporter.js): `<video>` 태그 준비 상태와 무관하게 `nearestSample.frameCanvas`를 즉시 렌더링하도록 개선.
+  - [`mobile/app/src/main/assets/www/styles.css`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/assets/www/styles.css) & [`styles.css`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/styles.css): `#stageCanvas`의 고정 16:9 비율 강제를 제거하여 `720×1280` 세로 스윙 영상 및 `1280×720` 가로 스윙 영상 모두 원본 비율을 유지하도록 개선.
+  - [`mobile/dist/golfSwing.apk`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/dist/golfSwing.apk): 최종 빌드 산출물 (`12,065,893 Bytes`).
