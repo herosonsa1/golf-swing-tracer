@@ -1,0 +1,10 @@
+# Gradle 및 Android Studio 임시 빌드 캐시 제외 (mobile/dist/golfSwing.apk 산출물은 포함)
+mobile/.gradle/
+mobile/.kotlin/
+mobile/build/
+mobile/app/build/
+mobile/local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
