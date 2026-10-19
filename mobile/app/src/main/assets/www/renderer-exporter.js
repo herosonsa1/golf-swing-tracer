@@ -13,12 +13,20 @@ import {
   measurements,
   calculateTempo,
   interpolateCatmullRom
-} from './swing-engine.js';
+} from './swing-engine.js?v=20261019_06';
 import {
   drawSynthesizedGolferScene,
   drawRealisticGolfClub,
   computeShaftAxialAlpha
-} from './demo-generator.js';
+} from './demo-generator.js?v=20261019_06';
+import {
+  drawSynthesizedDtlRangeScene,
+  renderShotTracerOverlay
+} from './shot-tracer-engine.js?v=20261019_06';
+import {
+  computeEffectiveStabilizationOffset,
+  drawStabilizedVideoFrame
+} from './video-stabilizer.js?v=20261019_06';
 
 /**
  * 시간 t가 스윙의 어느 구간(백스윙 / 다운스윙~임팩트 / 팔로우스루)에 속하는지 판별합니다.
@@ -991,29 +999,69 @@ export function renderCompositeFrame(ctx, width, height, state, time, overrideOp
   const nearestSample = findNearestSample(state.samples, time) || state.samples[0];
   let effectiveTime = time;
 
+  const isShotTracerMode = state.studioMode === 'shot-tracer';
+
   if (state.sourceMode === 'video') {
     const video = state.videoElement;
     const isVideoSynced =
-      Boolean(state.videoReady) &&
       Boolean(video) &&
+      Boolean(state.videoReady) &&
       video.readyState >= 2 &&
       !video.seeking &&
       Math.abs(video.currentTime - time) <= 0.085;
 
-    if (nearestSample?.frameCanvas && (!state.videoReady || !isVideoSynced)) {
-      // 안드로이드 네이티브 하드웨어 디코더(HEVC/HDR10+ 완벽 지원) 프레임 또는 사전 디코딩 프레임 즉시 렌더링
-      ctx.drawImage(nearestSample.frameCanvas, 0, 0, width, height);
+    const stabOpts = state.stabilizationOptions;
+    const effOffset = computeEffectiveStabilizationOffset(state.samples, time, stabOpts);
+
+    if (isVideoSynced) {
+      drawStabilizedVideoFrame(ctx, video, width, height, effOffset, stabOpts);
       effectiveTime = time;
-    } else if (isVideoSynced && video) {
-      ctx.drawImage(video, 0, 0, width, height);
+    } else if (nearestSample?.rawFrameCanvas) {
+      drawStabilizedVideoFrame(ctx, nearestSample.rawFrameCanvas, width, height, effOffset, stabOpts);
       effectiveTime = time;
     } else if (nearestSample?.frameCanvas) {
+      // 안드로이드 네이티브 HEVC/HDR10+ 하드웨어 디코더 프레임 시퀀스 또는 비동기 시크 대기 중 사전 디코딩된 프레임을 즉시 렌더링
       ctx.drawImage(nearestSample.frameCanvas, 0, 0, width, height);
       effectiveTime = time;
     } else if (video && state.videoReady) {
-      ctx.drawImage(video, 0, 0, width, height);
+      drawStabilizedVideoFrame(ctx, video, width, height, effOffset, stabOpts);
       effectiveTime = time;
     }
+
+    // 지면·발 고정점 클릭 맞추기 모드이거나 고정 가이드 표시 중일 때 기준 지면 수평선 및 고정 앵커 표시
+    if (stabOpts?.groundPinMode) {
+      const gPt = stabOpts.groundAnchorPoint || { x: 0.48, y: 0.78 };
+      const gx = gPt.x * width;
+      const gy = gPt.y * height;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(13, 148, 136, 0.90)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(width, gy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#0D9488';
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(gx, gy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '700 12px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.lineWidth = 3;
+      const label = '기준 지면·스탠스 고정선 (현재 프레임의 실제 지면/발 위치를 클릭하면 이 높이에 고정됩니다)';
+      ctx.strokeText(label, Math.min(width - 440, Math.max(16, gx - 180)), Math.max(24, gy - 12));
+      ctx.fillText(label, Math.min(width - 440, Math.max(16, gx - 180)), Math.max(24, gy - 12));
+      ctx.restore();
+    }
+  } else if (isShotTracerMode) {
+    drawSynthesizedDtlRangeScene(ctx, width, height, state, time);
   } else {
     const interpSample = interpolateSampleAtTime(state.samples, time) || nearestSample;
     if (interpSample) {
@@ -1021,14 +1069,28 @@ export function renderCompositeFrame(ctx, width, height, state, time, overrideOp
     }
   }
 
-  renderSwingAfterimageOverlay(ctx, width, height, state, effectiveTime, overrideOptions);
+  if (isShotTracerMode) {
+    if (state.shotTracerOptions?.showClubAfterimageInTracer) {
+      renderSwingAfterimageOverlay(ctx, width, height, state, effectiveTime, {
+        ...overrideOptions,
+        showHud: false
+      });
+    }
+    renderShotTracerOverlay(ctx, width, height, state, effectiveTime, overrideOptions.shotTracerOverride || {});
+  } else {
+    renderSwingAfterimageOverlay(ctx, width, height, state, effectiveTime, overrideOptions);
+  }
 }
 
 // ============================================================================
 // 스냅샷 1: 타임라인 현재 상태 및 단일 스트로보 다중 잔상 스냅샷 저장
 // ============================================================================
 
-export async function exportStrobeSnapshot(state, overrideOptions = {}) {
+export async function exportStrobeSnapshot(state, overrideOptions = {}, onProgress = null) {
+  if (typeof overrideOptions === 'function') {
+    onProgress = overrideOptions;
+    overrideOptions = {};
+  }
   const width = state.canvasWidth || 1280;
   const height = state.canvasHeight || 720;
   const offscreen = document.createElement('canvas');
@@ -1041,6 +1103,9 @@ export async function exportStrobeSnapshot(state, overrideOptions = {}) {
     ? state.currentTime
     : (momentsMap.finish ?? momentsMap.impact ?? 1.78);
 
+  if (onProgress) onProgress(25, '현재 타임라인 프레임 동기화 및 잔상 합성 중...');
+  await new Promise(r => setTimeout(r, 0));
+
   if (state.sourceMode === 'video' && state.videoElement && state.videoReady) {
     await seekVideoSafely(state.videoElement, baseTime);
   }
@@ -1051,10 +1116,13 @@ export async function exportStrobeSnapshot(state, overrideOptions = {}) {
     ...overrideOptions
   });
 
+  if (onProgress) onProgress(75, '고해상도 PNG 이미지 인코딩 중...');
+  await new Promise(r => setTimeout(r, 0));
+
   const timeTag = `${baseTime.toFixed(2).replace('.', '_')}s`;
   const dataUrl = offscreen.toDataURL('image/png');
-  const filename = `golf-swing-snapshot-${timeTag}-${Date.now()}.png`;
-  saveSnapshotNativeOrDownload(dataUrl, filename);
+  triggerDownload(dataUrl, `golf-swing-snapshot-${timeTag}-${Date.now()}.png`);
+  if (onProgress) onProgress(100, '스냅샷 생성 완료');
   return dataUrl;
 }
 
@@ -1062,7 +1130,7 @@ export async function exportStrobeSnapshot(state, overrideOptions = {}) {
 // 스냅샷 2: 7단계 스윙 시퀀스 파노라마 스냅샷
 // ============================================================================
 
-export async function exportSequencePanorama(state) {
+export async function exportSequencePanorama(state, onProgress = null) {
   const cellW = 340;
   const cellH = 440;
   const gap = 12;
@@ -1120,6 +1188,14 @@ export async function exportSequencePanorama(state) {
     const m = moments[i];
     const x = pad + i * (cellW + gap);
     const y = headerH;
+
+    if (onProgress) {
+      onProgress(
+        Math.round(((i + 0.5) / count) * 85),
+        `7단계 시퀀스 파노라마 합성 중 (${i + 1}/${count} · ${m.labelKo})`
+      );
+    }
+    await new Promise(r => setTimeout(r, 0));
 
     if (state.sourceMode === 'video' && state.videoElement && state.videoReady) {
       await seekVideoSafely(state.videoElement, m.time);
@@ -1205,14 +1281,17 @@ export async function exportSequencePanorama(state) {
     ctx.fillText(`추정 클럽 헤드 스피드: ${spdVal}`, x + 12, fy + 40);
   }
 
+  if (onProgress) onProgress(92, '7단계 파노라마 고해상도 PNG 인코딩 중...');
+  await new Promise(r => setTimeout(r, 0));
+
   const dataUrl = panorama.toDataURL('image/png');
-  const filename = `golf-swing-7stage-panorama-${Date.now()}.png`;
-  saveSnapshotNativeOrDownload(dataUrl, filename);
+  triggerDownload(dataUrl, `golf-swing-7stage-panorama-${Date.now()}.png`);
+  if (onProgress) onProgress(100, '7단계 파노라마 생성 완료');
   return dataUrl;
 }
 
 // ============================================================================
-// 동영상 내보내기: 타임라인 설정 구간(시작~종료) 다중 잔상 동영상 렌더링 및 기기 갤러리 즉시 저장 (MP4 / WebM)
+// 동영상 내보내기: 타임라인 설정 구간(시작~종료) 다중 잔상 동영상 렌더링 및 다운로드 (MP4 / WebM)
 // ============================================================================
 
 export async function exportAfterimageVideo(state, onProgress = () => {}, clipOptions = {}) {
@@ -1234,55 +1313,6 @@ export async function exportAfterimageVideo(state, onProgress = () => {}, clipOp
   const speedFactor = clamp(Number(clipOptions.speedFactor ?? state.exportSpeedFactor ?? 0.5), 0.1, 2.0);
   const totalSteps = Math.max(12, Math.round((clipSpanSec / speedFactor) * fps));
 
-  const startTag = startTime.toFixed(2).replace('.', '_');
-  const endTag = endTime.toFixed(2).replace('.', '_');
-  const speedTag = `${speedFactor}x`.replace('.', '_');
-  const bridge = window.AndroidNativeBridge;
-
-  // 1) 안드로이드 네이티브 H.264 MP4 인코더 우선 실행 (다운로드 없이 Movies/GolfSwingStudio 폴더에 즉시 MP4 저장)
-  if (bridge && typeof bridge.beginNativeMp4Export === 'function') {
-    const mp4Filename = `golf-swing-clip-${startTag}s-to-${endTag}s-${speedTag}-${Date.now()}.mp4`;
-    let nativeStarted = false;
-    try {
-      nativeStarted = Boolean(bridge.beginNativeMp4Export(width, height, fps, mp4Filename));
-    } catch {
-      nativeStarted = false;
-    }
-
-    if (nativeStarted) {
-      for (let step = 0; step <= totalSteps; step++) {
-        const simTime = clamp(startTime + (step / totalSteps) * clipSpanSec, startTime, endTime);
-        if (state.sourceMode === 'video' && state.videoElement && state.videoReady) {
-          await seekVideoSafely(state.videoElement, simTime);
-        }
-
-        renderCompositeFrame(ctx, width, height, state, simTime, {
-          ...state.renderOptions,
-          showHud: state.renderOptions?.showHud !== false
-        });
-
-        const frameJpeg = exportCanvas.toDataURL('image/jpeg', 0.90);
-        bridge.encodeNativeMp4Frame(frameJpeg, step);
-        onProgress(Math.round((step / totalSteps) * 100), simTime, startTime, endTime);
-        await new Promise(r => setTimeout(r, 8));
-      }
-
-      const previewUrl = bridge.finishNativeMp4Export() || `https://appassets.androidplatform.net/local-video/latest_exported_clip.mp4?t=${Date.now()}`;
-      return {
-        url: previewUrl,
-        filename: mp4Filename,
-        ext: 'mp4',
-        mimeType: 'video/mp4',
-        startTime,
-        endTime,
-        clipSpanSec,
-        speedFactor,
-        savedToGallery: true
-      };
-    }
-  }
-
-  // 2) WebView MediaRecorder 인코딩 후 안드로이드 MediaStore 즉시 저장 또는 웹 다운로드
   const mimeCandidates = [
     'video/mp4;codecs=avc1.42E01E',
     'video/mp4;codecs=avc1',
@@ -1336,15 +1366,13 @@ export async function exportAfterimageVideo(state, onProgress = () => {}, clipOp
   const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
   const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
   const url = URL.createObjectURL(blob);
+  const startTag = startTime.toFixed(2).replace('.', '_');
+  const endTag = endTime.toFixed(2).replace('.', '_');
+  const speedTag = `${speedFactor}x`.replace('.', '_');
   const filename = `golf-swing-clip-${startTag}s-to-${endTag}s-${speedTag}-${Date.now()}.${ext}`;
-
-  if (bridge && typeof bridge.beginVideoSave === 'function') {
-    await saveVideoBlobToAndroidGallery(blob, filename, mimeType || 'video/webm');
-  } else {
-    triggerDownload(url, filename);
-  }
-
+  triggerDownload(url, filename);
   return {
+    blob,
     url,
     filename,
     ext,
@@ -1352,8 +1380,7 @@ export async function exportAfterimageVideo(state, onProgress = () => {}, clipOp
     startTime,
     endTime,
     clipSpanSec,
-    speedFactor,
-    savedToGallery: Boolean(bridge)
+    speedFactor
   };
 }
 
@@ -1377,40 +1404,7 @@ export function seekVideoSafely(video, time) {
   });
 }
 
-export function saveSnapshotNativeOrDownload(dataUrl, filename) {
-  const bridge = window.AndroidNativeBridge;
-  if (bridge && typeof bridge.saveSnapshotToGallery === 'function') {
-    bridge.saveSnapshotToGallery(dataUrl, filename);
-    return;
-  }
-  triggerDownload(dataUrl, filename);
-}
-
-export async function saveVideoBlobToAndroidGallery(blob, filename, mimeType) {
-  const bridge = window.AndroidNativeBridge;
-  if (!bridge || typeof bridge.beginVideoSave !== 'function') return;
-
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 192 * 1024; // 192KB 단위 분할 전송으로 브릿지 메모리 부하 방지
-
-  bridge.beginVideoSave(filename, mimeType || 'video/mp4');
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    const slice = bytes.subarray(offset, Math.min(bytes.length, offset + chunkSize));
-    let binary = '';
-    for (let i = 0; i < slice.length; i++) {
-      binary += String.fromCharCode(slice[i]);
-    }
-    const b64 = window.btoa(binary);
-    bridge.appendVideoChunk(b64);
-  }
-  bridge.finishVideoSave();
-}
-
 export function triggerDownload(url, filename) {
-  if (window.AndroidNativeBridge) {
-    return;
-  }
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;

@@ -45,6 +45,8 @@ $mimeMap = @{
     '.jpg'  = 'image/jpeg'
     '.svg'  = 'image/svg+xml'
     '.ico'  = 'image/x-icon'
+    '.mp4'  = 'video/mp4'
+    '.webm' = 'video/webm'
 }
 
 try {

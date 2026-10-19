@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -94,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 val wv = webViewRef
                 if (wv != null) {
                     wv.evaluateJavascript(
-                        "(function(){const m=document.getElementById('snapshotModal');if(m&&m.open){m.close();return true;}return false;})()"
+                        "(function(){if(window.isStageFullscreenActive&&window.isStageFullscreenActive()){window.exitStageFullscreen&&window.exitStageFullscreen();return true;}const p=document.getElementById('topMenuDropdownPanel');if(p&&!p.hidden){const b=document.getElementById('btnCloseTopMenu');if(b)b.click();return true;}const am=document.getElementById('savedArchiveModal');if(am&&am.open){am.close();return true;}const m=document.getElementById('snapshotModal');if(m&&m.open){m.close();return true;}return false;})()"
                     ) { res ->
                         if (res != "true") {
                             if (wv.canGoBack()) wv.goBack() else finish()
@@ -280,6 +282,22 @@ class MainActivity : ComponentActivity() {
     }
 
     inner class AndroidNativeBridge {
+
+        @JavascriptInterface
+        fun setImmersiveFullscreen(enabled: Boolean) {
+            runOnUiThread {
+                val controller = WindowCompat.getInsetsController(window, window.decorView)
+                if (enabled) {
+                    controller.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    controller.hide(WindowInsetsCompat.Type.systemBars())
+                } else {
+                    controller.show(WindowInsetsCompat.Type.systemBars())
+                    controller.isAppearanceLightStatusBars = true
+                    controller.isAppearanceLightNavigationBars = true
+                }
+            }
+        }
 
         @JavascriptInterface
         fun pickVideoFromGallery() {

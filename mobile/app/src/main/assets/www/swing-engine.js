@@ -313,21 +313,47 @@ export function detectClubHeadMotionPeak(currData, prevData, width, height, grip
 export function detectAddressGolfClub(imageData, width, height, grip, torsoLen = 0.22, hand = 'right', points = null) {
   const dirSign = hand === 'left' ? -1 : 1;
 
-  // 발목·발끝 랜드마크(27, 28, 31, 32)로부터 골퍼의 양발 접지선(ankleY) 산출
-  // 어드레스 시 골프공과 클럽 헤드는 양발 사이가 아니라 반드시 양발 접지선보다 아래쪽(타석 매트 전면)에 위치합니다.
-  let ankleY = clamp(grip.y + Math.max(0.19, torsoLen * 1.05), 0.54, 0.76);
+  // 발목·발끝 랜드마크(27, 28, 29, 30, 31, 32) 및 골반(23, 24)으로부터 골퍼의 양발 접지선 및 후방(DTL)/정면(FO) 뷰 판별
+  let ankleY = clamp(grip.y + Math.max(0.16, torsoLen * 0.95), 0.54, 0.87);
+  let footCenterX = grip.x - dirSign * 0.08;
+  let footForwardX = grip.x - dirSign * 0.04;
+  let hipCenterX = grip.x - dirSign * 0.08;
+  let isDTLStance = false;
+
   if (Array.isArray(points)) {
-    const footYs = [27, 28, 29, 30, 31, 32]
+    const footPts = [27, 28, 29, 30, 31, 32]
       .map(idx => points[idx])
-      .filter(p => p && Number.isFinite(p.y) && (p.visibility ?? 1) > 0.25)
-      .map(p => p.y);
-    if (footYs.length) {
-      ankleY = clamp(Math.max(...footYs), 0.50, 0.78);
+      .filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y) && (p.visibility ?? 1) > 0.22);
+    if (footPts.length) {
+      const footYs = footPts.map(p => p.y);
+      const footXs = footPts.map(p => p.x);
+      ankleY = clamp(Math.max(...footYs), 0.50, 0.88);
+      footCenterX = footXs.reduce((a, b) => a + b, 0) / footXs.length;
+      footForwardX = dirSign > 0 ? Math.max(...footXs) : Math.min(...footXs);
+    }
+    const lHip = points[23];
+    const rHip = points[24];
+    if (lHip && rHip && Number.isFinite(lHip.x) && Number.isFinite(rHip.x)) {
+      hipCenterX = (lHip.x + rHip.x) * 0.5;
+    }
+    const lSh = points[11];
+    const rSh = points[12];
+    const shSpanX = (lSh && rSh && Number.isFinite(lSh.x) && Number.isFinite(rSh.x))
+      ? Math.abs(lSh.x - rSh.x)
+      : 0.16;
+
+    // 후방(DTL) 스탠스: 양손(grip.x)이 골반·발 중심보다 앞쪽(오른손잡이 기준 우측)으로 뻗어 있거나 어깨 좌우 폭이 좁은 측면 정렬
+    if ((grip.x - hipCenterX) * dirSign > 0.030 || (grip.x - footCenterX) * dirSign > 0.030 || shSpanX < 0.135) {
+      isDTLStance = true;
     }
   }
 
-  const defaultHeadY = clamp(ankleY + 0.135, grip.y + 0.25, 0.91);
-  const defaultHeadX = clamp(grip.x - dirSign * 0.016, 0.05, 0.95);
+  const defaultHeadY = isDTLStance
+    ? clamp(Math.max(grip.y + 0.105, ankleY - 0.01), 0.62, 0.88)
+    : clamp(ankleY + 0.135, grip.y + 0.25, 0.91);
+  const defaultHeadX = isDTLStance
+    ? clamp(grip.x + dirSign * 0.18, 0.15, 0.85)
+    : clamp(grip.x - dirSign * 0.016, 0.05, 0.95);
   const defaultLen = Math.hypot(defaultHeadX - grip.x, defaultHeadY - grip.y);
   const defaultAngle = Math.atan2(defaultHeadY - grip.y, defaultHeadX - grip.x);
   const fallbackHead = {
@@ -336,80 +362,247 @@ export function detectAddressGolfClub(imageData, width, height, grip, torsoLen =
     shaftAngle: defaultAngle,
     pinned: false
   };
+  const fallbackBall = {
+    x: clamp(defaultHeadX + dirSign * 0.016, 0.06, 0.94),
+    y: clamp(defaultHeadY - 0.003, 0.06, 0.94)
+  };
 
   if (!imageData || !width || !height || !grip) {
-    return { grip, clubHead: fallbackHead, shaftLengthNorm: defaultLen };
+    return { grip, clubHead: fallbackHead, ballPoint: fallbackBall, shaftLengthNorm: defaultLen, isDTL: isDTLStance };
   }
 
   const gx = grip.x * width;
   const gy = grip.y * height;
 
-  // 1) 양발 접지선 아래 타석 매트 영역([ankleY + 0.065, ankleY + 0.175])에서 실제 골프공(백색 원형 피크) 및 클럽헤드 탐색
-  const roiY0 = Math.max(4, Math.floor(height * clamp(ankleY + 0.065, 0.54, 0.86)));
-  const roiY1 = Math.min(height - 6, Math.ceil(height * clamp(ankleY + 0.175, 0.64, 0.93)));
-  const roiX0 = Math.max(6, Math.floor(width * clamp(grip.x - 0.075, 0.04, 0.90)));
-  const roiX1 = Math.min(width - 6, Math.ceil(width * clamp(grip.x + 0.055, 0.08, 0.95)));
+  // 1) 후방(DTL) 타석 매트 전방 영역 탐색:
+  //    골퍼의 흰색 골프화(신발)는 발 위치(x <= footForwardX + 0.04)에 있고 면적이 넓으므로,
+  //    반드시 양손/발끝 앞쪽 타석 매트 영역에서 주변 4방향이 초록색 잔디 매트(Green Turf)로 둘러싸인
+  //    컴팩트한 클럽헤드 + 골프공 클러스터 및 그립에서 이어지는 사선 샤프트 라인을 탐색합니다.
+  const dtlXMinNorm = dirSign > 0
+    ? clamp(Math.max(0.43, grip.x + 0.07, footForwardX + 0.07), 0.40, 0.72)
+    : clamp(Math.min(0.22, grip.x - 0.28), 0.12, 0.45);
+  const dtlXMaxNorm = dirSign > 0
+    ? clamp(Math.max(dtlXMinNorm + 0.12, grip.x + 0.28), 0.52, 0.80)
+    : clamp(Math.min(0.57, grip.x - 0.07, footForwardX - 0.07), 0.28, 0.60);
+  const dtlYMinNorm = clamp(Math.min(grip.y + 0.04, ankleY - 0.07), 0.62, 0.82);
+  const dtlYMaxNorm = clamp(Math.max(ankleY + 0.035, grip.y + 0.16), dtlYMinNorm + 0.06, 0.88);
 
-  let bestBallScore = -1;
-  let ballXNorm = null;
-  let ballYNorm = null;
+  const ringDistX = Math.max(6, Math.round(width * 0.025));
+  const ringDistY = Math.max(6, Math.round(height * 0.015));
 
-  for (let y = roiY0; y <= roiY1; y += 2) {
-    for (let x = roiX0; x <= roiX1; x += 2) {
+  let bestDtlScore = -1;
+  let dtlPeakXNorm = null;
+  let dtlPeakYNorm = null;
+
+  const dtlX0 = Math.max(ringDistX + 2, Math.floor(width * dtlXMinNorm));
+  const dtlX1 = Math.min(width - ringDistX - 2, Math.ceil(width * dtlXMaxNorm));
+  const dtlY0 = Math.max(ringDistY + 2, Math.floor(height * dtlYMinNorm));
+  const dtlY1 = Math.min(height - ringDistY - 2, Math.ceil(height * dtlYMaxNorm));
+
+  for (let y = dtlY0; y <= dtlY1; y += 2) {
+    for (let x = dtlX0; x <= dtlX1; x += 2) {
       const idx = (y * width + x) * 4;
       const r = imageData[idx];
       const g = imageData[idx + 1];
       const b = imageData[idx + 2];
       const lum = (r + g + b) / 3;
-      if (lum < 175) continue;
+      if (lum < 180) continue;
 
       const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-      const achr = lum - chroma * 1.2;
-      if (achr < 155) continue;
+      if (chroma > 42) continue;
 
-      // 주변 타석 매트(상하좌우 7px 외곽) 대비 밝기 돌출도 확인 (넓은 흰 벽면·바닥 오검출 차단)
-      const ringDist = 7;
-      if (x - ringDist < 2 || x + ringDist >= width - 2 || y - ringDist < 2 || y + ringDist >= height - 2) continue;
-      const idxL = (y * width + (x - ringDist)) * 4;
-      const idxR = (y * width + (x + ringDist)) * 4;
-      const idxU = ((y - ringDist) * width + x) * 4;
-      const idxD = ((y + ringDist) * width + x) * 4;
-      const bgLum = (
-        imageData[idxL] + imageData[idxL + 1] + imageData[idxL + 2] +
-        imageData[idxR] + imageData[idxR + 1] + imageData[idxR + 2] +
-        imageData[idxU] + imageData[idxU + 1] + imageData[idxU + 2] +
-        imageData[idxD] + imageData[idxD + 1] + imageData[idxD + 2]
-      ) / 12;
+      // 상하좌우 외곽 링 픽셀이 흰색 운동화나 넓은 흰색 벽/카드가 아닌 타석 매트(어두운 녹색/잔디)인지 검증
+      const idxL = (y * width + (x - ringDistX)) * 4;
+      const idxR = (y * width + (x + ringDistX)) * 4;
+      const idxU = ((y - ringDistY) * width + x) * 4;
+      const idxD = ((y + ringDistY) * width + x) * 4;
+
+      const bgR = (imageData[idxL] + imageData[idxR] + imageData[idxU] + imageData[idxD]) * 0.25;
+      const bgG = (imageData[idxL + 1] + imageData[idxR + 1] + imageData[idxU + 1] + imageData[idxD + 1]) * 0.25;
+      const bgB = (imageData[idxL + 2] + imageData[idxR + 2] + imageData[idxU + 2] + imageData[idxD + 2]) * 0.25;
+      const bgLum = (bgR + bgG + bgB) / 3;
+      if (bgLum > 168) continue;
 
       const localContrast = lum - bgLum;
       if (localContrast < 28) continue;
 
-      const score = achr + localContrast * 0.65;
-      if (score > bestBallScore) {
-        bestBallScore = score;
-        ballXNorm = x / width;
-        ballYNorm = y / height;
+      const greenExcess = Math.max(0, (bgG - bgR) + (bgG - bgB));
+      if (greenExcess < 10 && !isDTLStance) continue;
+
+      // 그립(gx, gy)에서 후보점(x, y)까지 이어지는 사선 샤프트 에지 연속성 점수 합산
+      let shaftContrastSum = 0;
+      let shaftValid = 0;
+      const dxRay = x - gx;
+      const dyRay = y - gy;
+      const rayLen = Math.hypot(dxRay, dyRay);
+      if (rayLen > 20) {
+        const nx = -dyRay / rayLen;
+        const ny = dxRay / rayLen;
+        for (let s = 3; s <= 9; s++) {
+          const u = s / 11;
+          const sx = Math.round(gx + dxRay * u);
+          const sy = Math.round(gy + dyRay * u);
+          const lx = Math.round(sx + nx * 2.5);
+          const ly = Math.round(sy + ny * 2.5);
+          const rx = Math.round(sx - nx * 2.5);
+          const ry = Math.round(sy - ny * 2.5);
+          if (lx < 2 || lx >= width - 2 || rx < 2 || rx >= width - 2 || ly < 2 || ly >= height - 2 || ry < 2 || ry >= height - 2) {
+            continue;
+          }
+          const ic = (sy * width + sx) * 4;
+          const il = (ly * width + lx) * 4;
+          const ir = (ry * width + rx) * 4;
+          const lc = (imageData[ic] + imageData[ic + 1] + imageData[ic + 2]) / 3;
+          const ll = (imageData[il] + imageData[il + 1] + imageData[il + 2]) / 3;
+          const lr = (imageData[ir] + imageData[ir + 1] + imageData[ir + 2]) / 3;
+          shaftContrastSum += Math.abs(lc - ll) + Math.abs(lc - lr);
+          shaftValid++;
+        }
+      }
+      const shaftBonus = shaftValid > 0 ? (shaftContrastSum / shaftValid) * 0.85 : 0;
+      const score = (lum - chroma) + localContrast * 0.85 + greenExcess * 0.75 + shaftBonus;
+
+      if (score > bestDtlScore) {
+        bestDtlScore = score;
+        dtlPeakXNorm = x / width;
+        dtlPeakYNorm = y / height;
       }
     }
   }
 
   let detectedHeadX = null;
   let detectedHeadY = null;
+  let detectedBallX = null;
+  let detectedBallY = null;
 
-  if (bestBallScore > 185 && ballXNorm !== null && ballYNorm !== null) {
-    // 어드레스 시 클럽헤드는 골프공 바로 뒤쪽(타깃 반대편)에 정렬됨
-    detectedHeadX = clamp(ballXNorm - dirSign * 0.013, 0.04, 0.96);
-    detectedHeadY = clamp(ballYNorm - 0.003, 0.04, 0.95);
+  if (bestDtlScore > 225 && dtlPeakXNorm !== null && dtlPeakYNorm !== null && (isDTLStance || bestDtlScore > 275)) {
+    isDTLStance = true;
+    // 피크 주변의 밝은 클럽헤드+골프공 클러스터에서 중심(클럽헤드)과 전방 끝단(헤드 앞쪽 실제 공 위치)을 정밀 분리
+    const radX = Math.max(4, Math.round(width * 0.022));
+    const radY = Math.max(4, Math.round(height * 0.016));
+    const cxPx = Math.round(dtlPeakXNorm * width);
+    const cyPx = Math.round(dtlPeakYNorm * height);
+
+    let sumX = 0;
+    let sumY = 0;
+    let sumW = 0;
+    let minClusterX = dtlPeakXNorm;
+    let maxClusterX = dtlPeakXNorm;
+
+    for (let yy = Math.max(2, cyPx - radY); yy <= Math.min(height - 3, cyPx + radY); yy++) {
+      for (let xx = Math.max(2, cxPx - radX); xx <= Math.min(width - 3, cxPx + radX); xx++) {
+        const idx = (yy * width + xx) * 4;
+        const r = imageData[idx];
+        const g = imageData[idx + 1];
+        const b = imageData[idx + 2];
+        const lum = (r + g + b) / 3;
+        const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+        if (lum >= 182 && chroma <= 42) {
+          const nx = xx / width;
+          const ny = yy / height;
+          const w = lum - 175;
+          sumX += nx * w;
+          sumY += ny * w;
+          sumW += w;
+          if (nx < minClusterX) minClusterX = nx;
+          if (nx > maxClusterX) maxClusterX = nx;
+        }
+      }
+    }
+
+    const centroidX = sumW > 0 ? sumX / sumW : dtlPeakXNorm;
+    const centroidY = sumW > 0 ? sumY / sumW : dtlPeakYNorm;
+    const clusterSpanX = maxClusterX - minClusterX;
+    const frontEdgeX = dirSign > 0 ? maxClusterX : minClusterX;
+
+    if (clusterSpanX >= 0.010) {
+      // 흰색/실버 드라이버 헤드 + 공이 함께 잡힌 경우: 샤프트 끝 헤드는 클러스터 안쪽 중심에, 실제 공은 헤드 바로 앞쪽에 위치
+      detectedHeadX = clamp(centroidX - dirSign * 0.003, 0.04, 0.96);
+      detectedHeadY = clamp(centroidY, 0.04, 0.95);
+      detectedBallX = clamp(
+        dirSign > 0
+          ? Math.max(detectedHeadX + 0.015, frontEdgeX + 0.004)
+          : Math.min(detectedHeadX - 0.015, frontEdgeX - 0.004),
+        0.04,
+        0.96
+      );
+      detectedBallY = clamp(detectedHeadY - 0.003, 0.04, 0.95);
+    } else {
+      // 어두운 색 클럽헤드 앞에 흰색 골프공만 단독으로 밝게 잡힌 경우: 클러스터 중심이 곧 공 위치이며 헤드는 그 바로 안쪽
+      detectedBallX = clamp(centroidX + dirSign * 0.003, 0.04, 0.96);
+      detectedBallY = clamp(centroidY, 0.04, 0.95);
+      detectedHeadX = clamp(detectedBallX - dirSign * 0.015, 0.04, 0.96);
+      detectedHeadY = clamp(detectedBallY + 0.002, 0.04, 0.95);
+    }
   }
 
-  // 2) 폴백: 다리 사이 간극 오검출을 막기 위해 무릎·정강이 아래 타석 구간(u = 0.58 ~ 0.98)에서만 샤프트 선적분 탐색
+  // 2) 정면(Face-On) 뷰일 때 양발 접지선 아래 타석 매트 영역([ankleY + 0.065, ankleY + 0.175])에서 골프공 및 클럽헤드 탐색
   if (detectedHeadX === null || detectedHeadY === null) {
-    const minAngle = 0.88; // ~50° (DTL 어드레스 샤프트 각도 포함)
-    const maxAngle = 1.92; // ~110° (정면 어드레스 샤프트 각도 포함)
+    if (!isDTLStance) {
+      const roiY0 = Math.max(4, Math.floor(height * clamp(ankleY + 0.065, 0.54, 0.86)));
+      const roiY1 = Math.min(height - 6, Math.ceil(height * clamp(ankleY + 0.175, 0.64, 0.93)));
+      const roiX0 = Math.max(6, Math.floor(width * clamp(grip.x - 0.075, 0.04, 0.90)));
+      const roiX1 = Math.min(width - 6, Math.ceil(width * clamp(grip.x + 0.055, 0.08, 0.95)));
+
+      let bestBallScore = -1;
+      let ballXNorm = null;
+      let ballYNorm = null;
+
+      for (let y = roiY0; y <= roiY1; y += 2) {
+        for (let x = roiX0; x <= roiX1; x += 2) {
+          const idx = (y * width + x) * 4;
+          const r = imageData[idx];
+          const g = imageData[idx + 1];
+          const b = imageData[idx + 2];
+          const lum = (r + g + b) / 3;
+          if (lum < 175) continue;
+
+          const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+          const achr = lum - chroma * 1.2;
+          if (achr < 155) continue;
+
+          const ringDist = 7;
+          if (x - ringDist < 2 || x + ringDist >= width - 2 || y - ringDist < 2 || y + ringDist >= height - 2) continue;
+          const idxL = (y * width + (x - ringDist)) * 4;
+          const idxR = (y * width + (x + ringDist)) * 4;
+          const idxU = ((y - ringDist) * width + x) * 4;
+          const idxD = ((y + ringDist) * width + x) * 4;
+          const bgLum = (
+            imageData[idxL] + imageData[idxL + 1] + imageData[idxL + 2] +
+            imageData[idxR] + imageData[idxR + 1] + imageData[idxR + 2] +
+            imageData[idxU] + imageData[idxU + 1] + imageData[idxU + 2] +
+            imageData[idxD] + imageData[idxD + 1] + imageData[idxD + 2]
+          ) / 12;
+
+          const localContrast = lum - bgLum;
+          if (localContrast < 28) continue;
+
+          const score = achr + localContrast * 0.65;
+          if (score > bestBallScore) {
+            bestBallScore = score;
+            ballXNorm = x / width;
+            ballYNorm = y / height;
+          }
+        }
+      }
+
+      if (bestBallScore > 185 && ballXNorm !== null && ballYNorm !== null) {
+        detectedBallX = clamp(ballXNorm, 0.04, 0.96);
+        detectedBallY = clamp(ballYNorm, 0.04, 0.95);
+        detectedHeadX = clamp(ballXNorm - dirSign * 0.013, 0.04, 0.96);
+        detectedHeadY = clamp(ballYNorm - 0.003, 0.04, 0.95);
+      }
+    }
+  }
+
+  // 3) 폴백: 샤프트 선적분 탐색
+  if (detectedHeadX === null || detectedHeadY === null) {
+    const minAngle = isDTLStance ? 0.52 : 0.88;
+    const maxAngle = isDTLStance ? 1.18 : 1.92;
     const angleSteps = 36;
 
-    const minLenNorm = clamp((ankleY - grip.y) + 0.085, 0.25, 0.36);
-    const maxLenNorm = clamp((ankleY - grip.y) + 0.165, 0.30, 0.40);
+    const minLenNorm = isDTLStance ? 0.16 : clamp((ankleY - grip.y) + 0.085, 0.25, 0.36);
+    const maxLenNorm = isDTLStance ? 0.28 : clamp((ankleY - grip.y) + 0.165, 0.30, 0.40);
 
     let bestScore = -1;
     let bestAngle = defaultAngle;
@@ -458,7 +651,8 @@ export function detectAddressGolfClub(imageData, width, height, grip, torsoLen =
         }
 
         if (validSamples < 6) continue;
-        const priorWeight = 1.0 - 0.18 * Math.abs(theta - 1.62);
+        const targetTheta = isDTLStance ? 0.78 : 1.62;
+        const priorWeight = 1.0 - 0.18 * Math.abs(theta - targetTheta);
         const score = (edgeSum / validSamples) * priorWeight;
 
         if (score > bestScore) {
@@ -471,12 +665,11 @@ export function detectAddressGolfClub(imageData, width, height, grip, torsoLen =
 
     detectedHeadX = clamp(grip.x + Math.cos(bestAngle) * bestLenNorm, 0.04, 0.96);
     detectedHeadY = clamp(grip.y + Math.sin(bestAngle) * bestLenNorm, 0.04, 0.95);
+    detectedBallX = clamp(detectedHeadX + dirSign * 0.016, 0.04, 0.96);
+    detectedBallY = clamp(detectedHeadY - 0.003, 0.04, 0.95);
   }
 
-  // 3) 2-Point 실제 샤프트 브라이트 릿지(Ridge) 직선 정밀 피팅:
-  //    MediaPipe 손목 중점(grip.x)이 실제 클럽 샤프트 연장선보다 좌/우로 치우쳐 있을 수 있으므로,
-  //    검출된 클럽헤드(detectedHeadX, detectedHeadY)와 연결했을 때 실제 샤프트의 얇은 밝은 직선 에지(Ridge)를
-  //    정확히 관통하는 상단 축(bestTopX)을 찾아 실제 골프채 샤프트·헤드 중심선과 100% 일치시킵니다.
+  // 4) 2-Point 실제 샤프트 브라이트 릿지(Ridge) 직선 정밀 피팅:
   let bestTopX = grip.x;
   let bestRidgeScore = -1e9;
   const sideStepPx = Math.max(3, Math.round(width * 0.0068));
@@ -521,13 +714,18 @@ export function detectAddressGolfClub(imageData, width, height, grip, torsoLen =
     }
   }
 
-  // 양손(장갑/손목 중심 높이 grip.y)에서 실제 샤프트 브라이트 릿지 직선이 지나는 위치(bestTopX)를 정밀 그립 앵커로 확정
   const refinedGrip = {
     x: clamp(bestTopX, 0.04, 0.96),
     y: clamp(grip.y, 0.04, 0.95)
   };
   const finalAngle = Math.atan2(detectedHeadY - refinedGrip.y, detectedHeadX - refinedGrip.x);
   const finalLenNorm = Math.hypot(detectedHeadX - refinedGrip.x, detectedHeadY - refinedGrip.y);
+
+  // 골프채 끝 헤드 바로 앞쪽의 실제 공 위치 확정
+  const finalBallPoint = {
+    x: Number(clamp(detectedBallX ?? (detectedHeadX + dirSign * 0.016), 0.04, 0.96).toFixed(4)),
+    y: Number(clamp(detectedBallY ?? (detectedHeadY - 0.003), 0.04, 0.95).toFixed(4))
+  };
 
   return {
     grip: refinedGrip,
@@ -537,7 +735,9 @@ export function detectAddressGolfClub(imageData, width, height, grip, torsoLen =
       shaftAngle: finalAngle,
       pinned: false
     },
-    shaftLengthNorm: finalLenNorm
+    ballPoint: finalBallPoint,
+    shaftLengthNorm: finalLenNorm,
+    isDTL: isDTLStance
   };
 }
 
@@ -580,17 +780,17 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
 
   const addrForeshorten = isDTL ? 0.90 : 0.92;
   // 어드레스에서 인식된 실제 그립~헤드 거리(addrDistNorm)를 보존하여 어드레스·임팩트 시 타석 매트 볼 위치까지 100% 도달하도록 보장
-  const addrDistNorm = clamp(Math.hypot(dxPxNorm, dyPxNorm), isDTL ? 0.23 : 0.25, 0.42);
+  const addrDistNorm = clamp(Math.hypot(dxPxNorm, dyPxNorm), isDTL ? 0.11 : 0.25, 0.42);
   const baseShaftLenY = clamp(
     addrDistNorm / addrForeshorten,
-    isDTL ? 0.258 : 0.278,
+    isDTL ? 0.13 : 0.278,
     0.345
   );
 
   const dirSign = hand === 'left' ? -1 : 1;
   const halfPi = Math.PI * 0.5;
   const exactAddrShaftAngle = isDTL
-    ? clamp(addrShaftAngle, 0.95, 1.32)
+    ? clamp(addrShaftAngle, 0.45, 1.32)
     : clamp(addrShaftAngle, halfPi - 0.28, halfPi + 0.36);
 
   // 어드레스 프레임의 실제 어깨 중심과 그립(손) 사이의 거리로부터 골퍼의 기준 팔 길이(baseArmLenY) 산출
@@ -1044,6 +1244,9 @@ function trackedHandsMetric(sample) {
     clubY: sample.clubHead?.y ?? wristY,
     clubX: sample.clubHead?.x ?? wristX,
     clubSpeed: sample.clubSpeed ?? 0,
+    videoMotion: sample.videoMotion ?? 0,
+    strikeMotion: sample.strikeMotion ?? 0,
+    videoTimingHint: sample.videoTimingHint || null,
     torso,
     observed: true
   };
@@ -1054,11 +1257,36 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
   const fallback = () => {
     const sTime = validSamples[0]?.time ?? 0;
     const eTime = validSamples.at(-1)?.time ?? 3.0;
+    const dur = Math.max(0.5, eTime - sTime);
+    const hint = validSamples.find(s => s.videoTimingHint)?.videoTimingHint || null;
+    if (hint && Number.isFinite(hint.impactTime)) {
+      const addrT = clamp(hint.addressTime ?? (sTime + 0.42), sTime, eTime - 1.2);
+      const topT = clamp(hint.topTime ?? (addrT + 0.88), addrT + 0.35, eTime - 0.7);
+      const impT = clamp(hint.impactTime, topT + 0.16, eTime - 0.45);
+      const finT = clamp(hint.finishTime ?? (impT + 0.72), impT + 0.35, eTime);
+      const times = [
+        addrT,
+        addrT + (topT - addrT) * 0.48,
+        topT,
+        topT + (impT - topT) * 0.52,
+        impT,
+        impT + (finT - impT) * 0.38,
+        finT
+      ];
+      return KEY_MOMENTS.map(([key, labelKo, labelEn], i) => ({
+        key,
+        labelKo,
+        labelEn,
+        time: Number(times[i].toFixed(3)),
+        source: 'sampled'
+      }));
+    }
+    const activeSpan = Math.min(dur, 2.75);
     return KEY_MOMENTS.map(([key, labelKo, labelEn], i) => ({
       key,
       labelKo,
       labelEn,
-      time: Number((sTime + ((eTime - sTime) * i) / (KEY_MOMENTS.length - 1)).toFixed(3)),
+      time: Number((sTime + (activeSpan * i) / (KEY_MOMENTS.length - 1)).toFixed(3)),
       source: 'sampled'
     }));
   };
@@ -1078,31 +1306,163 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
     return [metrics[i - 1].x, m.x, metrics[i + 1].x].sort((a, b) => a - b)[1];
   });
 
-  // 1) 백스윙 탑(top) 탐색:
-  // 전반~중반 구간에서 손이 가장 높이 올라간 극소점 구간을 찾고,
-  // 탑 정점 평탄부(plateau)에서 다운스윙 하강이 시작되기 직전의 실제 백스윙 탑 전환 프레임을 선택합니다.
-  let rawTopIdx = Math.floor(metrics.length * 0.42);
-  let minTopY = Infinity;
-  const searchTopStart = Math.max(2, Math.floor(metrics.length * 0.14));
-  const searchTopEnd = Math.min(metrics.length - 6, Math.floor(metrics.length * 0.68));
+  const avgDt = Math.max(0.015, (metrics.at(-1).time - metrics[0].time) / Math.max(1, metrics.length - 1));
+  const totalTimeSpan = Math.max(0.5, metrics.at(-1).time - metrics[0].time);
 
-  for (let i = searchTopStart; i <= searchTopEnd; i++) {
-    if (ySmooth[i] < minTopY) {
-      minTopY = ySmooth[i];
-      rawTopIdx = i;
+  // 어드레스 기준 저점(addrBaselineY) 및 전체 스윙 수직 진폭(totalSpread) 산출
+  const earlySlice = ySmooth.slice(0, Math.max(4, Math.floor(ySmooth.length * 0.48))).slice().sort((a, b) => a - b);
+  const overallSorted = ySmooth.slice().sort((a, b) => a - b);
+  const addrBaselineY = earlySlice.length
+    ? earlySlice[Math.min(earlySlice.length - 1, Math.floor(earlySlice.length * 0.82))]
+    : overallSorted[Math.min(overallSorted.length - 1, Math.floor(overallSorted.length * 0.82))];
+  const globalMinY = overallSorted[0] ?? -0.6;
+  const totalSpread = Math.max(0.14, addrBaselineY - globalMinY);
+
+  // 1) [백스윙 탑(Peak 1) -> 임팩트 골짜기(Valley) -> 피니시(Peak 2)] 3단 연동(Triad) 탐색:
+  // 실제 골프 스윙에서는 피니시(Peak 2)에서 손이 백스윙 탑(Peak 1)보다 더 높이 올라가는 경우가 많으므로,
+  // 단순히 전체 구간 최솟값을 백스윙 탑으로 잡으면 피니시를 백스윙 탑으로 오인하여 임팩트가 스윙 종료 한참 뒤로 밀리게 됩니다.
+  // 따라서 반드시 ① 직전 0.14s~0.65s 내에 높은 백스윙 탑이 있고, ② 현재 프레임에서 손이 어드레스 높이로 급강하(임팩트 골짜기)한 뒤,
+  // ③ 직후 0.15s~1.15s 내에 다시 높은 팔로우스루·피니시 정점으로 치솟는 V자 골짜기(Impact Valley)를 찾아 백스윙 탑·임팩트·피니시를 동시에 확정합니다.
+  let bestTriadScore = -Infinity;
+  let bestTopCand = -1;
+  let bestImpCand = -1;
+  let bestFinCand = -1;
+
+  const maxStrikeMotion = Math.max(1e-4, ...metrics.map(m => m.strikeMotion || 0));
+  const hintObj = metrics.find(m => m.videoTimingHint)?.videoTimingHint || null;
+
+  const impSearchStart = Math.max(3, Math.floor(metrics.length * 0.12));
+  let impSearchEnd = Math.min(metrics.length - 4, Math.floor(metrics.length * 0.72));
+  if (hintObj && Number.isFinite(hintObj.finishTime)) {
+    const finBoundIdx = metrics.findIndex(m => m.time >= hintObj.finishTime - 0.08);
+    if (finBoundIdx > impSearchStart + 4) {
+      impSearchEnd = Math.min(impSearchEnd, finBoundIdx);
     }
   }
 
-  let addrBaselineY = -Infinity;
-  for (let i = 0; i < Math.max(2, rawTopIdx - 2); i++) {
-    if (ySmooth[i] > addrBaselineY) addrBaselineY = ySmooth[i];
+  for (let impCand = impSearchStart; impCand <= impSearchEnd; impCand++) {
+    const tImp = metrics[impCand].time;
+    const yImp = ySmooth[impCand];
+
+    // 임팩트 시점에는 손이 낮은 위치(골반/어드레스 높이 근처)에 있어야 함
+    if (yImp < globalMinY + totalSpread * 0.35) continue;
+
+    // (a) 임팩트 직전 0.12s ~ 0.65s 구간에서 백스윙 탑(topCand: ySmooth 최소) 탐색
+    let topCand = -1;
+    let yTopMin = Infinity;
+    for (let k = impCand - 2; k >= 1; k--) {
+      const dtBack = tImp - metrics[k].time;
+      if (dtBack < 0.11) continue;
+      if (dtBack > 0.66) break;
+      if (ySmooth[k] < yTopMin) {
+        yTopMin = ySmooth[k];
+        topCand = k;
+      }
+    }
+    if (topCand < 0) continue;
+
+    // (b) 임팩트 직후 0.14s ~ 1.15s 구간에서 팔로우스루·피니시 정점(finCand: ySmooth 최소) 탐색
+    let finCand = -1;
+    let yFinMin = Infinity;
+    for (let k = impCand + 2; k < metrics.length; k++) {
+      const dtFoll = metrics[k].time - tImp;
+      if (dtFoll < 0.13) continue;
+      if (dtFoll > 1.18) break;
+      if (ySmooth[k] < yFinMin) {
+        yFinMin = ySmooth[k];
+        finCand = k;
+      }
+    }
+    if (finCand < 0) continue;
+
+    const dropFromTop = yImp - yTopMin;   // 다운스윙 하강 폭
+    const riseToFinish = yImp - yFinMin;  // 임팩트 직후 피니시 상승 폭
+    if (dropFromTop < totalSpread * 0.18 || riseToFinish < totalSpread * 0.22) continue;
+
+    const dtDown = Math.max(0.11, tImp - metrics[topCand].time);
+    const dtUp = Math.max(0.13, metrics[finCand].time - tImp);
+
+    // 양방향 V자 대칭 깊이(조화평균): 백스윙 탑 하강과 피니시 상승이 모두 뚜렷할 때만 높은 점수 부여
+    const valleyHarmonic = (2 * dropFromTop * riseToFinish) / Math.max(0.05, dropFromTop + riseToFinish);
+    const downSpeed = dropFromTop / dtDown;
+    const upSpeed = riseToFinish / dtUp;
+
+    // 임팩트 전후 클럽/손목 순간 속도 피크 및 실제 영상 타격 영역 픽셀 모션 에너지
+    let localPeakClubSpeed = 0;
+    let localPeakWristSpeed = 0;
+    let localStrikeRatio = 0;
+    for (let mIdx = Math.max(topCand, impCand - 2); mIdx <= Math.min(finCand, impCand + 1); mIdx++) {
+      localPeakClubSpeed = Math.max(localPeakClubSpeed, metrics[mIdx].clubSpeed ?? 0);
+      localStrikeRatio = Math.max(localStrikeRatio, (metrics[mIdx].strikeMotion ?? 0) / maxStrikeMotion);
+      const pPrev = metrics[Math.max(0, mIdx - 1)];
+      const pNext = metrics[Math.min(metrics.length - 1, mIdx + 1)];
+      const dtLocal = Math.max(0.015, pNext.time - pPrev.time);
+      const wSpd = Math.hypot(pNext.x - pPrev.x, pNext.y - pPrev.y) / dtLocal;
+      localPeakWristSpeed = Math.max(localPeakWristSpeed, wSpd);
+    }
+
+    // 실제 골프 다운스윙 소요 시간(0.16s ~ 0.46s) 보너스
+    const downTempoBonus = (dtDown >= 0.15 && dtDown <= 0.48)
+      ? totalSpread * 0.36
+      : (dtDown > 0.55 ? -totalSpread * 0.25 : 0);
+
+    // 임팩트 순간 손 높이가 어드레스 베이스라인에 가까울수록 가산점
+    const lowHandBonus = (1.0 - clamp(Math.abs(addrBaselineY - yImp) / totalSpread, 0, 1)) * totalSpread * 0.42;
+
+    // 실제 영상 픽셀 모션 기반 타격 시점 정합 보너스
+    const videoStrikeBonus = localStrikeRatio * totalSpread * 0.48 +
+      (hintObj && Number.isFinite(hintObj.impactTime)
+        ? Math.max(0, 1.0 - Math.abs(tImp - hintObj.impactTime) / 0.42) * totalSpread * 0.62
+        : 0);
+
+    // 스윙 종료 후 팔을 내리는 동작보다 영상 전반~중반의 실제 본 스윙을 우선하도록 시간 가중치 부여
+    const timeRatio = (tImp - metrics[0].time) / totalTimeSpan;
+    const earlySwingBias = -Math.max(0, timeRatio - 0.25) * totalSpread * 0.45;
+
+    const triadScore =
+      valleyHarmonic * 2.35 +
+      (dropFromTop + riseToFinish) * 0.65 +
+      (downSpeed * 0.12 + upSpeed * 0.09) +
+      (localPeakClubSpeed / 120) * totalSpread * 0.30 +
+      Math.min(1.5, localPeakWristSpeed * 0.15) * totalSpread +
+      downTempoBonus +
+      lowHandBonus +
+      videoStrikeBonus +
+      earlySwingBias;
+
+    if (triadScore > bestTriadScore) {
+      bestTriadScore = triadScore;
+      bestTopCand = topCand;
+      bestImpCand = impCand;
+      bestFinCand = finCand;
+    }
   }
+
+  // 만약 Triad 조건을 만족하는 구간을 못 찾은 예외 영상의 경우, 전반부(10% ~ 52%) 내에서 백스윙 탑을 탐색
+  let rawTopIdx = bestTopCand;
+  if (rawTopIdx < 0) {
+    rawTopIdx = Math.floor(metrics.length * 0.32);
+    let minTopY = Infinity;
+    const searchTopStart = Math.max(2, Math.floor(metrics.length * 0.08));
+    const searchTopEnd = Math.min(metrics.length - 6, Math.floor(metrics.length * 0.52));
+    for (let i = searchTopStart; i <= searchTopEnd; i++) {
+      if (ySmooth[i] < minTopY) {
+        minTopY = ySmooth[i];
+        rawTopIdx = i;
+      }
+    }
+  }
+
+  const minTopY = ySmooth[rawTopIdx];
   const addrHeightSpread = Math.max(0.12, addrBaselineY - minTopY);
 
-  // 백스윙 탑 평탄부(minTopY + 5% 이내)에서 다운스윙 하강 직전의 정점(topIdx) 확정
+  // 백스윙 탑 평탄부(minTopY + 6% 이내)에서 다운스윙 하강이 시작되기 직전의 정점(topIdx) 확정
   let topIdx = rawTopIdx;
-  const plateauLimit = minTopY + addrHeightSpread * 0.05;
-  for (let i = rawTopIdx; i <= Math.min(searchTopEnd, rawTopIdx + 6); i++) {
+  const maxTopPlateauIdx = bestImpCand > rawTopIdx
+    ? Math.max(rawTopIdx, bestImpCand - 3)
+    : Math.min(metrics.length - 5, rawTopIdx + 5);
+  const plateauLimit = minTopY + addrHeightSpread * 0.06;
+  for (let i = rawTopIdx; i <= Math.min(maxTopPlateauIdx, rawTopIdx + 5); i++) {
     if (ySmooth[i] <= plateauLimit) {
       topIdx = i;
     } else {
@@ -1111,13 +1471,9 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
   }
 
   // 2) 어드레스(address) 탐색:
-  // 테이크어웨이 초기(6시 -> 7시 30분)에는 손목은 거의 제자리에 있으면서 클럽헤드만 먼저 출발(예: 24 mph)할 수 있습니다.
-  // 따라서 1단계로 손목이 셋업 위치로 돌아온 시점(wristStartIdx)을 찾은 뒤,
-  // 2단계로 그 직전 0.3초(약 9프레임) 윈도우 내에서 클럽헤드 테이크어웨이 가속이 시작되기 전의
-  // 완전 정지 어드레스 프레임(6시 정면 정렬)까지 역추적합니다.
   const lowHandXs = [];
   for (let i = 0; i < Math.max(2, topIdx - 2); i++) {
-    if (ySmooth[i] >= addrBaselineY - addrHeightSpread * 0.06) {
+    if (ySmooth[i] >= addrBaselineY - addrHeightSpread * 0.08) {
       lowHandXs.push(xSmooth[i]);
     }
   }
@@ -1150,8 +1506,6 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
 
   let addrIdx = Math.max(0, Math.floor(topIdx * 0.25));
   if (wristStartIdx >= 0) {
-    // 손목이 셋업 높이에 있는 wristStartIdx에서 클럽헤드가 이미 테이크어웨이(7시 방향 등)를 시작한 경우,
-    // 직전 9프레임(약 0.3초) 구간을 역탐색하여 클럽헤드 속도와 이탈량이 가장 작은 실제 정지 어드레스 프레임을 선택
     const lookbackStart = Math.max(0, wristStartIdx - 9);
     let bestIdx = wristStartIdx;
     let bestScore = Infinity;
@@ -1180,7 +1534,7 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
       const horizShiftRatio = Math.abs(xSmooth[i] - addrBaseX) / maxHorizShift;
       const excursion2D = Math.hypot(horizShiftRatio * 0.85, vertRiseRatio);
       const cSpeed = metrics[i].clubSpeed ?? 0;
-      const cost = excursion2D * 2.4 + wristSpeed * 0.35 + (cSpeed / 100) * 0.65 - (i / topIdx) * 0.10;
+      const cost = excursion2D * 2.4 + wristSpeed * 0.35 + (cSpeed / 100) * 0.65 - (i / Math.max(1, topIdx)) * 0.10;
       if (cost < minAddrCost) {
         minAddrCost = cost;
         addrIdx = i;
@@ -1188,37 +1542,55 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
     }
   }
 
-  // 3) 임팩트(impact) 탐색:
-  // 다운스윙에서 손목 최저점(P6 딜리버리) 직후 클럽 헤드가 최저점을 통과하며 타격하는 실제 임팩트(P7) 프레임을 검출합니다.
-  let wristLowIdx = Math.min(metrics.length - 3, topIdx + Math.max(3, Math.floor((metrics.length - topIdx) * 0.42)));
-  let maxImpY = -Infinity;
-  for (let i = topIdx + 2; i < metrics.length - 2; i++) {
+  // 3) 임팩트(impact) 정밀 확정:
+  // 백스윙 탑(topIdx) 직후 ~ 피니시(bestFinCand) 이전의 다운스윙 골짜기 구간(최대 0.58초 이내)에서
+  // 손과 클럽 헤드가 최저점을 통과하는 실제 타격 프레임(impIdx)을 확정합니다.
+  let impWindowStart = topIdx + 2;
+  let impWindowEnd = bestImpCand > topIdx
+    ? Math.min(metrics.length - 3, bestImpCand + 2)
+    : Math.min(metrics.length - 3, topIdx + Math.max(4, Math.round(0.55 / avgDt)));
+  if (bestFinCand > topIdx + 3) {
+    impWindowEnd = Math.min(impWindowEnd, bestFinCand - 2);
+  }
+
+  let wristLowIdx = bestImpCand > topIdx ? bestImpCand : impWindowStart;
+  let maxImpMetric = -Infinity;
+  for (let i = impWindowStart; i <= impWindowEnd; i++) {
     const dtFromTop = metrics[i].time - metrics[topIdx].time;
-    if (dtFromTop > 1.35) break;
-    const combinedLow = ySmooth[i] * 0.65 + metrics[i].clubY * 0.35;
-    if (combinedLow > maxImpY) {
-      maxImpY = combinedLow;
+    if (dtFromTop > 0.62) break;
+    const combinedLow = ySmooth[i] * 0.72 + metrics[i].clubY * 0.28;
+    if (combinedLow > maxImpMetric) {
+      maxImpMetric = combinedLow;
       wristLowIdx = i;
     }
   }
-  const avgDt = Math.max(0.015, (metrics.at(-1).time - metrics[0].time) / Math.max(1, metrics.length - 1));
-  const deliveryLagFrames = Math.max(1, Math.round(0.038 / avgDt));
-  const impIdx = clamp(wristLowIdx + deliveryLagFrames, topIdx + 3, metrics.length - 3);
 
-  // 4) 피니시(finish) 탐색: 임팩트 이후 손이 가장 높이 올라간 뒤 클럽헤드가 머리를 지나 목·어깨 뒤로 완전히 감기는 지점
-  let peakFinIdx = metrics.length - 1;
+  // 다음 프레임(wristLowIdx + 1)이 아직 팔로우스루로 크게 떠오르기 전이면서 클럽 스피드가 더 빠른 경우에만 +1 프레임 보정
+  let impIdx = wristLowIdx;
+  if (
+    wristLowIdx + 1 <= impWindowEnd &&
+    ySmooth[wristLowIdx] - ySmooth[wristLowIdx + 1] <= addrHeightSpread * 0.08 &&
+    (metrics[wristLowIdx + 1].clubSpeed ?? 0) >= (metrics[wristLowIdx].clubSpeed ?? 0)
+  ) {
+    impIdx = wristLowIdx + 1;
+  }
+  impIdx = clamp(impIdx, topIdx + 2, metrics.length - 3);
+
+  // 4) 피니시(finish) 탐색: 임팩트 직후(최대 1.35초 내) 손이 가장 높이 올라간 뒤 클럽이 목·어깨 뒤로 감기는 지점
+  let peakFinIdx = bestFinCand > impIdx ? bestFinCand : Math.min(metrics.length - 1, impIdx + 4);
   let minFinY = Infinity;
   for (let i = impIdx + 2; i < metrics.length; i++) {
+    if (metrics[i].time - metrics[impIdx].time > 1.35) break;
     if (ySmooth[i] < minFinY) {
       minFinY = ySmooth[i];
       peakFinIdx = i;
     }
   }
-  const finishWrapFrames = Math.max(2, Math.round(0.26 / avgDt));
+  const finishWrapFrames = Math.max(2, Math.round(0.24 / avgDt));
   let finIdx = peakFinIdx;
   const maxFinSearch = Math.min(metrics.length - 1, peakFinIdx + finishWrapFrames);
   for (let i = peakFinIdx + 1; i <= maxFinSearch; i++) {
-    if (ySmooth[i] <= minFinY + addrHeightSpread * 0.28) {
+    if (ySmooth[i] <= minFinY + addrHeightSpread * 0.24) {
       finIdx = i;
     }
   }

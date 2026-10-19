@@ -1,4 +1,4 @@
-# Gradle 및 Android Studio 임시 빌드 캐시 제외 (mobile/dist/golfSwing.apk 산출물은 포함)
+# Gradle 및 Android Studio 임시 빌드 캐시 제외 (최신 APK 산출물은 포함)
 mobile/.gradle/
 mobile/.kotlin/
 mobile/build/
@@ -8,3 +8,8 @@ mobile/local.properties
 *.iml
 .DS_Store
 Thumbs.db
+
+# 로컬 디스크에는 모든 버전 APK를 보존하되, GitHub 원격 푸시 용량 제한 방지를 위해 최신 버전(v1.18) APK만 Git 추적
+*.apk
+!나만의골프스윙_v1.18.apk
+

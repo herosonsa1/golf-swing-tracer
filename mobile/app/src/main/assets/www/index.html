@@ -2,201 +2,776 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Golf Swing Afterimage Studio Mobile</title>
-  <meta name="description" content="REA 역공학 기반 스마트폰 골프 클럽 헤드 잔상 동영상 및 7단계 스윙 시퀀스 스튜디오">
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>나만의골프스윙</title>
+  <meta name="description" content="나만의골프스윙 — 골프 클럽 헤드 잔상 동영상 제작 및 후방 공 궤적 샷 트레이서 스튜디오">
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=20261017_04">
+  <link rel="icon" type="image/png" href="app-icon.png?v=20261017_04">
+  <link rel="apple-touch-icon" href="app-icon.png?v=20261017_04">
+  <link rel="stylesheet" href="styles.css?v=20261019_05">
 </head>
-<body class="mobile-app-shell">
+<body>
   <header class="top-bar" role="banner">
-    <div class="brand-row">
+    <div class="top-bar-main-row">
       <div class="brand-group">
-        <span class="brand-mark" aria-hidden="true">GS</span>
+        <img src="app-icon.png?v=20261017_04" alt="나만의 골프스윙 아이콘" class="brand-mark-icon" width="36" height="36">
         <div class="brand-titles">
-          <h1>Golf Swing Studio</h1>
-          <p id="activeFileLabel" class="sub-label">내장 프로 스윙 시뮬레이션 (Driver 정면 60fps)</p>
+          <h1 class="brand-title-twoline" title="나만의골프스윙">
+            <span class="brand-title-line1">나만의</span>
+            <span class="brand-title-line2">골프스윙</span>
+          </h1>
+          <p id="activeFileLabel" class="sub-label">내장 프로 스윙 시뮬레이션</p>
         </div>
       </div>
 
-      <button type="button" id="btnUploadVideo" class="btn-primary btn-gallery-pick">갤러리 스윙 영상 선택</button>
-      <input type="file" id="videoFileInput" accept="video/*,.mp4,.mov,.webm" hidden>
+      <div class="top-bar-right">
+        <div class="top-quick-mode-switch" role="group" aria-label="분석 모드 빠른 전환">
+          <button type="button" id="btnQuickModeAfterimage" class="btn-quick-mode is-active" title="스윙 클럽 잔상 분석 화면">클럽 잔상</button>
+          <button type="button" id="btnQuickModeShotTracer" class="btn-quick-mode" title="후방 공 궤적 샷 트레이서 화면">공 궤적</button>
+        </div>
+
+        <button type="button" id="btnQuickUploadVideo" class="btn-upload-accent btn-quick-upload" title="내 스윙 동영상 열기 (측면·후면 촬영 각도를 자동 판별하여 클럽 잔상 또는 후방 공 궤적 분석으로 자동 진행)">영상 열기</button>
+
+        <button
+          type="button"
+          id="btnTopMenuToggle"
+          class="btn-top-menu-toggle"
+          aria-expanded="false"
+          aria-controls="topMenuDropdownPanel"
+          aria-label="숨겨진 부가 기능 전체 메뉴 열기 및 닫기"
+          title="메뉴를 펼쳐 보관함·내보내기·데모·화면분할 등 부가 기능을 선택합니다"
+        >
+          <svg class="top-menu-icon-svg" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path class="menu-line line-1" d="M3 5.25H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path class="menu-line line-2" d="M3 10H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path class="menu-line line-3" d="M3 14.75H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="top-menu-toggle-label">메뉴</span>
+          <span id="badgeArchiveCountTop" class="archive-count-pill top-menu-badge" hidden>0</span>
+        </button>
+      </div>
     </div>
 
-    <div class="header-actions" role="toolbar" aria-label="스윙 프리셋 및 즉시 갤러리 저장 도구">
-      <div class="input-group">
-        <label for="selectDemoPreset" class="sr-only">데모 스윙 선택</label>
-        <select id="selectDemoPreset" class="control-select" title="샘플 스윙 시뮬레이션 전환">
-          <option value="driver-fo" selected>데모: 드라이버 정면 (Face-On)</option>
-          <option value="iron-dtl">데모: 아이언 측면 (Down-The-Line)</option>
-        </select>
+    <div id="topMenuBackdrop" class="top-menu-backdrop" hidden></div>
+
+    <nav id="topMenuDropdownPanel" class="top-menu-dropdown-panel" aria-label="상단 전체 메뉴 리스트" hidden>
+      <div class="top-menu-panel-header">
+        <div class="top-menu-panel-title-wrap">
+          <strong class="top-menu-panel-title">전체 메뉴 · 부가 기능 모음</strong>
+          <span class="top-menu-panel-sub">화면 이동, 작업 보관함, 결과물 저장 및 환경 설정을 선택하세요</span>
+        </div>
+        <button type="button" id="btnCloseTopMenu" class="btn-transport btn-close-top-menu" aria-label="메뉴 닫기">닫기</button>
       </div>
 
-      <div class="export-group">
-        <button type="button" id="btnExportStrobeSnapshot" class="btn-secondary">스냅샷 갤러리 저장</button>
-        <button type="button" id="btnExportPanoramaSnapshot" class="btn-secondary">7단계 파노라마 저장</button>
-        <button type="button" id="btnExportAfterimageVideo" class="btn-primary">구간 동영상 갤러리 저장</button>
+      <div id="topMenuSectionsWrap" class="top-menu-sections-wrap" tabindex="-1">
+        <div class="top-menu-section">
+          <span class="top-menu-section-label">스튜디오 분석 모드 이동</span>
+          <div class="mode-switch-group top-menu-list-group" role="tablist" aria-label="스튜디오 분석 모드 전환">
+            <button type="button" id="btnModeAfterimage" class="mode-switch-btn top-menu-list-item is-active" data-studio-mode="afterimage" role="tab" aria-selected="true">
+              <span class="top-menu-item-main">
+                <span class="top-menu-item-title">스윙 클럽 잔상 분석 (측면·정면)</span>
+                <span class="top-menu-item-desc">다중 노출 클럽 헤드 스트로보 잔상 · 7단계 스윙 시퀀스 분석</span>
+              </span>
+              <span class="top-menu-item-state" id="stateBadgeModeAfterimage">현재 화면</span>
+            </button>
+            <button type="button" id="btnModeShotTracer" class="mode-switch-btn top-menu-list-item" data-studio-mode="shot-tracer" role="tab" aria-selected="false">
+              <span class="top-menu-item-main">
+                <span class="top-menu-item-title">후방 공 궤적 샷 트레이서 (DTL)</span>
+                <span class="top-menu-item-desc">공 출발~APEX 슬로우 탄도 궤적 · 캐리 및 런 거리 판독</span>
+              </span>
+              <span class="top-menu-item-state" id="stateBadgeModeShotTracer">화면 이동</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="top-menu-section">
+          <span class="top-menu-section-label">작업 보관함 (저장 · 조회 · 이어하기)</span>
+          <div class="export-group top-menu-list-group" role="group" aria-label="작업 저장 및 보관함">
+            <button type="button" id="btnSaveWorkState" class="btn-secondary btn-save-work top-menu-action-row" title="현재 궤적·핀·구질·수치 편집 상태를 보관함에 저장">작업 내용 저장</button>
+            <button type="button" id="btnOpenSavedArchive" class="btn-secondary btn-open-archive top-menu-action-row" title="저장된 작업 결과를 조회하고 편집장으로 불러와 이어서 수정하거나 삭제합니다">
+              <span>저장된 작업 조회 및 이어하기</span>
+              <span id="badgeArchiveCount" class="archive-count-pill">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="top-menu-section">
+          <span class="top-menu-section-label">결과물 이미지 · 동영상 다운로드</span>
+          <div class="export-group top-menu-list-group" role="group" aria-label="스냅샷 및 동영상 내보내기">
+            <button type="button" id="btnExportStrobeSnapshot" class="btn-secondary top-menu-action-row">클럽 잔상 스냅샷 (PNG)</button>
+            <button type="button" id="btnExportPanoramaSnapshot" class="btn-secondary top-menu-action-row" data-mode-only="afterimage">7단계 파노라마 (PNG)</button>
+            <button type="button" id="btnExportAfterimageVideo" class="btn-primary top-menu-action-row is-primary-row">클럽 잔상 동영상 다운로드</button>
+          </div>
+        </div>
+
+        <div class="top-menu-section">
+          <span class="top-menu-section-label">영상 열기 · 샘플 데모 · 화면 분할 설정</span>
+          <div class="input-group top-menu-list-group" role="group" aria-label="영상 입력 및 레이아웃 도구">
+            <button type="button" id="btnUploadVideo" class="btn-upload-accent top-menu-list-item is-upload-item">
+              <span class="top-menu-item-main">
+                <span class="top-menu-item-title">내 스윙 영상 열기 (측면·후면 자동 판별)</span>
+                <span class="top-menu-item-desc">동영상을 열면 측면(정면)인지 후면(DTL)인지 자동 판단하여 잔상분석 또는 후방 공 궤적으로 바로 진행합니다</span>
+              </span>
+              <span class="top-menu-item-state">자동 분석</span>
+            </button>
+            <input type="file" id="videoFileInput" accept="video/*,.mp4,.mov,.webm" hidden>
+
+            <div class="top-menu-select-card">
+              <label for="selectDemoPreset" class="top-menu-select-label">샘플 데모 스윙 선택</label>
+              <select id="selectDemoPreset" class="control-select" title="샘플 스윙 시뮬레이션 전환">
+                <option value="driver-fo" data-mode-only="afterimage" selected>데모: 드라이버 정면 (Face-On)</option>
+                <option value="iron-dtl" data-mode-only="afterimage">데모: 아이언 측면 (DTL)</option>
+                <option value="shot-tracer-dtl" data-mode-only="shot-tracer" hidden>데모: 후방 공 궤적 (212m)</option>
+              </select>
+            </div>
+
+            <div class="top-menu-select-card">
+              <span class="top-menu-select-label">데스크톱/태블릿 영상 패널 분할 방식</span>
+              <div class="split-mode-switcher" role="group" aria-label="상단 영상 패널 분할 방식 선택">
+                <button type="button" id="btnSplitPlusOne" class="btn-split-mode is-active" data-split-mode="plus-one" aria-pressed="true">+1 분할 (2분할·최적)</button>
+                <button type="button" id="btnSplitPlusTwo" class="btn-split-mode" data-split-mode="plus-two" aria-pressed="false">+2 분할 (3분할·비교)</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </nav>
   </header>
 
   <div class="status-strip" role="status" aria-live="polite">
     <div class="status-inner">
       <span class="status-indicator" aria-hidden="true"></span>
-      <span id="statusBannerText">7단계 스윙 구간 및 클럽 헤드 잔상 궤적 준비 완료</span>
+      <span id="statusBannerText">7단계 스윙 구간 및 클럽 헤드 잔상 궤적 분석 완료</span>
     </div>
-    <div id="analysisProgressWrap" class="progress-wrap" hidden>
-      <progress id="analysisProgressBar" max="100" value="0"></progress>
+    <div class="status-right-tools">
+      <div id="activeArchiveEditBanner" class="active-archive-banner" hidden>
+        <span class="active-archive-label">이어서 편집 중:</span>
+        <strong id="activeArchiveTitleText" class="active-archive-title">-</strong>
+        <button type="button" id="btnOverwriteArchiveWork" class="btn-transport btn-archive-BannerAct" title="수정된 내용을 현재 불러온 저장 항목에 덮어쓰기 저장">수정내용 덮어쓰기</button>
+        <button type="button" id="btnDetachArchiveWork" class="btn-transport btn-archive-BannerGhost" title="불러온 항목 연결을 해제하고 새 작업으로 전환">새 작업으로 전환</button>
+      </div>
+      <div id="analysisProgressWrap" class="progress-wrap" hidden>
+        <progress id="analysisProgressBar" max="100" value="0"></progress>
+      </div>
     </div>
   </div>
 
-  <!-- 갤러리 무다운로드 즉시 저장 완료 알림 배너 -->
-  <div id="nativeSaveToast" class="native-save-toast" role="status" aria-live="assertive" hidden>
-    <div class="native-save-toast-content">
-      <span id="nativeSaveToastBadge" class="native-save-badge">갤러리 저장됨</span>
-      <span id="nativeSaveToastText" class="native-save-text">스마트폰 갤러리에 파일이 즉시 저장되었습니다.</span>
-    </div>
-    <div class="native-save-toast-actions">
-      <button type="button" id="btnToastPreview" class="btn-toast-action">미리보기</button>
-      <button type="button" id="btnToastDismiss" class="btn-toast-close" aria-label="알림 닫기">닫기</button>
-    </div>
-  </div>
-
-  <main class="studio-layout">
-    <section class="viewport-column" aria-label="스윙 비디오 및 잔상 캔버스 영역">
-      <!-- 스마트폰 상단 고정(Sticky) 스윙 스테이지 + 핵심 타임라인 바 -->
-      <div class="sticky-stage-shell">
-        <div id="stageViewport" class="stage-viewport">
-          <video id="hiddenVideo" class="video-decoder-layer" muted playsinline preload="auto"></video>
-          <canvas id="stageCanvas" width="1280" height="720" aria-label="골프 클럽 헤드 잔상 및 포즈 분석 캔버스"></canvas>
-        </div>
-
-        <div class="quick-timeline-bar">
-          <div class="timeline-row">
-            <label for="timelineRange" class="timeline-label">TIMELINE</label>
-            <input type="range" id="timelineRange" min="0" max="3.2" step="0.005" value="1.78" aria-label="스윙 타임라인 탐색">
-            <output id="timeReadout" class="time-readout">1.78s / 3.20s (F107/192)</output>
-          </div>
-
-          <div class="quick-transport-row">
-            <button type="button" id="btnPrevFrame" class="btn-transport" title="이전 프레임">이전</button>
-            <button type="button" id="btnPlayPause" class="btn-transport btn-play-main" aria-pressed="false" title="재생 / 일시정지">재생</button>
-            <button type="button" id="btnNextFrame" class="btn-transport" title="다음 프레임">다음</button>
-            <button type="button" id="btnJumpImpact" class="btn-transport">임팩트</button>
-            <button type="button" id="btnSaveCurrentSnapshot" class="btn-primary btn-quick-save" title="현재 화면 스냅샷을 다운로드 없이 갤러리에 즉시 저장">스냅샷 저장</button>
-          </div>
-        </div>
-
-        <!-- 스마트폰 한 손 조작을 위한 4-탭 워크스페이스 전환 바 -->
-        <nav id="mobileTabNav" class="mobile-tab-nav" aria-label="모바일 편집 및 분석 탭">
-          <button type="button" class="mobile-tab-btn is-active" data-tab-target="trail" aria-selected="true">잔상·궤적 설정</button>
-          <button type="button" class="mobile-tab-btn" data-tab-target="clip" aria-selected="false">구간·영상저장</button>
-          <button type="button" class="mobile-tab-btn" data-tab-target="sequence" aria-selected="false">7단계 시퀀스</button>
-          <button type="button" class="mobile-tab-btn" data-tab-target="metrics" aria-selected="false">측정·AI코칭</button>
-        </nav>
-      </div>
-
-      <!-- 탭 2 패널: 재생 속도 / 헤드 보정 / 타임라인 구간(CLIP) 동영상 갤러리 즉시 저장 -->
-      <div id="panelClipTransport" class="transport-bar mobile-tab-panel" data-tab-panel="clip" aria-label="구간 설정 및 동영상 저장 컨트롤">
-        <div class="transport-controls">
-          <div class="calibration-buttons">
-            <label class="inline-control-label">재생 속도
-              <select id="selectPlaybackSpeed" class="control-select-compact">
-                <option value="0.1">0.1x (초정밀)</option>
-                <option value="0.25">0.25x (슬로우)</option>
-                <option value="0.5" selected>0.5x (권장 잔상)</option>
-                <option value="1">1.0x (실속도)</option>
-              </select>
-            </label>
-            <button type="button" id="btnToggleManualPin" class="btn-transport" aria-pressed="false">헤드 위치 수동 보정</button>
-            <button type="button" id="btnResetPins" class="btn-transport">궤적 초기화</button>
-          </div>
-        </div>
-
-        <div class="clip-range-panel" aria-label="타임라인 구간 동영상 갤러리 저장 설정">
-          <div class="clip-track-row">
-            <span class="timeline-label">CLIP 구간</span>
-            <div class="dual-range-wrap">
-              <div class="dual-range-rail"></div>
-              <div id="clipRangeFill" class="dual-range-fill"></div>
-              <input type="range" id="rangeClipStart" class="dual-range-input" min="0" max="3.2" step="0.01" value="0.00" aria-label="동영상 저장 시작 시점 슬라이더">
-              <input type="range" id="rangeClipEnd" class="dual-range-input" min="0" max="3.2" step="0.01" value="3.20" aria-label="동영상 저장 종료 시점 슬라이더">
-            </div>
-            <output id="clipDurationReadout" class="time-readout">구간 0.00s ~ 3.20s (3.20s)</output>
-          </div>
-
-          <div class="clip-controls-row">
-            <div class="clip-points-group">
-              <label class="inline-control-label">빠른 구간
-                <select id="selectClipPreset" class="control-select-compact">
-                  <option value="all" selected>전체 영상 (0.00s ~ 끝)</option>
-                  <option value="full-swing">스윙 전체 (어드레스 ~ 피니시)</option>
-                  <option value="backswing">백스윙 구간 (어드레스 ~ 탑)</option>
-                  <option value="down-impact">다운스윙~임팩트 (탑 ~ 팔로우스루)</option>
-                  <option value="down-finish">다운스윙~피니시 (탑 ~ 피니시)</option>
-                  <option value="custom">사용자 직접 지정</option>
-                </select>
-              </label>
-
-              <div class="clip-endpoint-box">
-                <label for="inputClipStart" class="clip-endpoint-label">시작(s)</label>
-                <input type="number" id="inputClipStart" class="clip-num-input" min="0" max="3.2" step="0.01" value="0.00">
-                <button type="button" id="btnSetClipStart" class="btn-transport btn-clip-mark" title="현재 타임라인 위치를 동영상 시작점으로 설정">현 위치 시작점</button>
+  <!-- 기존 배열(좌측 메인 스테이지 + 우측 인스펙터) 기반 위에서 상단 영상 패널만 분할하는 하이브리드 워크스페이스 -->
+  <main id="studioLayout" class="studio-layout">
+    <!-- 좌측 메인 스테이지 워크스페이스 (상단: 영상 패널 분할 영역 / 하단: 와이드 시퀀스·비행 시점 영역) -->
+    <div class="main-workspace-column">
+      <!-- 상단: 기존에 사진(영상)이 있던 패널 부분만 분할 (+1 분할: 좌 영상 뷰포트 | 우 영상 직결 조작 독) -->
+      <section id="stageHeroSplit" class="stage-hero-split" aria-label="스윙 비디오 뷰포트 및 영상 직결 조작 패널">
+        <!-- 상단 분할 1: 영상 캔버스 및 필수 프레임 재생 컨트롤 -->
+        <div class="stage-video-pane">
+          <div id="stageViewport" class="stage-viewport">
+            <div id="stageFullscreenTopBar" class="stage-fs-top-bar" hidden>
+              <div class="stage-fs-top-left">
+                <strong id="fsStageTitleLabel" class="stage-fs-title">나만의 골프스윙 · 전체화면 재생</strong>
               </div>
-
-              <div class="clip-endpoint-box">
-                <label for="inputClipEnd" class="clip-endpoint-label">종료(s)</label>
-                <input type="number" id="inputClipEnd" class="clip-num-input" min="0.1" max="3.2" step="0.01" value="3.20">
-                <button type="button" id="btnSetClipEnd" class="btn-transport btn-clip-mark" title="현재 타임라인 위치를 동영상 종료점으로 설정">현 위치 종료점</button>
+              <div class="stage-fs-top-right">
+                <select id="selectFsPlaybackSpeed" class="stage-fs-speed-select" aria-label="전체화면 재생 배속">
+                  <option value="0.1">0.1x 초저속</option>
+                  <option value="0.25">0.25x</option>
+                  <option value="0.5" selected>0.5x 슬로우</option>
+                  <option value="0.75">0.75x</option>
+                  <option value="1">1.0x 정속</option>
+                </select>
+                <button type="button" id="btnExitStageFullscreenTop" class="btn-stage-fs-exit" title="전체화면 닫기 (ESC)">전체화면 닫기</button>
               </div>
             </div>
 
-            <div class="clip-export-actions">
-              <button type="button" id="btnPlayClipRange" class="btn-transport" title="설정한 시작~종료 구간만 미리 재생">선택 구간 재생</button>
-              <label class="inline-control-label">저장 배속
-                <select id="selectExportSpeed" class="control-select-compact">
-                  <option value="0.25">0.25x (초슬로우)</option>
-                  <option value="0.5" selected>0.5x (권장 슬로우)</option>
-                  <option value="1">1.0x (실속도)</option>
-                </select>
-              </label>
-              <button type="button" id="btnExportClipVideo" class="btn-primary" title="설정한 타임라인 시작~종료 구간을 동영상으로 갤러리에 즉시 저장">선택 구간 동영상 저장</button>
+            <video id="hiddenVideo" class="video-decoder-layer" muted playsinline preload="auto"></video>
+            <div id="stageZoomScroll" class="stage-zoom-scroll" aria-label="확대된 영상 좌우·상하 스크롤 영역">
+              <div id="stageZoomContent" class="stage-zoom-content">
+                <canvas id="stageCanvas" width="1280" height="720" aria-label="골프 클럽 헤드 잔상 및 포즈 분석 캔버스"></canvas>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              id="btnStageFullscreenOverlay"
+              class="btn-stage-fs-overlay"
+              title="스윙 영상을 전체화면으로 크게 재생합니다"
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M3 7V3H7M13 3H17V7M17 13V17H13M7 17H3V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>전체화면 재생</span>
+            </button>
+
+            <div id="stageFullscreenBottomBar" class="stage-fs-bottom-bar" hidden>
+              <div class="stage-fs-timeline-row">
+                <input type="range" id="fsTimelineRange" class="stage-fs-range" min="0" max="3.2" step="0.005" value="1.78" aria-label="전체화면 스윙 타임라인 탐색">
+                <output id="fsTimeReadout" class="stage-fs-time">1.78s / 3.20s (F107/192)</output>
+              </div>
+              <div class="stage-fs-controls-row">
+                <button type="button" id="btnFsPrevFrame" class="btn-stage-fs-ctrl">이전 프레임</button>
+                <button type="button" id="btnFsPlayPause" class="btn-stage-fs-ctrl is-primary-fs">재생</button>
+                <button type="button" id="btnFsNextFrame" class="btn-stage-fs-ctrl">다음 프레임</button>
+                <button type="button" id="btnFsJumpImpact" class="btn-stage-fs-ctrl">임팩트 이동</button>
+                <button type="button" id="btnExitStageFullscreenBottom" class="btn-stage-fs-ctrl is-exit-fs">화면 축소</button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 탭 3 패널: 7단계 스윙 시퀀스 필름스트립 -->
-      <section id="panelSequence" class="sequence-section mobile-tab-panel" data-tab-panel="sequence" aria-labelledby="sequenceTitle">
-        <div class="section-header-bar">
-          <div>
-            <h2 id="sequenceTitle">7단계 스윙 시퀀스 및 누적 헤드 잔상</h2>
-            <p class="section-caption">각 스윙 구간 카드를 터치하면 해당 프레임으로 즉시 이동하며 누적 클럽 잔상을 표시합니다.</p>
+          <!-- 바깥에 항상 노출되는 필수 재생 및 저장 컨트롤 바 -->
+          <div class="transport-bar" aria-label="재생 및 프레임 정밀 탐색 컨트롤">
+            <div class="timeline-row">
+              <label for="timelineRange" class="timeline-label">TIMELINE</label>
+              <input type="range" id="timelineRange" min="0" max="3.2" step="0.005" value="1.78" aria-label="스윙 타임라인 탐색">
+              <output id="timeReadout" class="time-readout">1.78s / 3.20s (F107/192)</output>
+            </div>
+
+            <div class="transport-controls">
+              <div class="playback-buttons">
+                <button type="button" id="btnPrevFrame" class="btn-transport" title="이전 프레임 (왼쪽 화살표)">이전 프레임</button>
+                <button type="button" id="btnPlayPause" class="btn-transport btn-play-main" aria-pressed="false" title="재생 / 일시정지 (Space)">재생</button>
+                <button type="button" id="btnNextFrame" class="btn-transport" title="다음 프레임 (오른쪽 화살표)">다음 프레임</button>
+                <button type="button" id="btnJumpImpact" class="btn-transport">임팩트 이동</button>
+              </div>
+
+              <div class="essential-quick-actions">
+                <button type="button" id="btnFullscreenPlay" class="btn-upload-accent btn-snapshot-compact" title="스윙 영상을 전체화면으로 크게 재생합니다">전체화면 재생</button>
+                <button type="button" id="btnQuickSaveWorkOutside" class="btn-secondary btn-snapshot-compact" title="현재 편집 작업 내용을 보관함에 저장">작업 저장</button>
+                <button type="button" id="btnQuickExportVideoOutside" class="btn-primary btn-snapshot-compact" title="분석 결과 동영상 다운로드">동영상 저장</button>
+              </div>
+            </div>
           </div>
-          <div class="legend-group" aria-label="궤적 색상 범례">
-            <span class="legend-item"><i class="dot dot-backswing"></i>백스윙 궤적</span>
-            <span class="legend-item"><i class="dot dot-downswing"></i>다운스윙·임팩트</span>
-            <span class="legend-item"><i class="dot dot-follow"></i>팔로우스루</span>
-          </div>
+
+          <!-- 부수적인 영상 도구(미리보기 확대·축소, 지면·사람 흔들림 고정, 재생 속도, 스냅샷)는 숨겨진 접이식 메뉴로 제공 -->
+          <details id="detailsViewportAuxMenu" class="collapsible-sub-menu viewport-aux-menu">
+            <summary class="collapsible-menu-summary">
+              <span class="collapsible-summary-left">
+                <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+                <span class="collapsible-summary-title">화면 확대 · 흔들림 고정 · 속도/스냅샷 설정</span>
+              </span>
+              <span class="collapsible-summary-badges">
+                <output id="zoomReadoutBadge" class="zoom-readout-badge">100%</output>
+                <output id="badgeStabReadout" class="stab-readout-badge">고정 ON</output>
+                <span class="collapsible-chevron" aria-hidden="true">▾</span>
+              </span>
+            </summary>
+
+            <div class="collapsible-menu-body">
+              <div class="viewport-zoom-bar" aria-label="영상 미리보기 확대 및 축소 컨트롤">
+                <div class="zoom-info-group">
+                  <span class="zoom-title-label">미리보기 화면 확대</span>
+                  <span id="zoomCursorHint" class="zoom-cursor-hint">확대 후 드래그하여 이동</span>
+                </div>
+                <div class="zoom-action-group">
+                  <button type="button" id="btnZoomOut" class="btn-transport btn-zoom-ctrl" title="미리보기 축소 (-25%)">축소 -</button>
+                  <input type="range" id="rangeViewportZoom" class="zoom-range-slider" min="1" max="5" step="0.25" value="1" aria-label="영상 미리보기 확대 배율 슬라이더">
+                  <button type="button" id="btnZoomIn" class="btn-transport btn-zoom-ctrl" title="미리보기 확대 (+25%)">확대 +</button>
+                  <button type="button" id="btnZoom200" class="btn-transport btn-zoom-preset" data-zoom-preset="2">200%</button>
+                  <button type="button" id="btnZoom300" class="btn-transport btn-zoom-preset" data-zoom-preset="3">300%</button>
+                  <button type="button" id="btnZoomReset" class="btn-transport btn-zoom-preset is-active" data-zoom-preset="1">100% 맞춤</button>
+                </div>
+              </div>
+
+              <div class="viewport-stab-bar" aria-label="영상 흔들림 및 지면·사람 위치 고정 화면 제어 바">
+                <div class="stab-info-group">
+                  <span class="stab-title-label">지면·사람 흔들림 고정</span>
+                  <select id="selectStabCropMode" class="control-select-compact stab-mode-select" aria-label="영상 흔들림 고정 방식 선택">
+                    <option value="crop-matte" selected>위·아래 잘림 고정 (사람·지면 스테이)</option>
+                    <option value="auto-zoom">자동 줌인 고정 (잘림 여백 숨김)</option>
+                    <option value="off">고정 끄기 (원본 흔들림 유지)</option>
+                  </select>
+                </div>
+                <div class="stab-action-group">
+                  <button type="button" id="btnSetStabRefFrame" class="btn-transport btn-stab-ctrl" title="현재 프레임의 사람·지면 높이를 전체 영상의 고정 기준 위치로 지정">현재 프레임 기준 고정</button>
+                  <button type="button" id="btnPinGroundStay" class="btn-transport btn-stab-ctrl" aria-pressed="false" title="흔들린 프레임에서 실제 지면·발 위치를 클릭하여 기준 높이에 즉시 맞춤">지면·발 클릭 맞추기</button>
+                  <div class="stab-nudge-group" aria-label="수직 높이 미세 조정">
+                    <button type="button" id="btnStabShiftUp" class="btn-transport btn-stab-nudge" title="화면을 위로 1% 이동">높이 ▲</button>
+                    <output id="valStabManualY" class="stab-nudge-readout">0%</output>
+                    <button type="button" id="btnStabShiftDown" class="btn-transport btn-stab-nudge" title="화면을 아래로 1% 이동">▼</button>
+                  </div>
+                  <button type="button" id="btnResetStabLock" class="btn-transport btn-stab-ctrl" title="수동 지면 고정 보정치 초기화">고정 초기화</button>
+                </div>
+              </div>
+
+              <div class="aux-playback-extra-row">
+                <label class="inline-control-label">재생 속도
+                  <select id="selectPlaybackSpeed" class="control-select-compact">
+                    <option value="0.1">0.1x (초저속)</option>
+                    <option value="0.25">0.25x (저속)</option>
+                    <option value="0.5" selected>0.5x (슬로우)</option>
+                    <option value="1">1.0x (실속도)</option>
+                  </select>
+                </label>
+                <button type="button" id="btnSaveCurrentSnapshot" class="btn-secondary btn-snapshot-compact" title="현재 타임라인 화면 그대로 PNG 스냅샷 저장">현재 화면 스냅샷 (PNG)</button>
+              </div>
+            </div>
+          </details>
         </div>
-        <div id="phaseFilmstrip" class="phase-filmstrip" role="list"></div>
+
+        <!-- 상단 분할 2: 핵심 위치 지정 버튼은 바깥에 노출하고 부수적 상세 설정은 접이식 메뉴로 구성 -->
+        <div class="stage-dock-pane" aria-label="영상 직결 조작 및 구간 추출 독">
+          <!-- [샷 트레이서 전용 직결 도구] 꼭 필요한 공 위치 지정 버튼만 바깥에 배치 -->
+          <section id="shotPinDockSection" class="inspector-block dock-card-block" data-mode-only="shot-tracer" aria-labelledby="shotPinDockHeading" hidden>
+            <div class="block-header">
+              <h2 id="shotPinDockHeading">공 위치 지정 (궤적 보정)</h2>
+              <button type="button" id="btnQuickResetShotPins" class="btn-GhostSmall" style="width:auto;padding:2px 8px;">자동 궤적 복원</button>
+            </div>
+            <p id="labelCanvasShotPin" class="section-caption">프레임을 맞춘 뒤 아래 지점 버튼을 누르고 영상 속 공을 클릭하세요.</p>
+
+            <div class="pin-frame-nav-bar" aria-label="공 위치 탐색용 프레임 이동 및 멈춤 컨트롤">
+              <span id="badgeCurrentPinFrame" class="pin-frame-badge">현재 멈춘 프레임: F54 (1.78s)</span>
+              <div class="pin-frame-step-group">
+                <button type="button" id="btnPinPrevFrame" class="btn-transport btn-pin-step" title="이전 프레임으로 이동">&lt; 1프레임</button>
+                <button type="button" id="btnPinPauseToggle" class="btn-transport btn-pin-step" title="현재 프레임 멈춤 / 재생">재생/멈춤</button>
+                <button type="button" id="btnPinNextFrame" class="btn-transport btn-pin-step" title="다음 프레임으로 이동">1프레임 &gt;</button>
+              </div>
+            </div>
+
+            <div class="pin-target-btn-grid">
+              <button type="button" class="btn-transport btn-shot-pin btn-shot-pin-smart" data-shot-pin="frame-ball" data-base-label="현재 멈춘 프레임의 공 위치 지정 (자동 연결)" data-real-tail-only="true">현재 멈춘 프레임의 공 위치 지정 (자동 연결)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="origin" data-base-label="1. 출발점(공)">1. 출발점(공)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="mid1" data-base-label="2. 중간점 1 (초반)" data-real-tail-only="true">2. 중간점 1 (초반)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="mid2" data-base-label="3. 중간점 2 (중반)" data-real-tail-only="true">3. 중간점 2 (중반)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="mid3" data-base-label="4. 중간점 3 (상승)" data-real-tail-only="true">4. 중간점 3 (상승)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="apex" data-base-label="5. 최고점(APEX)">5. 최고점(APEX)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="landing" data-base-label="6. 탄착지점(캐리)">6. 탄착지점(캐리)</button>
+              <button type="button" class="btn-transport btn-shot-pin" data-shot-pin="roll" data-base-label="7. 최종지점(런)">7. 최종지점(런)</button>
+            </div>
+
+            <details id="detailsShotPinHistory" class="collapsible-sub-menu">
+              <summary class="collapsible-menu-summary">
+                <span class="collapsible-summary-left">
+                  <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+                  <span id="shotPinRealtimeTitle" class="collapsible-summary-title">직전 지정 프레임 · 공 위치 이력 보기</span>
+                </span>
+                <span class="collapsible-summary-badges">
+                  <span id="shotPinRealtimeSaveBadge" class="shot-pin-save-badge">위치 저장 대기</span>
+                  <span class="collapsible-chevron" aria-hidden="true">▾</span>
+                </span>
+              </summary>
+              <div class="collapsible-menu-body">
+                <div id="shotPinRealtimeStatusBox" class="shot-pin-realtime-box" aria-live="polite">
+                  <div id="shotPinImmediatePrevCard" class="shot-pin-prev-card">
+                    <span class="shot-pin-prev-empty">지점 버튼을 누르고 영상 위 공을 클릭하면 해당 프레임 번호와 공 좌표(X, Y)가 실시간 저장됩니다.</span>
+                  </div>
+                  <div id="shotPinChainList" class="shot-pin-chain-list" aria-label="직전 작업까지 지정된 지점별 프레임 및 좌표 목록"></div>
+                </div>
+                <button type="button" id="btnResetShotTracerPins" class="btn-GhostSmall">영상 자동 판독 궤적으로 전체 복원</button>
+              </div>
+            </details>
+          </section>
+
+          <!-- [스윙 클럽 잔상 전용 직결 도구] 꼭 필요한 헤드 보정 버튼과 핵심 지표 2개만 바깥에 노출 -->
+          <section id="swingMetricsSection" class="inspector-block dock-card-block" data-mode-only="afterimage" aria-labelledby="metricsHeading">
+            <div class="block-header">
+              <h2 id="metricsHeading">클럽 헤드 보정 · 핵심 지표</h2>
+            </div>
+
+            <div class="head-pin-quick-bar">
+              <span class="head-pin-caption">클럽 헤드 위치 클릭 보정</span>
+              <div class="calibration-buttons">
+                <button type="button" id="btnToggleManualPin" class="btn-transport btn-clip-mark" aria-pressed="false">헤드 위치 수동 보정</button>
+                <button type="button" id="btnResetPins" class="btn-transport btn-clip-mark">헤드 궤적 초기화</button>
+              </div>
+            </div>
+
+            <div class="primary-metrics-row">
+              <div class="metric-highlight">
+                <span class="metric-label">스윙 템포 비율</span>
+                <strong id="metricTempo" class="metric-value-lg">3.03 : 1</strong>
+                <span id="metricTempoSub" class="metric-sub">백스윙 1.00s / 다운스윙 0.33s</span>
+              </div>
+              <div class="metric-highlight">
+                <span class="metric-label">추정 클럽 헤드 스피드</span>
+                <strong id="metricClubSpeed" class="metric-value-lg">108 mph</strong>
+                <span class="metric-sub">프레임 모션 벡터 기반</span>
+              </div>
+            </div>
+
+            <!-- 부수적인 관절 각도 및 타석 방향 설정은 숨겨진 메뉴로 접어둠 -->
+            <details class="collapsible-sub-menu">
+              <summary class="collapsible-menu-summary">
+                <span class="collapsible-summary-left">
+                  <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+                  <span class="collapsible-summary-title">세부 관절 각도 · 타석 방향 설정</span>
+                </span>
+                <span class="collapsible-summary-badges">
+                  <span class="collapsible-chevron" aria-hidden="true">▾</span>
+                </span>
+              </summary>
+              <div class="collapsible-menu-body">
+                <div class="form-row">
+                  <label for="selectHandedness">타석 방향 선택</label>
+                  <select id="selectHandedness" class="control-select">
+                    <option value="right" selected>오른손잡이 (Right-Handed)</option>
+                    <option value="left">왼손잡이 (Left-Handed)</option>
+                  </select>
+                </div>
+                <div class="secondary-metrics-grid">
+                  <div class="sub-metric-cell">
+                    <span class="metric-label">리드 팔꿈치 각도</span>
+                    <strong id="metricLeadElbow" class="metric-value-md">168°</strong>
+                  </div>
+                  <div class="sub-metric-cell">
+                    <span class="metric-label">척추 전경 각도</span>
+                    <strong id="metricSpineLean" class="metric-value-md">34°</strong>
+                  </div>
+                  <div class="sub-metric-cell">
+                    <span class="metric-label">리드 무릎 각도</span>
+                    <strong id="metricLeadKnee" class="metric-value-md">162°</strong>
+                  </div>
+                  <div class="sub-metric-cell">
+                    <span class="metric-label">손목 코킹 각도</span>
+                    <strong id="metricWristCock" class="metric-value-md">142°</strong>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <!-- [공통 부가 도구] 타임라인 구간(CLIP) 자르기 및 배속 상세 설정은 숨겨진 메뉴로 제공 -->
+          <details id="detailsClipExtractMenu" class="collapsible-sub-menu dock-collapsible-block">
+            <summary class="collapsible-menu-summary">
+              <span class="collapsible-summary-left">
+                <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+                <span class="collapsible-summary-title">동영상 구간 자르기 · 추출 배속 설정</span>
+              </span>
+              <span class="collapsible-summary-badges">
+                <output id="clipDurationReadout" class="clip-badge-readout">구간 0.00s ~ 3.20s</output>
+                <span class="collapsible-chevron" aria-hidden="true">▾</span>
+              </span>
+            </summary>
+
+            <div class="collapsible-menu-body clip-extract-block">
+              <div class="clip-track-row">
+                <span class="timeline-label">CLIP 구간</span>
+                <div class="dual-range-wrap">
+                  <div class="dual-range-rail"></div>
+                  <div id="clipRangeFill" class="dual-range-fill"></div>
+                  <input type="range" id="rangeClipStart" class="dual-range-input" min="0" max="3.2" step="0.01" value="0.00" aria-label="동영상 저장 시작 시점 슬라이더">
+                  <input type="range" id="rangeClipEnd" class="dual-range-input" min="0" max="3.2" step="0.01" value="3.20" aria-label="동영상 저장 종료 시점 슬라이더">
+                </div>
+              </div>
+
+              <div class="form-row two-col-row">
+                <div>
+                  <label for="selectClipPreset">빠른 구간 선택</label>
+                  <select id="selectClipPreset" class="control-select">
+                    <option value="all" selected>전체 영상 (0.00s ~ 끝)</option>
+                    <option value="full-swing" data-mode-only="afterimage">스윙 전체 (어드레스 ~ 피니시)</option>
+                    <option value="backswing" data-mode-only="afterimage">백스윙 구간 (어드레스 ~ 탑)</option>
+                    <option value="down-impact" data-mode-only="afterimage">다운스윙~임팩트 (탑 ~ 팔로우스루)</option>
+                    <option value="down-finish" data-mode-only="afterimage">다운스윙~피니시 (탑 ~ 피니시)</option>
+                    <option value="shot-flight" data-mode-only="shot-tracer" hidden>공 비행 구간 (임팩트 ~ 탄착·런 완료)</option>
+                    <option value="shot-full" data-mode-only="shot-tracer" hidden>샷 전체 구간 (어드레스 ~ 탄착·런 완료)</option>
+                    <option value="custom">사용자 직접 지정</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="selectExportSpeed">추출 동영상 배속</label>
+                  <select id="selectExportSpeed" class="control-select">
+                    <option value="0.25">0.25x (초슬로우)</option>
+                    <option value="0.5" selected>0.5x (권장 슬로우)</option>
+                    <option value="1">1.0x (실속도)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="clip-endpoints-grid">
+                <div class="clip-endpoint-box">
+                  <label for="inputClipStart" class="clip-endpoint-label">시작(s)</label>
+                  <input type="number" id="inputClipStart" class="clip-num-input" min="0" max="3.2" step="0.01" value="0.00">
+                  <button type="button" id="btnSetClipStart" class="btn-transport btn-clip-mark" title="현재 타임라인 위치를 동영상 시작점으로 설정">현재 위치로</button>
+                </div>
+
+                <div class="clip-endpoint-box">
+                  <label for="inputClipEnd" class="clip-endpoint-label">종료(s)</label>
+                  <input type="number" id="inputClipEnd" class="clip-num-input" min="0.1" max="3.2" step="0.01" value="3.20">
+                  <button type="button" id="btnSetClipEnd" class="btn-transport btn-clip-mark" title="현재 타임라인 위치를 동영상 종료점으로 설정">현재 위치로</button>
+                </div>
+              </div>
+
+              <div class="clip-export-actions">
+                <button type="button" id="btnPlayClipRange" class="btn-transport" title="설정한 시작~종료 구간만 미리 재생">선택 구간 미리 재생</button>
+                <button type="button" id="btnExportClipVideo" class="btn-primary" title="설정한 타임라인 시작~종료 구간을 동영상으로 렌더링 및 다운로드">선택 구간 동영상 저장</button>
+              </div>
+            </div>
+          </details>
+        </div>
       </section>
-    </section>
 
-    <aside class="inspector-column" aria-label="클럽 헤드 잔상 설정 및 생체역학 측정치">
-      <!-- 탭 1 패널 (기본 활성): 골프 헤드 잔상 및 궤적 설정 -->
-      <section id="panelTrailConfig" class="inspector-block mobile-tab-panel is-active" data-tab-panel="trail" aria-labelledby="trailConfigHeading">
+      <!-- 하단 와이드 영역: 분할하지 않고 넓은 가로 폭을 100% 활용하여 7단계 시퀀스 및 5단계 비행 시점을 한눈에 표시 -->
+      <section class="stage-bottom-wide" aria-label="스윙 시퀀스 및 공 비행 단계 와이드 패널">
+        <!-- 스윙 클럽 잔상 전용: 7단계 스윙 시퀀스 와이드 파노라마 필름스트립 -->
+        <section id="sequenceSection" class="wide-sequence-block" data-mode-only="afterimage" aria-labelledby="sequenceTitle">
+          <div class="wide-section-header">
+            <div class="wide-title-group">
+              <h2 id="sequenceTitle">7단계 스윙 시퀀스 바로가기</h2>
+              <span class="section-caption">썸네일을 클릭하면 해당 시점으로 즉시 이동하며, 하단 버튼으로 현재 프레임을 각 스윙 단계 시점으로 재지정할 수 있습니다.</span>
+            </div>
+            <div class="legend-group" aria-label="궤적 색상 범례">
+              <span class="legend-item"><i class="dot dot-backswing"></i>백스윙</span>
+              <span class="legend-item"><i class="dot dot-downswing"></i>다운스윙·임팩트</span>
+              <span class="legend-item"><i class="dot dot-follow"></i>팔로우스루</span>
+            </div>
+          </div>
+          <div id="phaseFilmstrip" class="phase-filmstrip" role="list"></div>
+        </section>
+
+        <!-- 샷 트레이서 전용: 영상 판독 핵심 샷 데이터 요약 (4열 와이드) + 후방 공 비행 5단계 시점 바로가기 (5열 와이드) -->
+        <section id="shotFlightStepSection" class="wide-sequence-block" data-mode-only="shot-tracer" aria-labelledby="shotFlightStepTitle" hidden>
+          <div id="autoReadoutShotBox" class="auto-readout-box wide-readout-bar" aria-live="polite">
+            <div class="auto-readout-header">
+              <span class="auto-readout-title">영상 판독 및 현재 적용된 샷 정보 요약</span>
+              <div class="wide-readout-actions">
+                <span id="readoutAutoStatusBadge" class="auto-readout-badge">연속 4프레임 공 추적 완료</span>
+                <button type="button" id="btnQuickShotPinOrigin" class="btn-GhostSmall" style="width:auto;padding:2px 10px;">공 출발점 위치 지정</button>
+              </div>
+            </div>
+            <div class="auto-readout-grid wide-four-col">
+              <div class="auto-readout-item">
+                <span class="auto-readout-label">APEX 최고점 높이</span>
+                <strong id="readoutAutoApex" class="auto-readout-val">24.5 m</strong>
+              </div>
+              <div class="auto-readout-item">
+                <span class="auto-readout-label">탄착 캐리 거리 (Carry)</span>
+                <strong id="readoutAutoCarry" class="auto-readout-val">198.5 m</strong>
+              </div>
+              <div class="auto-readout-item">
+                <span class="auto-readout-label">런 포함 최종 거리 (Total)</span>
+                <strong id="readoutAutoTotal" class="auto-readout-val">212.0 m (+13.5m)</strong>
+              </div>
+              <div class="auto-readout-item">
+                <span class="auto-readout-label">발사 탄도 · 구질 판독</span>
+                <strong id="readoutAutoLaunch" class="auto-readout-val">13.6° (드로우)</strong>
+              </div>
+            </div>
+            <div id="readoutAutoChainText" class="auto-readout-chain">
+              프레임별 공 위치 추적: 출발(58.8%, 81.9%) → F+1(47.0%, 66.3%) → F+2(42.0%, 56.8%) → F+3(38.9%, 51.8%) → F+4(37.1%, 47.5%)
+            </div>
+          </div>
+
+          <div class="wide-flight-steps-wrap">
+            <div class="wide-section-header">
+              <h2 id="shotFlightStepTitle">후방 공 비행 5단계 시점 바로가기</h2>
+              <span class="section-caption">각 비행 단계 카드를 클릭하면 해당 타임라인 시점의 공 위치와 궤적을 즉시 확인합니다.</span>
+            </div>
+            <div id="shotFlightStepsStrip" class="shot-flight-steps-grid" role="list"></div>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <!-- 우측 고정 인스펙터 사이드바: 핵심 색상/모드만 바깥에 노출하고 세부 그래픽·수치·AI 진단은 숨겨진 메뉴로 제공 -->
+    <aside class="inspector-column" aria-label="분석 설정 및 데이터 인스펙터">
+      <section id="shotTracerConfigSection" class="inspector-block" data-mode-only="shot-tracer" aria-labelledby="shotTracerHeading" hidden>
         <div class="block-header">
-          <h2 id="trailConfigHeading">골프 헤드 잔상 및 궤적 설정</h2>
-          <label class="inline-control-label">타석 방향
-            <select id="selectHandedness" class="control-select-compact">
-              <option value="right" selected>오른손잡이</option>
-              <option value="left">왼손잡이</option>
-            </select>
-          </label>
+          <h2 id="shotTracerHeading">공 궤적 색상 · 세부 설정</h2>
+          <span id="badgeShotTotalReadout" class="shot-total-badge">최종 212.0 m</span>
         </div>
 
         <div class="form-row">
-          <label for="selectTrailScope">잔상 유지 범위</label>
+          <div class="slider-header">
+            <label>공 궤적 색상 빠른 선택</label>
+            <span id="valTraceColorName" class="slider-val">투어 레드</span>
+          </div>
+          <div class="color-swatch-row" role="radiogroup" aria-label="공 궤적 색상 선택">
+            <button type="button" class="color-swatch-btn is-selected" data-trace-color="#DC2626" data-color-label="투어 레드" style="background:#DC2626" title="투어 레드 (기본)"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#EA580C" data-color-label="프로 오렌지" style="background:#EA580C" title="프로트레이서 오렌지"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#0284C7" data-color-label="스카이 시안" style="background:#0284C7" title="스카이 시안 블루"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#059669" data-color-label="에메랄드" style="background:#059669" title="에메랄드 그린"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#D97706" data-color-label="로열 골드" style="background:#D97706" title="로열 앰버 골드"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#7C3AED" data-color-label="바이올렛" style="background:#7C3AED" title="바이올렛 퍼플"></button>
+            <button type="button" class="color-swatch-btn" data-trace-color="#F8FAFC" data-color-label="TV 화이트" style="background:#F8FAFC;border-color:#94A3B8" title="클래식 TV 화이트"></button>
+            <button type="button" class="color-swatch-btn swatch-gradient" data-trace-color="gradient" data-color-label="속도 그라데이션" title="속도 그라데이션 (레드→골드→블루)"></button>
+            <label class="custom-color-picker-wrap" title="직접 색상 선택">
+              <input type="color" id="inputCustomTraceColor" value="#DC2626" aria-label="궤적 색상 직접 선택">
+              <span>직접선택</span>
+            </label>
+          </div>
+        </div>
+
+        <details class="collapsible-sub-menu">
+          <summary class="collapsible-menu-summary">
+            <span class="collapsible-summary-left">
+              <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+              <span class="collapsible-summary-title">궤적 스타일 · 선 두께 · HUD 표시 설정</span>
+            </span>
+            <span class="collapsible-summary-badges">
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </span>
+          </summary>
+          <div class="collapsible-menu-body">
+            <div class="form-row">
+              <label for="selectTrajectoryMode">공 궤적 및 샷 데이터 산출 방식</label>
+              <select id="selectTrajectoryMode" class="control-select" autocomplete="off">
+                <option value="real-tail" selected>실제 공 궤적 추종 (영상 판독 + 사용자 수치 보정 반영)</option>
+                <option value="simulation">표준 탄도 시뮬레이션 (프리셋 · 수동 궤적 아크)</option>
+              </select>
+            </div>
+
+            <div class="form-row two-col-row">
+              <div>
+                <label for="selectTraceStyle">궤적 렌더링 스타일</label>
+                <select id="selectTraceStyle" class="control-select" autocomplete="off">
+                  <option value="tube" selected>프로트레이서 입체 튜브</option>
+                  <option value="beam">하이라이트 레이저 빔</option>
+                  <option value="strobe-ball">스트로보 골프공 잔상</option>
+                  <option value="ribbon">솔리드 테이퍼드 라인</option>
+                </select>
+              </div>
+              <div>
+                <div class="slider-header">
+                  <label for="rangeShotLineWidth">궤적 선 두께</label>
+                  <span id="valShotLineWidth" class="slider-val">6px</span>
+                </div>
+                <input type="range" id="rangeShotLineWidth" min="2" max="14" step="1" value="6" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="checkbox-grid" role="group" aria-label="샷 트레이서 동영상 표시 항목">
+              <label class="check-label"><input type="checkbox" id="chkShowApexBubble" checked autocomplete="off"> 최고점 APEX 말풍선 표시</label>
+              <label class="check-label"><input type="checkbox" id="chkShowLandingMarker" checked autocomplete="off"> 탄착·최종 거리(m) 표시</label>
+              <label class="check-label"><input type="checkbox" id="chkShowTrajectoryHud" checked autocomplete="off"> 발사 탄도·구질 HUD 표기</label>
+              <label class="check-label"><input type="checkbox" id="chkShowGroundShadow" checked autocomplete="off"> 페어웨이 지면 그림자선</label>
+            </div>
+          </div>
+        </details>
+
+        <details class="collapsible-sub-menu">
+          <summary class="collapsible-menu-summary">
+            <span class="collapsible-summary-left">
+              <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+              <span class="collapsible-summary-title">구질 · 비거리 · 탄도 수치 상세 수정</span>
+            </span>
+            <span class="collapsible-summary-badges">
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </span>
+          </summary>
+          <div class="collapsible-menu-body">
+            <div id="simulationManualControlsWrap" class="simulation-manual-wrap">
+              <div class="manual-edit-banner">
+                <span class="manual-edit-title">샷 정보 및 구질 직접 수정 (즉시 반영)</span>
+                <button type="button" id="btnReapplyVideoAutoMetrics" class="btn-GhostSmall" style="width:auto;padding:2px 8px;">자동판독 복원</button>
+              </div>
+
+              <div class="form-row">
+                <label for="selectShotShapeType">구질 판독 · 직접 선택 (7대 구질)</label>
+                <select id="selectShotShapeType" class="control-select" autocomplete="off">
+                  <option value="auto" selected>자동 판독 (출발각·스핀 분석)</option>
+                  <option value="straight">스트레이트 (Straight · 직진)</option>
+                  <option value="draw">드로우 (Draw · 좌측 휨 낙하)</option>
+                  <option value="fade">페이드 (Fade · 우측 휨 낙하)</option>
+                  <option value="pull">풀 (Pull · 좌측 직선 탄도)</option>
+                  <option value="push">푸쉬 (Push · 우측 직선 탄도)</option>
+                  <option value="hook">훅 (Hook · 강한 좌측 급격 낙하)</option>
+                  <option value="slice">슬라이스 (Slice · 강한 우측 급격 낙하)</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="selectShotTracerPreset">클럽별 표준 거리 프리셋</label>
+                <select id="selectShotTracerPreset" class="control-select" autocomplete="off">
+                  <option value="driver-draw" selected>드라이버 드로우 (캐리 198.5m / 총 212m)</option>
+                  <option value="driver-straight">드라이버 스트레이트 (캐리 192m / 총 205m)</option>
+                  <option value="driver-fade">드라이버 페이드 (캐리 188m / 총 198.5m)</option>
+                  <option value="driver-pull">드라이버 풀 (캐리 194m / 총 207m)</option>
+                  <option value="driver-push">드라이버 푸쉬 (캐리 190m / 총 202.5m)</option>
+                  <option value="driver-hook">드라이버 훅 (캐리 182m / 총 198m)</option>
+                  <option value="driver-slice">드라이버 슬라이스 (캐리 174m / 총 182.5m)</option>
+                  <option value="iron-7">7번 아이언 (캐리 142m / 총 148.5m)</option>
+                  <option value="stinger">로우 스팅어 펀치샷 (캐리 172m / 총 190.5m)</option>
+                </select>
+              </div>
+
+              <div class="shot-direct-grid">
+                <div class="shot-direct-cell">
+                  <label for="inputCarryMeters">탄착 캐리 거리 (m)</label>
+                  <input type="number" id="inputCarryMeters" class="shot-num-input" min="30" max="320" step="0.5" value="198.5">
+                </div>
+                <div class="shot-direct-cell">
+                  <label for="inputRollMeters">런 거리 (+m)</label>
+                  <input type="number" id="inputRollMeters" class="shot-num-input" min="0" max="60" step="0.5" value="13.5">
+                </div>
+                <div class="shot-direct-cell">
+                  <label for="inputTotalMeters">최종 거리 Total (m)</label>
+                  <input type="number" id="inputTotalMeters" class="shot-num-input is-highlight" min="30" max="360" step="0.5" value="212.0">
+                </div>
+                <div class="shot-direct-cell">
+                  <label for="inputApexMeters">APEX 최고 높이 (m)</label>
+                  <input type="number" id="inputApexMeters" class="shot-num-input" min="3" max="55" step="0.5" value="24.5">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="slider-header">
+                  <label for="rangeCarryMeters">탄착지점까지 캐리 거리 (Carry)</label>
+                  <span id="valCarryMeters" class="slider-val">198.5 m</span>
+                </div>
+                <input type="range" id="rangeCarryMeters" min="40" max="300" step="0.5" value="198.5" autocomplete="off">
+              </div>
+
+              <div class="form-row">
+                <div class="slider-header">
+                  <label for="rangeRollMeters">탄착 후 런 거리 (Roll · 최종 합산)</label>
+                  <span id="valRollMeters" class="slider-val">+13.5 m (총 212.0 m)</span>
+                </div>
+                <input type="range" id="rangeRollMeters" min="0" max="50" step="0.5" value="13.5" autocomplete="off">
+              </div>
+
+              <div class="form-row">
+                <div class="slider-header">
+                  <label for="rangeApexMeters">APEX 최고점 높이 (말풍선 표기)</label>
+                  <span id="valApexMeters" class="slider-val">24.5 m</span>
+                </div>
+                <input type="range" id="rangeApexMeters" min="4" max="50" step="0.5" value="24.5" autocomplete="off">
+              </div>
+
+              <div class="form-row">
+                <div class="slider-header">
+                  <label for="rangeLaunchAngle">공 발사 탄도 (Launch Angle)</label>
+                  <div class="slider-inline-num">
+                    <input type="number" id="inputLaunchAngle" class="shot-num-input-sm" min="4.0" max="32.0" step="0.1" value="13.6" aria-label="발사 탄도 직접 입력">
+                    <span id="valLaunchAngle" class="slider-val">13.6° (중고탄도)</span>
+                  </div>
+                </div>
+                <input type="range" id="rangeLaunchAngle" min="4.0" max="32.0" step="0.2" value="13.6" autocomplete="off">
+              </div>
+
+              <div class="form-row">
+                <div class="slider-header">
+                  <label for="rangeSideCurve">구질 좌우 휨 폭 (-드로우 ↔ +페이드)</label>
+                  <div class="slider-inline-num">
+                    <input type="number" id="inputSideCurve" class="shot-num-input-sm" min="-30" max="30" step="0.5" value="-5.2" aria-label="좌우 휨 폭 직접 입력">
+                    <span id="valSideCurve" class="slider-val">드로우 (-5.2m)</span>
+                  </div>
+                </div>
+                <input type="range" id="rangeSideCurve" min="-28" max="28" step="0.5" value="-5.2" autocomplete="off">
+              </div>
+
+              <div class="form-row two-col-row">
+                <div>
+                  <div class="slider-header">
+                    <label for="rangeBallSpeed">볼 스피드</label>
+                    <span id="valBallSpeed" class="slider-val">60.4 m/s (135 mph)</span>
+                  </div>
+                  <input type="range" id="rangeBallSpeed" min="30" max="82" step="0.5" value="60.4" autocomplete="off">
+                </div>
+                <div>
+                  <div class="slider-header">
+                    <label for="rangeFlightDuration">공 체공 시간</label>
+                    <span id="valFlightDuration" class="slider-val">2.35s</span>
+                  </div>
+                  <input type="range" id="rangeFlightDuration" min="1.20" max="3.60" step="0.05" value="2.35" autocomplete="off">
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="trailConfigSection" class="inspector-block" data-mode-only="afterimage" aria-labelledby="trailConfigHeading">
+        <h2 id="trailConfigHeading">골프 헤드 잔상 및 궤적 설정</h2>
+
+        <div class="form-row">
+          <label for="selectTrailScope">잔상 유지 방식 선택</label>
           <select id="selectTrailScope" class="control-select" autocomplete="off">
             <option value="full" selected>지속 시간 궤도 유지 (선명한 궤적)</option>
             <option value="comet">혜성 꼬리 모드 (꼬리 감쇠 잔상)</option>
@@ -204,111 +779,95 @@
           </select>
         </div>
 
-        <div class="form-row">
-          <div class="slider-header">
-            <label for="rangeTrailDuration">잔상 지속 시간 (궤도 길이)</label>
-            <span id="valTrailDuration" class="slider-val">1.80s</span>
-          </div>
-          <input type="range" id="rangeTrailDuration" min="0.15" max="1.80" step="0.05" value="1.80" autocomplete="off">
-        </div>
+        <details class="collapsible-sub-menu">
+          <summary class="collapsible-menu-summary">
+            <span class="collapsible-summary-left">
+              <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+              <span class="collapsible-summary-title">잔상 길이 · 밀도 · 선명도 · 표시 레이어 설정</span>
+            </span>
+            <span class="collapsible-summary-badges">
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </span>
+          </summary>
+          <div class="collapsible-menu-body">
+            <div class="form-row">
+              <div class="slider-header">
+                <label for="rangeTrailDuration">잔상 지속 시간 (궤도 길이)</label>
+                <span id="valTrailDuration" class="slider-val">1.80s</span>
+              </div>
+              <input type="range" id="rangeTrailDuration" min="0.15" max="1.80" step="0.05" value="1.80" autocomplete="off">
+            </div>
 
-        <div class="form-row">
-          <div class="slider-header">
-            <label for="rangeRibbonWidth">보조 궤적·빛반사 선 두께</label>
-            <span id="valRibbonWidth" class="slider-val">3px</span>
-          </div>
-          <input type="range" id="rangeRibbonWidth" min="2" max="14" step="1" value="3" autocomplete="off">
-        </div>
+            <div class="form-row">
+              <div class="slider-header">
+                <label for="rangeRibbonWidth">보조 궤적·빛반사 선 두께</label>
+                <span id="valRibbonWidth" class="slider-val">3px</span>
+              </div>
+              <input type="range" id="rangeRibbonWidth" min="2" max="14" step="1" value="3" autocomplete="off">
+            </div>
 
-        <div class="form-row">
-          <div class="slider-header">
-            <label for="rangeStrobeStep">실제 골프채 잔상 밀도</label>
-            <span id="valStrobeStep" class="slider-val">2프레임 간격</span>
-          </div>
-          <input type="range" id="rangeStrobeStep" min="1" max="8" step="1" value="2" autocomplete="off">
-        </div>
+            <div class="form-row">
+              <div class="slider-header">
+                <label for="rangeStrobeStep">실제 골프채 잔상 밀도</label>
+                <span id="valStrobeStep" class="slider-val">2프레임 간격</span>
+              </div>
+              <input type="range" id="rangeStrobeStep" min="1" max="8" step="1" value="2" autocomplete="off">
+            </div>
 
-        <div class="form-row">
-          <div class="slider-header">
-            <label for="rangeGhostOpacity">골프채 잔상 선명도 (불투명도)</label>
-            <span id="valGhostOpacity" class="slider-val">85%</span>
-          </div>
-          <input type="range" id="rangeGhostOpacity" min="0.15" max="1.00" step="0.05" value="0.85" autocomplete="off">
-        </div>
+            <div class="form-row">
+              <div class="slider-header">
+                <label for="rangeGhostOpacity">골프채 잔상 선명도 (불투명도)</label>
+                <span id="valGhostOpacity" class="slider-val">85%</span>
+              </div>
+              <input type="range" id="rangeGhostOpacity" min="0.15" max="1.00" step="0.05" value="0.85" autocomplete="off">
+            </div>
 
-        <div class="form-row">
-          <div class="slider-header">
-            <label for="rangeGripFade">손 쪽 샤프트 투명도 (중앙→헤드 선명화)</label>
-            <span id="valGripFade" class="slider-val">50%</span>
-          </div>
-          <input type="range" id="rangeGripFade" min="0.00" max="1.00" step="0.05" value="0.50" autocomplete="off">
-        </div>
+            <div class="form-row">
+              <div class="slider-header">
+                <label for="rangeGripFade">손 쪽 샤프트 투명도 (중앙→헤드 선명화)</label>
+                <span id="valGripFade" class="slider-val">50%</span>
+              </div>
+              <input type="range" id="rangeGripFade" min="0.00" max="1.00" step="0.05" value="0.50" autocomplete="off">
+            </div>
 
-        <div class="checkbox-grid" role="group" aria-label="오버레이 레이어 표시 설정">
-          <label class="check-label"><input type="checkbox" id="chkStrobeGhosts" checked autocomplete="off"> 실제 골프채 샤프트·헤드 잔상</label>
-          <label class="check-label"><input type="checkbox" id="chkShaftGlint" checked autocomplete="off"> 샤프트 빛반사 (( 원형 궤적</label>
-          <label class="check-label"><input type="checkbox" id="chkClubRibbon" autocomplete="off"> 보조 궤적 컬러 선 (선택)</label>
-          <label class="check-label"><input type="checkbox" id="chkHandPath" checked autocomplete="off"> 그립(손목) 궤적 점선</label>
-          <label class="check-label"><input type="checkbox" id="chkSwingPlane" checked autocomplete="off"> 어드레스 스윙 플레인</label>
-          <label class="check-label"><input type="checkbox" id="chkSkeleton" autocomplete="off"> 관절 스켈레톤</label>
-          <label class="check-label"><input type="checkbox" id="chkAngles" checked autocomplete="off"> 관절 각도 수치 표시</label>
-        </div>
+            <div class="checkbox-grid" role="group" aria-label="오버레이 레이어 표시 설정">
+              <label class="check-label"><input type="checkbox" id="chkStrobeGhosts" checked autocomplete="off"> 실제 골프채 샤프트·헤드 잔상</label>
+              <label class="check-label"><input type="checkbox" id="chkShaftGlint" checked autocomplete="off"> 샤프트 빛반사 (( 원형 궤적</label>
+              <label class="check-label"><input type="checkbox" id="chkClubRibbon" autocomplete="off"> 보조 궤적 컬러 선 (선택)</label>
+              <label class="check-label"><input type="checkbox" id="chkHandPath" checked autocomplete="off"> 그립(손목) 궤적 점선</label>
+              <label class="check-label"><input type="checkbox" id="chkSwingPlane" checked autocomplete="off"> 어드레스 스윙 플레인</label>
+              <label class="check-label"><input type="checkbox" id="chkSkeleton" autocomplete="off"> 관절 스켈레톤</label>
+              <label class="check-label"><input type="checkbox" id="chkAngles" checked autocomplete="off"> 관절 각도 수치 표시</label>
+            </div>
+          </div>
+        </details>
       </section>
 
-      <!-- 탭 4 패널: 실시간 스윙 측정 지표 & AI 스윙 진단 리포트 -->
-      <section id="panelMetrics" class="inspector-block mobile-tab-panel" data-tab-panel="metrics" aria-labelledby="metricsHeading">
-        <div class="block-header">
-          <h2 id="metricsHeading">실시간 스윙 측정 지표</h2>
-        </div>
-
-        <div class="primary-metrics-row">
-          <div class="metric-highlight">
-            <span class="metric-label">스윙 템포 비율</span>
-            <strong id="metricTempo" class="metric-value-lg">3.03 : 1</strong>
-            <span id="metricTempoSub" class="metric-sub">백스윙 1.00s / 다운스윙 0.33s</span>
+      <section id="coachingSection" class="inspector-block" data-mode-only="afterimage" aria-labelledby="coachingHeading">
+        <details class="collapsible-sub-menu inspector-collapsible-only">
+          <summary class="collapsible-menu-summary">
+            <span class="collapsible-summary-left">
+              <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
+              <span id="coachingHeading" class="collapsible-summary-title">구간별 AI 스윙 진단 리포트 보기</span>
+            </span>
+            <span class="collapsible-summary-badges">
+              <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            </span>
+          </summary>
+          <div class="collapsible-menu-body">
+            <ul id="coachingFeedbackList" class="coaching-list"></ul>
           </div>
-          <div class="metric-highlight">
-            <span class="metric-label">추정 클럽 헤드 스피드</span>
-            <strong id="metricClubSpeed" class="metric-value-lg">108 mph</strong>
-            <span class="metric-sub">프레임 모션 벡터 기반</span>
-          </div>
-        </div>
-
-        <div class="secondary-metrics-grid">
-          <div class="sub-metric-cell">
-            <span class="metric-label">리드 팔꿈치 각도</span>
-            <strong id="metricLeadElbow" class="metric-value-md">168°</strong>
-          </div>
-          <div class="sub-metric-cell">
-            <span class="metric-label">척추 전경 각도</span>
-            <strong id="metricSpineLean" class="metric-value-md">34°</strong>
-          </div>
-          <div class="sub-metric-cell">
-            <span class="metric-label">리드 무릎 각도</span>
-            <strong id="metricLeadKnee" class="metric-value-md">162°</strong>
-          </div>
-          <div class="sub-metric-cell">
-            <span class="metric-label">손목 코킹 각도</span>
-            <strong id="metricWristCock" class="metric-value-md">142°</strong>
-          </div>
-        </div>
-      </section>
-
-      <section id="panelCoaching" class="inspector-block mobile-tab-panel" data-tab-panel="metrics" aria-labelledby="coachingHeading">
-        <h2 id="coachingHeading">구간별 AI 스윙 진단 리포트</h2>
-        <ul id="coachingFeedbackList" class="coaching-list"></ul>
+        </details>
       </section>
     </aside>
   </main>
 
   <dialog id="snapshotModal" class="snapshot-modal" aria-labelledby="modalTitle">
     <div class="modal-header">
-      <div>
-        <h2 id="modalTitle">갤러리 저장 미리보기</h2>
-        <p id="modalSavedSub" class="sub-label">스마트폰 갤러리(GolfSwingStudio 앨범)에 즉시 저장되었습니다.</p>
-      </div>
+      <h2 id="modalTitle">스냅샷 미리보기</h2>
       <div class="modal-actions">
-        <a id="modalDownloadLink" class="btn-primary" href="#" download="golf-snapshot.png" hidden>파일 다시 저장</a>
+        <button type="button" id="btnModalOpenArchive" class="btn-secondary">저장된 작업 보관함 열기</button>
+        <a id="modalDownloadLink" class="btn-primary" href="#" download="golf-snapshot.png">파일 다시 저장</a>
         <button type="button" id="btnCloseModal" class="btn-secondary">닫기</button>
       </div>
     </div>
@@ -318,6 +877,129 @@
     </div>
   </dialog>
 
-  <script type="module" src="app.js"></script>
+  <dialog id="savedArchiveModal" class="archive-modal" aria-labelledby="archiveModalTitle">
+    <div class="modal-header archive-modal-header">
+      <div class="archive-header-title-wrap">
+        <h2 id="archiveModalTitle">저장된 작업 결과 조회 및 이어서 편집 보관함</h2>
+        <span id="archiveHeaderSubCount" class="archive-header-sub">총 0건 보관 중 (동영상·스냅샷 저장 시 자동 보관됨)</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="btnArchiveSaveCurrentNew" class="btn-primary">현재 편집장 작업 새로 저장</button>
+        <button type="button" id="btnArchiveClearAll" class="btn-secondary btn-danger-outline">전체 비우기</button>
+        <button type="button" id="btnCloseArchiveModal" class="btn-secondary">닫기</button>
+      </div>
+    </div>
+
+    <div class="archive-toolbar">
+      <div class="archive-filter-tabs" role="tablist" aria-label="저장된 작업 유형별 필터">
+        <button type="button" class="btn-archive-filter is-active" data-archive-filter="all">전체 작업</button>
+        <button type="button" class="btn-archive-filter" data-archive-filter="shot-tracer">후방 공 궤적 (샷 트레이서)</button>
+        <button type="button" class="btn-archive-filter" data-archive-filter="afterimage">스윙 클럽 잔상 분석</button>
+      </div>
+      <div class="archive-search-wrap">
+        <input type="search" id="inputArchiveSearch" class="archive-search-input" placeholder="작업 제목, 원본 파일명, 구질(드로우·페이드 등) 검색..." aria-label="저장된 작업 검색">
+      </div>
+    </div>
+
+    <div class="archive-body-split">
+      <!-- 좌측: 저장된 작업 카드 목록 -->
+      <div class="archive-list-column">
+        <div id="archiveEmptyState" class="archive-empty-state" hidden>
+          <strong>아직 저장된 작업 내역이 없습니다.</strong>
+          <p>상단의 [작업 내용 저장] 버튼을 누르거나 [스냅샷 / 동영상 다운로드]를 실행하면 작업된 궤적·수치·영상 결과물이 이곳에 자동으로 보관됩니다.</p>
+          <button type="button" id="btnEmptyStateSaveNow" class="btn-primary">현재 편집장 작업 바로 저장하기</button>
+        </div>
+        <ul id="archiveRecordList" class="archive-record-list" aria-label="저장된 작업 목록"></ul>
+      </div>
+
+      <!-- 우측: 선택한 저장 항목의 결과물 미리보기 및 상세 제원·불러오기·삭제 패널 -->
+      <aside id="archiveDetailPane" class="archive-detail-column" aria-label="선택한 작업 상세 조회 및 편집장 불러오기">
+        <div id="archiveDetailEmpty" class="archive-detail-empty">
+          <p>좌측 목록에서 조회하거나 이어서 수정할 작업 항목을 선택하세요.</p>
+        </div>
+
+        <div id="archiveDetailContent" class="archive-detail-content" hidden>
+          <div id="archivePreviewStage" class="archive-preview-stage" title="클릭하여 결과 영상 재생 / 일시정지">
+            <canvas id="archivePreviewCanvas" class="archive-preview-canvas" width="1280" height="720" hidden aria-label="저장된 작업 실시간 합성 재생 캔버스"></canvas>
+            <video id="archiveSourceVideo" muted playsinline preload="auto" hidden></video>
+            <img id="archivePreviewImg" alt="저장된 작업 썸네일 및 스냅샷 미리보기" hidden>
+            <video id="archivePreviewVideo" controls playsinline loop hidden aria-label="저장된 구간 동영상 미리보기"></video>
+          </div>
+
+          <div id="archivePlayerBar" class="archive-player-bar" hidden>
+            <div class="archive-player-btns">
+              <button type="button" id="btnArchivePlayPause" class="btn-transport btn-archive-play" title="저장된 작업 영상 재생 / 일시정지">일시정지</button>
+              <button type="button" id="btnArchiveRestart" class="btn-transport" title="구간 처음부터 다시 재생">처음부터</button>
+              <button type="button" id="btnArchiveJumpImpact" class="btn-transport" title="임팩트·공 출발 시점으로 이동">임팩트·출발</button>
+            </div>
+            <div class="archive-player-scrub-wrap">
+              <input type="range" id="rangeArchiveScrub" class="archive-scrub-range" min="0" max="3.2" step="0.01" value="0" aria-label="저장된 작업 프레임 탐색">
+              <span id="archiveTimeBadge" class="archive-time-badge">0.00s / 3.20s (F1)</span>
+            </div>
+            <select id="selectArchiveSpeed" class="control-select archive-speed-select" title="결과 조회 재생 속도">
+              <option value="0.25">0.25x</option>
+              <option value="0.5" selected>0.5x</option>
+              <option value="1">1.0x</option>
+            </select>
+          </div>
+
+          <div class="archive-title-edit-row">
+            <label for="inputArchiveDetailTitle" class="sr-only">작업 제목 수정</label>
+            <input type="text" id="inputArchiveDetailTitle" class="archive-title-input" placeholder="작업 제목 입력">
+            <button type="button" id="btnSaveArchiveTitle" class="btn-transport">제목 변경 저장</button>
+          </div>
+
+          <div id="archiveDetailMetaGrid" class="archive-detail-meta-grid"></div>
+
+          <div class="archive-detail-actions">
+            <button type="button" id="btnLoadSelectedToStudio" class="btn-primary btn-load-studio-main">편집장으로 불러와서 이어서 수정</button>
+            <div class="archive-detail-sub-actions">
+              <button type="button" id="btnDownloadSelectedMedia" class="btn-secondary">결과 스냅샷 저장 (PNG)</button>
+              <button type="button" id="btnDownloadArchiveVideo" class="btn-secondary">결과 동영상 다운로드</button>
+              <button type="button" id="btnDeleteSelectedArchive" class="btn-secondary btn-danger-outline">이 저장 항목 삭제</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </dialog>
+
+  <!-- 모든 작업 시 0.5초 이상 소요되면 최상단(Top Layer) 제일 앞에 표시되는 데이터 처리 및 화면 갱신 애니메이션 오버레이 -->
+  <div id="globalBusyOverlay" class="global-busy-overlay" popover="manual" role="status" aria-live="polite" aria-busy="true" hidden>
+    <div class="busy-overlay-backdrop" aria-hidden="true"></div>
+    <div class="busy-overlay-card">
+      <div class="busy-spinner-stage" aria-hidden="true">
+        <svg class="busy-spinner-svg" viewBox="0 0 64 64" width="54" height="54">
+          <circle class="busy-ring-track" cx="32" cy="32" r="26" fill="none" stroke-width="4.5"></circle>
+          <circle class="busy-ring-outer" cx="32" cy="32" r="26" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="88 80">
+            <animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="0.82s" repeatCount="indefinite" />
+          </circle>
+          <circle class="busy-ring-inner" cx="32" cy="32" r="17" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="44 64">
+            <animateTransform attributeName="transform" type="rotate" from="360 32 32" to="0 32 32" dur="1.18s" repeatCount="indefinite" />
+          </circle>
+          <circle class="busy-core-dot" cx="32" cy="32" r="4.5">
+            <animate attributeName="r" values="3.6;5.8;3.6" dur="0.95s" repeatCount="indefinite" />
+          </circle>
+        </svg>
+      </div>
+      <div class="busy-overlay-body">
+        <div class="busy-overlay-head-row">
+          <span class="busy-live-badge">데이터 처리 및 화면 갱신 중</span>
+          <span id="busyOverlayElapsed" class="busy-elapsed-tag">0.5s</span>
+        </div>
+        <strong id="busyOverlayTitle" class="busy-overlay-title">데이터 처리 및 화면 갱신 중입니다...</strong>
+        <p id="busyOverlaySub" class="busy-overlay-sub">잠시만 기다려 주세요. 스윙 궤적 및 영상 프레임을 실시간 처리하고 있습니다.</p>
+        <div class="busy-progress-track" id="busyOverlayProgressTrack">
+          <div id="busyOverlayProgressFill" class="busy-progress-fill is-indeterminate"></div>
+        </div>
+        <div class="busy-progress-meta">
+          <span id="busyOverlayStepText" class="busy-step-text">실시간 연산 및 캔버스 동기화 진행 중</span>
+          <strong id="busyOverlayPctText" class="busy-pct-text">처리 중</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js?v=20261019_06"></script>
 </body>
 </html>

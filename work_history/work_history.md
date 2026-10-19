@@ -97,3 +97,118 @@
   - [`mobile/app/src/main/assets/www/renderer-exporter.js`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/assets/www/renderer-exporter.js) & [`renderer-exporter.js`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/renderer-exporter.js): `<video>` 태그 준비 상태와 무관하게 `nearestSample.frameCanvas`를 즉시 렌더링하도록 개선.
   - [`mobile/app/src/main/assets/www/styles.css`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/app/src/main/assets/www/styles.css) & [`styles.css`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/styles.css): `#stageCanvas`의 고정 16:9 비율 강제를 제거하여 `720×1280` 세로 스윙 영상 및 `1280×720` 가로 스윙 영상 모두 원본 비율을 유지하도록 개선.
   - [`mobile/dist/golfSwing.apk`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/dist/golfSwing.apk): 최종 빌드 산출물 (`12,065,893 Bytes`).
+
+---
+
+## 9. 후방(Down-the-Line) 공 궤적 샷 트레이서(Shot Tracer) 엔진 구현 및 웹·안드로이드 앱 탑재 (2026-10-16)
+- **웹 딥서치 및 REA 역공학 분석 (`analyze_javascript_application`)**:
+  - 상용 골프 샷 트레이서 웹서비스 및 앱(`GolfBallTracer.com`, `ShotTracerApp.com`, `Toptracer`, `TrackMan`, `SmoothSwing`)을 딥서치하고, `GolfBallTracer` 프로덕션 JS 번들(4개 파일, 297,922 Bytes, AST 노드 91,659개)을 `rea:analyze_javascript_application` (`ev_59adc109c666574036b5eb3184a977914594d210837af62abb49dee53127a3e8`, 요약 `ev_e0ae8854c6f0f152c879a03f437e9fba2180a1dc87e2b0910999d8478a3cc0af`)으로 정밀 분석.
+  - 상용 서비스의 3점 베지어 곡선 보간, 타임라인 프레임 동기화, `MediaRecorder` / `WebCodecs` MP4 합성 구조를 뛰어넘어 **4점 공기역학 탄도(출발점·APEX 최고점·탄착지점·런 종료점) + 말풍선 APEX 고도 표시 + 캐리/런/최종 거리(m) + 동영상 내 탄도 프로파일 다이어그램 합성**을 모두 지원하는 차세대 엔진(`shot-tracer-engine.js`) 설계.
+- **핵심 구현 기능 (`shot-tracer-engine.js`, `renderer-exporter.js`, `app.js`, `index.html`, `styles.css`)**:
+  1. **기존 측면 클럽 잔상 분석 모드와 독립된 듀얼 스튜디오 모드 스위처**:
+     - 상단 헤더 및 모바일 5-탭 네비게이션에서 `[스윙 클럽 잔상 분석]` 모드와 `[후방 공 궤적 샷 트레이서]` 모드를 즉시 전환 가능하도록 구성.
+     - 후방 공 궤적 모드에서도 선택적으로 클럽 샤프트·헤드 잔상을 함께 중첩 표시(`후방 영상에 클럽 샤프트·헤드 잔상 함께 표시` 체크박스)할 수 있도록 지원.
+  2. **멀티 컬러 궤적 팔레트 및 4종 방송용 궤적 스타일**:
+     - 기본값 **투어 레드(`#DC2626`)**를 비롯하여 프로 오렌지(`#EA580C`), 스카이 시안(`#0284C7`), 에메랄드 그린(`#16A34A`), 로열 골드(`#CA8A04`), 바이올렛(`#7C3AED`), TV 화이트(`#F8FAFC`), **속도 그라데이션(레드→앰버→시안)** 및 사용자 직접 색상 선택(`input[type="color"]`) 지원.
+     - 4종 렌더링 스타일: `방송용 3D 코어 튜브 (Toptracer 스타일)`, `네온 레이저 빔`, `스트로보 골프공 잔상 궤적`, `플랫 리본 아크` 및 원근 테이퍼링(Perspective Tapering: 티박스는 굵고 원거리 탄착지점으로 갈수록 가늘어지는 원근감) 적용.
+  3. **APEX 최고점 말풍선(Speech Callout Bubble) 및 수직 고도 점선**:
+     - 공이 최고점(`t = apexTime`)을 통과하는 순간 말풍선 꼬리가 달린 고대비 카드(`APEX 최고점 | 28.4 m`)와 지면 투영 수직 점선 가이드를 자동 표시.
+  4. **탄착지점(캐리 거리, m) 및 런(Roll) 포함 최종 거리(m) 표시**:
+     - 공이 지면에 최초 탄착하는 시점(`landingTime`)에 타원형 타겟 링과 **`탄착(캐리) 232.5 m`** 배지를 표시.
+     - 탄착 후 잔디 마찰 감속 2-바운스 런(Roll) 궤적이 점선으로 이어진 뒤 최종 정지 지점(`rollEndTime`)에 **`최종 251.0 m / 런 +18.5 m`** 말풍선 배지를 표시.
+  5. **동영상 내 탄도(발사각·구질·볼스피드) 및 측면 탄도 프로파일 미니 아크 다이어그램 표기**:
+     - 동영상 프레임 상단 배너 및 우측 하단 Toptracer 스타일 방송용 텔레메트리 카드에 **탄도 분류(`중고탄도 12.8° / APEX 28.4m`), 구질(`하이 드로우 -6.5m`), 볼 스피드(`71.5 m/s · 160 mph`), 캐리(`232.5 m`), 런(`+18.5 m`), 최종 거리(`251.0 m`)** 및 실시간 공 진행 위치가 연동되는 **측면 탄도 프로파일 미니 아크 다이어그램**을 합성.
+  6. **업로드된 후방 영상 자동 보정 및 캔버스 4점 터치/클릭 수동 보정**:
+     - 사용자가 후방(DTL) 스윙 영상을 업로드하면 어드레스·임팩트 클럽 헤드 좌표를 기반으로 공 출발점·APEX·탄착지점을 자동 정합(`autoCalibrateShotTracerFromVideo`)하며, `[1. 공 출발점]`, `[2. APEX 최고점]`, `[3. 탄착지점]`, `[4. 최종 런 위치]` 버튼을 눌러 화면 클릭/터치만으로 궤적 포인트를 정밀 보정 가능.
+  7. **타임라인 구간(`CLIP 구간`) 동영상 저장 및 다운로드 (웹 & 안드로이드 앱)**:
+     - 타임라인 시작~종료 구간(`CLIP 구간`)을 설정하여 저장하면, 공 비행 궤적·APEX 말풍선·탄착/최종 거리(m)·탄도 다이어그램이 모두 합성된 고화질 동영상(웹: MP4/WebM 다운로드, 안드로이드 앱: 다운로드 없이 `Movies/GolfSwingStudio` 갤러리 즉시 저장) 및 스냅샷(PNG)으로 저장.
+  8. **안드로이드 APK 재빌드 및 배포 완료**:
+     - [`mobile/dist/golfSwing.apk`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/mobile/dist/golfSwing.apk) (`12,082,231 Bytes`) 빌드 및 배포 완료.
+
+---
+
+### [2026-10-16] Phase 12: 지면·골퍼 흔들림 고정(Stay Lock) 엔진, 작업 보관함(IndexedDB), 버전별 APK 자동 빌드 파이프라인 구축 (`v1.0 ~ v1.4`)
+* **2D 다중 패치 블록 매칭 기반 영상 흔들림 고정 엔진 (`video-stabilizer.js`)**:
+  - 지면(티매트·페어웨이 경계)·배경 능선·스윙 골퍼 하체 스탠스를 기준으로 Coarse-to-Fine SAD + Edge Gradient 2D 패치 매칭을 수행하여 촬영 중 손떨림을 보정하고, 원본 배율(100%) 그대로 지면과 사람을 제자리에 고정(`crop-matte` 및 `auto-zoom` 지원).
+  - 캔버스에서 원하는 프레임의 지면을 직접 클릭해 기준 지면선에 고정하는 수동 키프레임(`customKeyframes`) 보정 기능 탑재.
+* **프로젝트 작업 보관함 시스템 (`project-archive.js`, IndexedDB)**:
+  - 스윙 클럽 잔상 분석 및 후방 공 궤적 작업 내역(원본 프레임 데이터, 수동 지정 핀 좌표, 탄도·거리 수치, 지면 고정 설정, 대표 썸네일)을 브라우저/앱 내부 IndexedDB에 영구 저장·덮어쓰기·목록 조회·편집장 즉시 복원·미리보기 재생할 수 있는 작업 보관함(`#savedArchiveModal`) 구현.
+* **버전 자동 증가 및 누적 보존 빌드 스크립트 (`Build-GolfSwingApk.ps1`, `Build-GolfSwingApk.bat`, `mobile/version.properties`)**:
+  - 빌드 실행 시마다 웹 에셋(`assets/www/`)을 자동 동기화하고 `versionCode`와 `versionName`을 자동 증가시키며, 이전 버전의 APK 파일을 삭제하지 않고 프로젝트 루트(`.\`)와 `mobile\` 폴더에 버전별 파일명으로 누적 보존하도록 구성.
+
+---
+
+### [2026-10-16] Phase 13: 0.5초 임계치 최상단(Top Layer) 처리 애니메이션 및 전 구간 멈춤 방지(Non-Blocking) 아키텍처 (`v1.5`)
+* **최상단 처리 애니메이션 오버레이 (`#globalBusyOverlay`, `index.html`, `styles.css`, `app.js`)**:
+  - 모든 사용자 작업(`runWithBusyOverlay`)이 `0.5초(500ms)` 이상 소요될 경우 HTML5 `popover="manual"` + `z-index: 2147483647` 최상단 레이어에 SVG `<animateTransform>` 듀얼 링 스피너, 실시간 경과 시간 카운터(`0.5s...`), 단계별 진행률 바를 표시하여 모달 창 위에서도 화면 멈춤 없이 진행 상태를 직관적으로 안내.
+* **전 구간 비동기 프레임 양보 (`yieldToBrowserFrame`) 및 프로파일 캐싱 (`_stabProfileCacheKey`)**:
+  - 동영상 분석, 흔들림 보정 재계산(`recomputeSamplesStabilizationAsync`), 고해상도 스냅샷·파노라마 합성, 보관함 직렬화 루프에서 `26~32ms` 주기로 브라우저 렌더링 프레임을 양보하여 UI Freeze 현상을 원천 차단.
+
+---
+
+### [2026-10-17] Phase 14: 공 위치 핀 실시간 프레임·좌표 영구 저장 및 미세 조정 버튼 클릭 시 타임라인 시점 자동 이동 (`v1.6 ~ v1.9`)
+* **프레임별 공 위치 실시간 영구 저장 및 직전 작업 현황 패널 (`shot-tracer-engine.js`, `app.js`)**:
+  - 프레임을 이동한 뒤 공 위치를 지정할 때마다 해당 지점의 프레임 번호(`pinnedFrame`), 시간(`pinnedTime`), 정규화 좌표(`x`, `y`)를 `pinnedPointsStore`, `pinnedHistory`, 탭 워크스페이스 및 `localStorage`(`golfSwing_realtimePinnedPoints_v1`)에 즉시 저장하고, 지점 버튼 활성화 시 직전 작업 지점의 프레임·좌표 정보를 캔버스 상단 배너와 실시간 현황 카드(`#shotPinRealtimeStatusBox`)에 표시.
+* **캔버스 공 위치 미세 조정 버튼 클릭 시 영상 타임라인 자동 동기화 이동 (`resolvePinTargetTimelineTime`, `seekToTime`)**:
+  - `[1. 출발점(공)]`, `[2. 중간점 1]`, `[3. 중간점 2]`, `[4. 중간점 3]`, `[5. 최고점(APEX)]`, `[6. 탄착지점]`, `[7. 최종 런]` 버튼을 클릭하면 해당 지점이 수동 지정된 프레임 시점(미지정 시 탄도 곡선 기준 예상 시점)으로 비디오와 타임라인 슬라이더가 즉시 자동 이동되어 사용자가 별도로 타임라인을 찾지 않고도 곧바로 공 위치를 클릭·보정할 수 있도록 개선.
+
+---
+
+### [2026-10-17] Phase 15: `"나만의골프스윙"` 2줄 타이틀 리브랜딩 및 맞춤형 카툰 일러스트 앱 아이콘·파비콘 적용 (`v1.10 ~ v1.11`)
+* **앱 타이틀 `"나만의골프스윙"` 변경 및 `"나만의 / 골프스윙"` 2줄 타이포그래피 적용 (`index.html`, `styles.css`, `strings.xml`)**:
+  - 웹 및 안드로이드 앱 타이틀을 `"나만의골프스윙"`으로 변경하고, 헤더 브랜드 영역에 `"나만의"`(상단 작은 글씨)와 `"골프스윙"`(하단 굵은 글씨) 두 줄 구조로 선명하게 표시.
+* **카툰 일러스트 배경 + 꽉 차는 타이포그래피 앱 아이콘 및 파비콘 생성 (`Generate-AppBranding.ps1`, `app-icon.png`, `favicon.ico`)**:
+  - 골프 스윙과 어울리는 부드럽고 은은한 만화풍 골프장 배경 위에 상단 `"나만의"`와 하단 좌우에 꽉 차는 가장 굵은 `"골프스윙"` 글씨가 뚜렷하게 대비되는 전용 아이콘(`app-icon.png`, Android `mipmap-mdpi~xxxhdpi` 및 Adaptive Icon)과 멀티 사이즈 `favicon.ico`를 제작·적용.
+  - 빌드 산출물 APK 파일명을 `나만의골프스윙_v1.x.apk` 형식으로 리네임하고 버전 체계를 유지.
+
+---
+
+### [2026-10-17] Phase 16: 공 출발 시점 ~ APEX 최고점 도달 구간 슬로우 모션 탄도 밸런싱 (`v1.12`)
+* **상승 구간 체공 시간 배분(`climbRatio = 0.58`) 및 슬로우 모션 이징 (`shot-tracer-engine.js`)**:
+  - 후방(DTL) 원근 투영 특성상 화면에서 출발점→APEX 상승 이동 거리가 APEX→탄착 하강 거리보다 약 2배 길어 초반 상승이 너무 빠르게 보이던 문제를 해결하기 위해, 전체 비행 시간의 `58%`를 상승 구간에 배분하고 사인 감속 이징 함수(`climbEtaFromW`)와 여유 체공 시간 보장을 적용하여 출발부터 APEX 도달까지도 하강 구간과 조화롭게 슬로우 모션으로 표현되도록 개선.
+
+---
+
+### [2026-10-19] Phase 17: 상단 접이식 햄버거 메뉴 도입 및 핵심 버튼 외 부수 기능 숨김 UI 개편 (`v1.13 ~ v1.14`)
+* **상단 접이식 메뉴(`#btnToggleTopMenu`, `#topMenuDropdownPanel`) 및 간결한 바깥 액션 바 (`index.html`, `styles.css`, `app.js`)**:
+  - 모바일 화면에서 상단 메뉴가 겹치지 않도록 바깥 화면에는 꼭 필요한 핵심 버튼(`내 스윙 영상 열기`, `저장된 작업 조회`, `스윙 클럽 잔상 / 후방 공 궤적 모드 전환`, `재생/일시정지`, `공 위치 핀 지정`)만 노출.
+  - 데모 프리셋 불러오기, 촬영 구도 수동 전환, 스트로보 스냅샷/7단계 파노라마/구간 동영상 저장, 현재 작업 보관함 저장, 세부 궤적·흔들림 고급 조절, 7단계 시퀀스 및 AI 코칭 리포트 등 부수적인 기능들은 상단 접이식 메뉴 팝업과 접이식 `<details class="collapsible-sub-menu">` 안에 체계적으로 수납.
+
+---
+
+### [2026-10-19] Phase 18: `내 스윙 영상 열기` 시 측면(Face-On) vs 후면(DTL) 자동 판별 및 모드 자동 전환 (`v1.15`)
+* **다중 신호 융합 촬영 구도 자동 판별 엔진 (`classifySwingVideoCameraAngleAndMode` in `app.js`, `shot-tracer-engine.js`)**:
+  - 스윙 동영상 업로드 시 ① 포즈 관절 기하학(토르소 대비 어깨 폭·발목 스탠스 폭·3D 깊이차·양측 손 스윙 아크 대칭성), ② 티박스 공·원거리 페어웨이·임팩트 직후 상승 공 궤적 검출 신뢰도, ③ 클럽 헤드 픽셀 모션 아크 분포 및 해상도·파일명 힌트를 종합 점수화하여 측면(정면 Face-On)인지 후면(후방 DTL)인지 자동 판별.
+  - 판별 결과에 따라 `[스윙 클럽 잔상 분석]` 또는 `[후방 공 궤적]` 작업 모드로 자동 전환하여 즉시 분석·렌더링을 진행하고, 기존 탭의 이전 작업 워크스페이스는 안전하게 보존.
+
+---
+
+### [2026-10-19] Phase 19: 상단 메뉴 팝업 오픈 상태에서 스크롤 시 배경 영상 스크롤 차단 및 팝업 내부 스크롤 고정 (`v1.16`)
+* **전용 스크롤 컨테이너(`#topMenuSectionsWrap`) 분리 및 캡처 단계 스크롤 라우팅 (`index.html`, `styles.css`, `app.js`)**:
+  - 메뉴 팝업이 열린 상태에서 스크롤할 때 팝업 대신 뒤쪽 스윙 영상이 스크롤되던 문제(Scroll Chaining)를 해결하기 위해 `.top-menu-dropdown-panel` 내부에 `#topMenuSectionsWrap`(`overflow-y: auto; overscroll-behavior: contain;`)을 분리하고 각 섹션에 `flex-shrink: 0`을 부여.
+  - 메뉴 오픈 시 `body.is-top-menu-open`으로 배경 스크롤을 잠그고, `window` 캡처 단계(`{ passive: false, capture: true }`)에서 `wheel` 및 `touchmove`(관성 스크롤 포함) 이벤트를 가로채어 뒤쪽 영상 스크롤을 100% 차단하면서 팝업 내부 리스트만 부드럽게 스크롤되도록 구현.
+
+---
+
+### [2026-10-19] Phase 20: 스마트폰 스윙 영상 무스크롤 전체 보기 자동 맞춤 및 전체화면 재생 기능 추가 (`v1.17`)
+* **100% 기본 화면에서 스크롤 없는 영상 전체 맞춤 표시 (`setViewportZoom`, `ResizeObserver` in `app.js`, `styles.css`)**:
+  - 스마트폰 앱에서 스윙 영상 내부에 스크롤바가 생기거나 하단 발·공 위치가 잘리지 않도록 `.stage-zoom-scroll`을 기본 `overflow: hidden`으로 설정하고, 100% 기본 배율일 때 뷰포트 가용 영역(`availW`, `availH`)과 영상 원본 종횡비(`aspect`)에 맞춘 정확한 `width`/`height` 픽셀 크기를 `#stageCanvas`에 부여하여 세로·가로 어떤 스윙 영상이든 한눈에 전체가 다 보이도록 개선.
+* **몰입형 전체화면 재생 모드 (`#btnStageFullscreenOverlay`, `#btnFullscreenPlay`, `MainActivity.kt`)**:
+  - 영상 우측 하단 플로팅 `전체화면 재생` 버튼 및 타임라인 바의 `전체화면 재생` 버튼을 클릭하면 Android 네이티브 몰입형 전체화면(`AndroidNativeBridge.setImmersiveFullscreen(true)`)과 연동되어 화면 전체에 꽉 차게 스윙 영상과 궤적을 자동 재생하며, 전체화면 전용 상·하단 컨트롤 바(배속 선택, 타임라인 슬라이더, 1프레임 이동, 임팩트 이동, 전체화면 종료)를 지원.
+
+---
+
+### [2026-10-19] Phase 21: 스윙 종료 후 공 궤적이 뒤늦게 시작되던 문제 해결 및 실제 타격(임팩트) 시점 3중 동기화 (`v1.18`)
+* **근본 원인 규명 (`5.22초 / 156프레임` 영상에서 스윙 피니시 이후 `F116 / 3.83s`에 공이 출발하던 현상)**:
+  1. 스윙은 전반부(`~2.6초`)에 끝나고 후반부(`2.6초~5.22초`)는 날아가는 공을 비추는 영상에서, 기존 `buildFallbackKinematicPose`가 `3.2초` 스윙을 전체 영상 길이(`5.22초`)에 선형 비례로 늘려 매핑하면서 임팩트가 `3.83초(F116)`로 밀렸음.
+  2. 기존 `detectSwingMoments`가 단순히 손 위치가 가장 높은 단일 최솟값을 백스윙 탑으로 탐색하여, 스윙 피니시(`2.77s / F84`)에서 높이 올라간 손을 백스윙 탑으로 오인하고 그 이후인 `3.83s(F116)`를 임팩트로 잘못 판정했음.
+* **3중 타격(임팩트) 시점 정밀 동기화 파이프라인 구현 (`swing-engine.js`, `shot-tracer-engine.js`, `app.js`)**:
+  1. **실제 비디오 픽셀 모션 기반 스윙 타이밍 추출 (`computeFrameRegionalMotion` & `estimateSwingTimingFromVideoPixels`)**:
+     - 프레임 간 골퍼 상체 영역 및 하단 타격 영역의 실제 픽셀 모션 에너지를 분석하여, 후반부 여백이 긴 영상에서도 실제 스윙이 일어나는 전반부의 타격 피크(`~1.75s`)와 스윙 종료 시점(`~2.60s`)을 정확히 추출하고 키네마틱 시간축을 동기화. 또한 Android WebView에서 MediaPipe GPU 초기화 실패 시 자동으로 CPU 모드로 폴백하도록 `ensurePoseLandmarker()` 보강.
+  2. **[백스윙 탑(Peak 1) → 임팩트 골짜기(Valley) → 피니시(Peak 2)] 3단 연동 V-Valley Triad 검출기 (`detectSwingMoments`)**:
+     - 피니시 정점을 백스윙 탑으로 착각하지 않도록 직전 `0.12s~0.65s` 내에 백스윙 탑이 존재하고 어드레스 높이로 급강하(임팩트 골짜기)한 뒤 직후 `0.14s~1.15s` 내에 다시 피니시 정점으로 치솟는 V자 골짜기(Impact Valley) Triad와 실제 영상 타격 모션 피크를 결합하여 백스윙 탑·임팩트·피니시를 동시에 정밀 확정.
+  3. **티 위 골프공 이탈(Ball Disappearance on Tee) 시각 검출 (`detectVisualBallLaunchImpactTime`)**:
+     - 어드레스 시 티(`originPoint`) 위에 있던 골프공이 클럽에 맞아 사라지는 바로 그 프레임 전환 시점을 검출해 `calibratedImpactTime`과 `keyMoments.impact`를 동기화하여, 클럽이 공을 타격하는 즉시 공 궤적이 지체 없이 출발하도록 구현.
+* **최종 빌드 산출물**:
+  - [`나만의골프스윙_v1.18.apk`](file:///c:/myWork/workspace/scratch/golf-swing-tracer/%EB%82%98%EB%A7%8C%EC%9D%98%EA%B3%A8%ED%94%84%EC%8A%A4%EC%9C%99_v1.18.apk) (`13,444,777 Bytes`, `versionCode 19`, `versionName 1.18`).
+

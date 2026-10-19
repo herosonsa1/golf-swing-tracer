@@ -1,6 +1,10 @@
 {
   "name": "golf-swing-tracer",
   "version": "1.0.0",
-  "description": "REA 역공학 기반 골프 클럽 헤드 잔상 동영상 및 7단계 스윙 시퀀스 스냅샷 웹 스튜디오",
-  "type": "module"
+  "description": "REA 역공학 기반 골프 클럽 헤드 잔상 동영상 및 후방 공 궤적 샷 트레이서 웹 스튜디오",
+  "type": "module",
+  "scripts": {
+    "start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File server.ps1"
+  }
 }
+

@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "categories": {
     "android": [
       {
@@ -12,6 +12,19 @@
           "METADATA_KEY_VIDEO_ROTATION(90/270도 회전 메타데이터)을 반영하여 세로 스윙 영상(720x1280)과 가로 영상을 정확히 판별하고 #stageCanvas에서 고정 16:9 비율 강제를 제거하여 원본 세로 비율을 유지하였는가?"
         ],
         "solution": "NativeVideoDecoder(MediaMetadataRetriever + FileDescriptor 랜덤 액세스 + HDR10+ to SDR ARGB_8888 변환) 하드웨어 프레임 시퀀스 추출기 및 LocalWebAssetServer(/native-frame/) 서빙 파이프라인 구축, WebView <video> 의존 배제 및 세로/가로 원본 종횡비 적응형 캔버스 렌더링 적용"
+      }
+    ],
+    "web": [
+      {
+        "id": "AP-WEB-SHOT-TRACER-BEZIER-APEX-MISMATCH",
+        "name": "단순 2차 베지어 제어점(Control Point)에 APEX 좌표를 그대로 대입할 때 실제 궤적 곡선이 APEX 말풍선 높이에 도달하지 못하는 괴리 패턴",
+        "description": "후방(DTL) 골프 샷 트레이서에서 2차 베지어 곡선 B(u)=(1-u)^2*P0 + 2(1-u)u*P1 + u^2*P2의 제어점 P1에 사용자가 지정한 최고점(Apex) 좌표를 그대로 넣으면, 곡선이 u=0.5에서 실제 Apex 좌표보다 절반 높이에만 도달하여 APEX 말풍선과 공 궤적이 분리되는 현상",
+        "checklist": [
+          "사용자가 지정하거나 자동 산출된 실제 정점(Apex) 좌표를 곡선이 정확히 통과하도록 제어점 P1 = (Apex - 0.25*P0 - 0.25*P2) / 0.5 역산 공식을 적용하였는가?",
+          "공이 날아가는 캐리(Carry) 비행 구간과 지면 탄착 후 잔디 마찰로 감속하며 굴러가는 런(Roll) 구간을 분리하여 탄착지점(m)과 최종거리(m) 말풍선이 타임라인 진행에 맞춰 순차 표출되도록 구현하였는가?",
+          "renderCompositeFrame 단일 합성 파이프라인에 통합하여 실시간 재생, 스냅샷 저장, 타임라인 구간(CLIP) 동영상 내보내기(웹 MediaRecorder 및 안드로이드 NativeMp4Exporter) 시 모든 궤적·APEX·거리·탄도 HUD가 누락 없이 인코딩되는가?"
+        ],
+        "solution": "2차 베지어 정점 통과 역산 제어점 공식 적용, 2-바운스 감속 런(Roll) 궤적 분리, 원근 테이퍼링 3D 코어 튜브 렌더링 및 Toptracer 스타일 탄도 프로파일 미니 다이어그램 HUD 통합"
       }
     ]
   }
