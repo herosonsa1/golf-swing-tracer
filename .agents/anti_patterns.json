@@ -1,31 +1,646 @@
 {
-  "version": "1.2.0",
-  "categories": {
-    "android": [
-      {
-        "id": "AP-ANDROID-WEBVIEW-HEVC-HDR10-DECODE-FAIL",
-        "name": "Android WebView shouldInterceptRequest 단일 스트림 전달 시 스마트폰 HEVC(H.265) + HDR10+(10-bit) 영상 디코딩 실패 및 세로 영상 비율 왜곡 패턴",
-        "description": "Galaxy S24+ 등 최신 스마트폰 카메라로 촬영된 HEVC(H.265 Main10) + HDR10+(10-bit) + moov atom 후행 배치(파일 끝단 위치) MP4 비디오를 Android WebView의 shouldInterceptRequest 단일 순차 InputStream을 통해 HTML5 <video> 태그로 직접 로드하면, HTTP Byte-Range(206 Partial Content) 랜덤 시크 부재 및 WebView 10-bit HDR 컬러 프로파일 디멀티플렉싱 실패로 즉시 video.onerror('선택한 갤러리 비디오를 디코딩할 수 없습니다.')가 발생하고, 세로(720x1280) 영상이 고정 16:9 캔버스에 찌그러지는 패턴",
-        "checklist": [
-          "갤러리 비디오(HEVC/H.265, HDR10+, HLG, 10-bit, 30/60fps) 선택 시 WebView <video> 디코더에만 의존하지 않고 Android OS 네이티브 하드웨어 MediaMetadataRetriever(FileInputStream.fd 랜덤 액세스)로 프레임을 직접 추출하였는가?",
-          "HDR10+ 10-bit 하드웨어 비트맵(Bitmap.Config.HARDWARE, RGBA_1010102, RGBA_F16)을 표준 8-bit SDR ARGB_8888 소프트웨어 비트맵으로 안전 변환(ensureSdrSoftwareBitmap)하여 Canvas 2D 픽셀 연산 및 JPEG 인코딩 호환성을 100% 보장하였는가?",
-          "METADATA_KEY_VIDEO_ROTATION(90/270도 회전 메타데이터)을 반영하여 세로 스윙 영상(720x1280)과 가로 영상을 정확히 판별하고 #stageCanvas에서 고정 16:9 비율 강제를 제거하여 원본 세로 비율을 유지하였는가?"
-        ],
-        "solution": "NativeVideoDecoder(MediaMetadataRetriever + FileDescriptor 랜덤 액세스 + HDR10+ to SDR ARGB_8888 변환) 하드웨어 프레임 시퀀스 추출기 및 LocalWebAssetServer(/native-frame/) 서빙 파이프라인 구축, WebView <video> 의존 배제 및 세로/가로 원본 종횡비 적응형 캔버스 렌더링 적용"
-      }
-    ],
-    "web": [
-      {
-        "id": "AP-WEB-SHOT-TRACER-BEZIER-APEX-MISMATCH",
-        "name": "단순 2차 베지어 제어점(Control Point)에 APEX 좌표를 그대로 대입할 때 실제 궤적 곡선이 APEX 말풍선 높이에 도달하지 못하는 괴리 패턴",
-        "description": "후방(DTL) 골프 샷 트레이서에서 2차 베지어 곡선 B(u)=(1-u)^2*P0 + 2(1-u)u*P1 + u^2*P2의 제어점 P1에 사용자가 지정한 최고점(Apex) 좌표를 그대로 넣으면, 곡선이 u=0.5에서 실제 Apex 좌표보다 절반 높이에만 도달하여 APEX 말풍선과 공 궤적이 분리되는 현상",
-        "checklist": [
-          "사용자가 지정하거나 자동 산출된 실제 정점(Apex) 좌표를 곡선이 정확히 통과하도록 제어점 P1 = (Apex - 0.25*P0 - 0.25*P2) / 0.5 역산 공식을 적용하였는가?",
-          "공이 날아가는 캐리(Carry) 비행 구간과 지면 탄착 후 잔디 마찰로 감속하며 굴러가는 런(Roll) 구간을 분리하여 탄착지점(m)과 최종거리(m) 말풍선이 타임라인 진행에 맞춰 순차 표출되도록 구현하였는가?",
-          "renderCompositeFrame 단일 합성 파이프라인에 통합하여 실시간 재생, 스냅샷 저장, 타임라인 구간(CLIP) 동영상 내보내기(웹 MediaRecorder 및 안드로이드 NativeMp4Exporter) 시 모든 궤적·APEX·거리·탄도 HUD가 누락 없이 인코딩되는가?"
-        ],
-        "solution": "2차 베지어 정점 통과 역산 제어점 공식 적용, 2-바운스 감속 런(Roll) 궤적 분리, 원근 테이퍼링 3D 코어 튜브 렌더링 및 Toptracer 스타일 탄도 프로파일 미니 다이어그램 HUD 통합"
-      }
-    ]
-  }
+    "version":  "1.1.0",
+    "categories":  {
+                       "web":  [
+                                   {
+                                       "id":  "AP-WEB-HEAVY-DEPENDENCY",
+                                       "name":  "불필요한 외부 라이브러리 및 번들 종속성 유발",
+                                       "description":  "단순한 UI 및 기능 구현에 무거운 외부 의존성 라이브러리/프레임워크를 추가하여 독립 실행 및 배포를 어렵게 만드는 패턴",
+                                       "checklist":  [
+                                                         "별도 패키지 매니저나 무거운 외부 종속성 없이 순수 Vanilla JS/CSS/HTML로 구현 가능한가?",
+                                                         "CDN/오프라인 환경에서도 단일 파일 또는 독립 번들로 항상 구동되는가?"
+                                                     ],
+                                       "solution":  "Vanilla HTML5/CSS3/ES6+ 표준 API를 최우선 사용하고, 외부 라이브러리 설치 없이 독립 실행 상태로 번들링"
+                                   },
+                                   {
+                                       "id":  "AP-WEB-THEME-UNADAPTIVE",
+                                       "name":  "다크/라이트 테마 미적응 및 텍스트 깨짐",
+                                       "description":  "Antigravity Generative UI 및 웹뷰에서 폼 컨트롤, 스크롤바, 배경이 테마에 적응하지 못해 디자인이 훼손되는 패턴",
+                                       "checklist":  [
+                                                         "시스템 및 IDE의 다크/라이트 모드 테마 변수(CSS Variables)를 사용하였는가?",
+                                                         "스크롤바 및 폼 컨트롤이 배경색과 대비되어 가독성이 유지되는가?"
+                                                     ],
+                                       "solution":  "CSS Variables(var(--theme-...)) 및 prefers-color-scheme을 사용한 완벽 테마 적응형 스타일링"
+                                   },
+                                   {
+                                       "id":  "AP-WEB-NESTED-OVERFLOW-X-HIDDEN-SCROLL-LOCK",
+                                       "name":  "html, body, #root 및 루트 래퍼에 동시 overflow-x: hidden 부여로 인한 수직 터치 스크롤 먹통 및 sticky 파괴 패턴",
+                                       "description":  "가로 스크롤 방지를 위해 html, body, #root, 최상위 div(min-h-screen)에 동시에 overflow-x: hidden을 부여하면 CSS Overflow 명세에 의해 각 요소의 overflow-y가 자동으로 auto로 계산되어 다중 중첩 스크롤 컨테이너가 생성되고, height가 고정되지 않은 내부 컨테이너가 터치 이벤트를 가로채어 모바일 WebView에서 수직 스크롤이 완전히 먹통이 되는 패턴",
+                                       "checklist":  [
+                                                         "html, body, #root, 최상위 min-h-screen 래퍼에 불필요한 중첩 overflow-x: hidden을 부여하지 않았는가?",
+                                                         "가로 폭 정렬은 개별 flex/grid 컴포넌트 내부의 min-w-0, flex-1, box-border로 해결하여 문서 루트 스크롤러(document.scrollingElement)의 순수 수직 스크롤과 position: sticky 동작을 보장하였는가?"
+                                                     ],
+                                       "solution":  "html, body, #root 및 루트 래퍼에서 overflow-x: hidden을 제거하고, 상단 바 및 내부 플렉스 요소에 min-w-0와 정확한 폭 배분을 적용하여 수직 스크롤 100% 정상 동작 보장"
+                                   }
+                               ],
+                       "ui_design":  [
+                                         {
+                                             "id":  "AP-UI-CARD-HELL",
+                                             "name":  "카드 남용 및 중첩 카드(Card Hell) 패턴",
+                                             "description":  "모든 독립 정보를 사각형 카드로 감싸고, 카드 안에 또 카드를 넣는(nested card) 무분별한 박스 처리로 정보 계층 구조를 흐리는 패턴",
+                                             "checklist":  [
+                                                               "카드가 반드시 필요한 독립 정보에만 border/background를 사용하였는가?",
+                                                               "중첩 카드(nested card)를 제거하고 여백(whitespace)과 타이포그래피로 Visual Group을 구성하였는가?",
+                                                               "border와 shadow를 동시에 남용하지 않았는가?"
+                                                           ],
+                                             "solution":  "카드를 남발하지 않고 여백, 폰트 크기/굵기, 은은한 구분선(Divider)을 활용하여 시각적 그룹을 형성"
+                                         },
+                                         {
+                                             "id":  "AP-UI-AI-GENERIC-CLICHE",
+                                             "name":  "AI 기본 클리셰 디자인(둥근 카드, 그라데이션, 과도한 그림자 남발)",
+                                             "description":  "AI가 생성한 듯한 뻔한 디자인(과도하게 둥근 모서리, 무의미한 그라데이션/글로우, 모든 요소에 깔린 소프트 그림자, 3-4개 박스 반복)으로 서비스 개성이 결여된 패턴",
+                                             "checklist":  [
+                                                               "지나치게 둥근 full-rounded 모서리와 불필요한 보라/파랑 그라데이션을 배제하였는가?",
+                                                               "무의미한 장식성 뱃지(pill UI)와 아이콘을 제거하고 콘텐츠 자체의 가독성을 높였는가?",
+                                                               "본문 대비 비대한 Hero 영역을 간결하게 정돈하였는가?"
+                                                           ],
+                                             "solution":  "장식적 효과를 걷어내고, 스위스 스타일/애플 미니멀/벤토 그리드 등 서비스 성격에 맞는 명확한 Design Direction 및 Design System 적용"
+                                         },
+                                         {
+                                             "id":  "AP-UI-HIERARCHY-COLLAPSE",
+                                             "name":  "모든 요소 강조로 인한 시각적 위계(Visual Hierarchy) 붕괴",
+                                             "description":  "모든 텍스트, 버튼, 카드를 동일하게 크고 화려하게 강조하여 사용자가 5초 안에 핵심 정보와 액션을 찾지 못하게 만드는 패턴",
+                                             "checklist":  [
+                                                               "화면 진입 후 5초 안에 가장 먼저 봐야 할 Primary 정보와 메인 CTA가 한눈에 식별되는가?",
+                                                               "강조할 요소를 엄격히 제한하고 Display/H1/H2/Body/Caption 타이포그래피 스케일을 준수하였는가?",
+                                                               "포인트 컬러를 장식이 아닌 메인 CTA와 상태(Status) 정보에만 제한적으로 사용하였는가?"
+                                                           ],
+                                             "solution":  "Primary, Secondary, Supporting으로 정보를 3단계 분류하고, 폰트 크기/굵기/여백/대비로 명확한 시선 이동 경로 설계"
+                                         },
+                                         {
+                                             "id":  "AP-UI-RESPONSIVE-SIMPLE-STACK",
+                                             "name":  "반응형 정보 위계 무시 및 단순 세로 쌓기(Vertical Stacking)",
+                                             "description":  "데스크톱 레이아웃을 모바일에서 단순히 세로로 일렬 나열만 하여 모바일 사용자에게 과도한 스크롤과 핵심 CTA 지연을 유발하는 패턴",
+                                             "checklist":  [
+                                                               "모바일 뷰포트에서 핵심 CTA와 주요 정보가 최상단에 우선 노출되는가?",
+                                                               "부가 데이터는 Accordion/Drawer/탭 등으로 접어 스크롤 낭비를 방지하였는가?",
+                                                               "터치 타깃이 최소 44x44px 이상 확보되었는가?"
+                                                           ],
+                                             "solution":  "디바이스별 핵심 행동을 재정의하여 Breakpoint마다 정보 우선순위를 재구성"
+                                         },
+                                         {
+                                             "id":  "AP-UI-ACCESSIBILITY-DEFECT",
+                                             "name":  "색상만으로 상태 구분 및 WCAG 접근성 결여",
+                                             "description":  "텍스트 대비비 부족(4.5:1 미만), 색상만으로 성공/오류를 구분하거나 포커스 링이 없어 접근성을 저해하는 패턴",
+                                             "checklist":  [
+                                                               "본문과 배경 간 최소 4.5:1(WCAG AA/AAA) 명도 대비를 만족하는가?",
+                                                               "색상 외에 아이콘이나 텍스트 레이블을 병기하여 상태를 식별할 수 있는가?",
+                                                               "모든 대화형 요소에 visible focus state가 존재하고 키보드 탭 네비게이션이 가능한가?"
+                                                           ],
+                                             "solution":  "WCAG 기준 준수: 시맨틱 태그, ARIA 레이블, 고대비 색상, 텍스트 병기, 키보드 포커스링 필수 적용"
+                                         },
+                                         {
+                                             "id":  "AP-UI-EXCESSIVE-GLASSMORPHISM",
+                                             "name":  "데이터/폼 전면 글래스모피즘(Glassmorphism) 과도 적용",
+                                             "description":  "화면 전체의 카드나 데이터 테이블에 반투명 블러 효과를 무분별하게 적용하여 텍스트 대비와 데이터 가독성을 심각하게 떨어뜨리는 패턴",
+                                             "checklist":  [
+                                                               "글래스모피즘을 플로팅 내비게이션, 모달 백드롭 등 상위 레이어에만 제한적으로 사용하였는가?",
+                                                               "데이터 테이블, 긴 본문, 폼 입력 필드에는 솔리드/고가독성 서피스를 적용하였는가?"
+                                                           ],
+                                             "solution":  "글래스모피즘은 전체 스타일이 아닌 전면/후면 레이어 분리를 위한 시각적 강조 기법으로만 제한 적용"
+                                         }
+                                     ],
+                       "powershell_bat":  [
+                                              {
+                                                  "id":  "AP-PS1-BAT-PYTHON-DEPENDENCY",
+                                                  "name":  "Windows 배치/PS 스크립트의 외부 런타임(Python 등) 종속",
+                                                  "description":  "사용자 배포 환경에 Python이나 기타 인터프리터가 설치되어 있지 않아 배치/파워쉘 스크립트 구동이 실패하는 패턴",
+                                                  "checklist":  [
+                                                                    "Python 등 추가 프로그램 설치 없이 순수 Windows 내장 cmd.exe 및 powershell.exe만으로 구동되는가?",
+                                                                    "필요 시 내장 .NET 클래스([System.Net...], [System.IO...])를 활용하여 파워쉘 라인으로 자체 해결하였는가?"
+                                                                ],
+                                                  "solution":  "Windows 기본 내장 기능(PowerShell v5.1+, Batch, 내장 .NET API)을 100% 활용하여 무설치 단독 실행형(Standalone)으로 작성"
+                                              },
+                                              {
+                                                  "id":  "AP-PS1-BAT-ENCODING-CORRUPTION",
+                                                  "name":  "배치 파일 및 파워쉘 한글 인코딩(CP949 vs UTF-8) 깨짐",
+                                                  "description":  "배치 스크립트나 파워쉘 실행 시 chcp 65001 설정 누락 또는 파일 인코딩 불일치로 한글 메시지가 깨지는 패턴",
+                                                  "checklist":  [
+                                                                    "배치 파일 상단에 `chcp 65001 \u003enul` 또는 PowerShell 실행 시 `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`을 지정하였는가?",
+                                                                    "파일 저장 시 UTF-8 (또는 환경에 맞는 인코딩)으로 올바르게 저장되었는가?"
+                                                                ],
+                                                  "solution":  "스크립트 시작 시 UTF-8 코드페이지 및 출력 인코딩을 명시적으로 선언하고 관리자 권한 자동 상승(UAC) 루틴 탑재"
+                                              },
+                                              {
+                                                  "id":  "AP-PS1-BAT-ADMIN-PRIVILEGE-MISSING",
+                                                  "name":  "관리자 권한(UAC) 미체크로 인한 시스템 명령 실패",
+                                                  "description":  "네트워크, 서비스, Hyper-V 등 시스템 제어 작업 시 관리자 권한이 없어 명령이 에러 없이 무시되거나 실패하는 패턴",
+                                                  "checklist":  [
+                                                                    "스크립트 실행 시 현재 프로세스가 관리자 권한인지 사전 검사하였는가?",
+                                                                    "관리자 권한이 아닐 경우 `Start-Process -Verb RunAs`로 자동 상승 실행을 시도하였는가?"
+                                                                ],
+                                                  "solution":  "배치 및 파워쉘 진입부에 관리자 권한 여부 점검 및 자동 상승(Self-Elevation) 스크립트 블록 필수 삽입"
+                                              },
+                                              {
+                                                  "id":  "AP-MCP-NVM-NODE-VERSION-SHIM-TRAP",
+                                                  "name":  "Windows NVM 다중 Node 버전 환경에서 전역 MCP/CLI 실행 시 구버전(v18) 호출 및 .ps1 Shim 우선순위 함정",
+                                                  "description":  "시스템 기본 NVM 활성 버전이 구버전(예: Node v18.20.0)일 때 최신 Node(v22.19+/v24.15+)를 요구하는 MCP 서버나 글로벌 CLI(rea 등)를 단순 npx 또는 기본 shim으로 호출하면 PowerShell이 .cmd 대신 .ps1 shim을 우선 실행하여 구버전 node.exe를 호출하고 ESM/node:util styleText 문법 에러로 즉시 크래시되는 패턴",
+                                                  "checklist":  [
+                                                                    "mcp_config.json 등록 시 단순 npx 대신 요구 버전을 충족하는 NVM 버전(예: v24.17.0\\\\node.exe)의 절대 경로와 엔트리 스크립트(.mjs) 절대 경로를 명시하였는가?",
+                                                                    "Windows 글로벌 npm 설치 시 생성되는 .cmd 뿐만 아니라 PowerShell이 최우선 실행하는 .ps1 shim 스크립트 내부에도 타겟 Node 버전(v24.17.0) 절대 경로 바인딩을 적용하였는가?",
+                                                                    "전역 설정(config/mcp_config.json), 앱 설정(antigravity/mcp_config.json), IDE 설정(antigravity-ide/mcp_config.json) 3곳 모두에 누락 없이 동기화하였는가?"
+                                                                ],
+                                                  "solution":  "mcp_config.json 3대 경로 및 npm 글로벌 shim(rea.ps1, rea.cmd)에 Node v24.17.0 절대 경로를 직접 바인딩하여 시스템 기본 NVM 버전 변경과 무관하게 100% 독립 구동 보장"
+                                              },
+                                              {
+                                                  "id":  "AP-REA-ENGINE-JAVA8-CONFLICT",
+                                                  "name":  "시스템 전역 JAVA_HOME(JDK 8) 환경에서 Ghidra 12.1.x 및 JADX MCP 엔진 구동 시 JDK 버전 충돌 및 해시 핀닝 실패 패턴",
+                                                  "description":  "호스트 OS의 전역 JAVA_HOME이 레거시 프로젝트용 JDK 8(1.8.0)로 고정된 상태에서 64-bit Full JDK 21+를 요구하는 Ghidra 12.1.4 및 Full JDK 17+(jdk.compiler 모듈 필수)와 정확한 릴리스 SHA-256 핀닝(v0.7.1)을 요구하는 jadx-headless-mcp를 단순 등록하면, JDK 버전 미달 또는 JAR 해시 불일치로 엔진 활성화가 거부되는 패턴",
+                                                  "checklist":  [
+                                                                    "기존 레거시 프로젝트 호환을 위해 시스템 전역 JAVA_HOME(JDK 8)은 건드리지 않고, REA 실행 컨텍스트(mcp_config.json 3곳의 env, rea.ps1, rea.cmd, rea.mjs) 내부에만 64-bit Full JDK 21+(예: Android Studio JBR 25) 경로를 격리 주입하였는가?",
+                                                                    "REA가 요구하는 정확한 버전의 엔진(Ghidra 12.1.4 및 jadx-headless-mcp-0.7.1-all.jar)을 배치하고 SHA-256 해시와 javac.exe/jdk.compiler 모듈 포함 여부를 검증하였는가?",
+                                                                    "Windows 사용자 환경변수(GHIDRA_INSTALL_DIR, REA_JADX_MCP_JAR)와 rea doctor 진단에서 ghidra 및 jadx 모든 세부 항목이 healthy(available: true)로 통과하였는가?"
+                                                                ],
+                                                  "solution":  "Windows 사용자 환경변수에 GHIDRA_INSTALL_DIR 및 REA_JADX_MCP_JAR를 영구 등록하고, 3대 mcp_config.json과 rea 런처(rea.ps1, rea.cmd, rea.mjs)에 Full JDK 21+ 기반 JAVA_HOME을 스코프 격리 주입하여 기존 JDK 8 환경 훼손 없이 디컴파일 엔진 100% 활성화 달성"
+                                              }
+                                          ],
+                       "android":  [
+                                       {
+                                           "id":  "AP-ANDROID-HEAVY-DEPENDENCY",
+                                           "name":  "안드로이드 불필요한 서드파티 라이브러리 종속",
+                                           "description":  "간단한 기능에 거대한 서드파티 라이브러리를 임포트하여 APK 크기 증가 및 빌드/배포 호환성 문제를 일으키는 패턴",
+                                           "checklist":  [
+                                                             "Android Jetpack 및 플랫폼 표준 API로 대체 구현 가능한가?",
+                                                             "별도 사용 SDK나 외부 라이브러리 의존 없이 독립적으로 빌드/설치 가능한가?"
+                                                         ],
+                                           "solution":  "Android 표준 SDK 및 AndroidX Jetpack 컴포넌트만을 사용하는 경량화 독립 실행 구조 준수"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-MAIN-THREAD-BLOCKING",
+                                           "name":  "메인(UI) 스레드 I/O 블로킹 및 ANR 유발",
+                                           "description":  "네트워크, 파일 읽기/쓰기, 복잡한 연산을 메인 스레드에서 직접 실행하여 화면 멈춤(ANR)을 일으키는 패턴",
+                                           "checklist":  [
+                                                             "모든 I/O 및 백그라운드 작업을 Coroutine(Dispatchers.IO) 또는 Executor를 사용하였는가?",
+                                                             "UI 업데이트는 메인 스레드(Dispatchers.Main)에서만 안전하게 실행되는가?"
+                                                         ],
+                                           "solution":  "Kotlin Coroutines 및 LifecycleScope 기반 비동기 백그라운드 처리 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-ROOM-FLOW-RECURSION",
+                                           "name":  "Room DB Flow 관찰 중 내부 DB 갱신으로 인한 무한 재귀 루프",
+                                           "description":  "Room Flow(LiveData)를 수집하는 동일 코루틴 내에서 데이터를 갱신(update)하여 Flow가 재방출되고 무한 루프가 돌아 UI 프리징 및 CPU/DB 폭주를 일으키는 패턴",
+                                           "checklist":  [
+                                                             "Flow 수집 블록 내부에서 동일한 테이블을 다시 update/insert하고 있지 않은가?",
+                                                             "일회성 데이터 마이그레이션/업그레이드는 플래그나 독립 세션으로 1회만 실행하도록 격리하였는가?"
+                                                         ],
+                                           "solution":  "Flow 관찰 내부에서 조건부 DB 갱신 시 상태 플래그로 1회 격리하거나, Flow 관찰 스코프와 데이터 가공/보정 스코프를 명확히 분리"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-MLKIT-HIGHRES-OOM",
+                                           "name":  "고해상도 카메라 원본 이미지의 ML Kit 직접 전달로 인한 OOM 및 비정상 종료",
+                                           "description":  "12MP~50MP 카메라 원본 비트맵을 그대로 ML Kit에 전달하거나 인메모리로 디코딩하여 힙 메모리 초과(OOM) 및 네이티브 크래시(SIGSEGV/SIGABRT)가 발생하는 패턴",
+                                           "checklist":  [
+                                                             "카메라 원본 이미지를 ML Kit 전달 전 최대 1024px 수준으로 inSampleSize 다운샘플링하였는가?",
+                                                             "Bitmap Config를 ARGB_8888 대신 RGB_565 등으로 메모리를 절감하고 처리 후 recycle() 호출 및 try-catch(Throwable)로 방어하였는가?"
+                                                         ],
+                                           "solution":  "inSampleSize 및 inJustDecodeBounds를 통한 사전 크기 계산 후 최대 1024px 다운샘플링 및 예외를 Throwable 단위로 포획"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-BATCH-GEOCODING-BLOCK",
+                                           "name":  "대량 사진 역지오코딩 시 Geocoder 동기 반복 호출로 인한 타임아웃 및 서비스 먹통",
+                                           "description":  "수십~수백 장의 사진 위치(GPS)를 역지오코딩할 때 Geocoder.getFromLocation을 캐싱 없이 동기로 연속 호출하여 구글 플레이 서비스 응답 지연 및 ANR이 발생하는 패턴",
+                                           "checklist":  [
+                                                             "근접한 위경도(소수점 3자리 등)에 대해 인메모리 Geocoding Cache(ConcurrentHashMap 등)를 적용하였는가?",
+                                                             "네트워크 장애 또는 Geocoder 예외 시 앱이 멈추지 않고 기본 좌표나 null로 안전하게 폴백(Fallback) 처리되는가?"
+                                                         ],
+                                           "solution":  "위경도 좌표 소수점 3자리 기준 인메모리 캐싱 적용 및 try-catch 기반 안전 폴백 처리"
+                                       },
+                                       {
+                                           "id":  "AP-COMPOSE-CANVAS-OVERFLOW-NOCLIP",
+                                           "name":  "Compose Canvas 및 벡터 드로잉의 경계 클리핑(clipToBounds/clipRect) 누락",
+                                           "description":  "Jetpack Compose Canvas에서 동심원(Radar circle), 패스, 그리드 등을 그릴 때 bounds 밖으로 오버플로우되어 상단 탭 바, 헤더 등 외부 UI 영역을 침범하여 그려지는 패턴",
+                                           "checklist":  [
+                                                             "Canvas를 감싸는 컨테이너에 `Modifier.clipToBounds()`를 명시하였는가?",
+                                                             "Canvas 드로잉 스코프 내에서 `clipRect { ... }`를 사용하여 size 경계 내로 드로잉을 제한하였는가?"
+                                                         ],
+                                           "solution":  "Canvas 및 부모 Box에 `Modifier.clipToBounds()`를 설정하고, Canvas 드로잉 블록을 `clipRect { ... }`로 감싸 경계 밖 오버플로우 원천 차단"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-IME-DIALOG-OBSCURATION",
+                                           "name":  "Jetpack Compose Dialog의 소프트 키보드(IME) 하단 가림 및 스크롤 불가",
+                                           "description":  "Compose Dialog에서 decorFitsSystemWindows 기본값(true) 및 고정 크기 지정 시, 소프트 키보드가 올라올 때 다이얼로그가 키보드 뒤에 가려져 하단 폼 및 확인/취소 버튼이 보이지 않고 스크롤도 되지 않는 패턴",
+                                           "checklist":  [
+                                                             "AndroidManifest.xml의 Activity에 android:windowSoftInputMode=\"adjustResize\"가 지정되어 있는가?",
+                                                             "DialogProperties에 decorFitsSystemWindows = false를 지정하고, 루트 Box에 Modifier.fillMaxSize().imePadding().systemBarsPadding()을 적용하였는가?",
+                                                             "다이얼로그 내부 스크롤 영역에 Modifier.weight(1f).verticalScroll(...)을 적용하여 축소된 영역 내에서 최하단 버튼 및 입력란까지 원활히 스크롤되는가?"
+                                                         ],
+                                           "solution":  "DialogProperties(decorFitsSystemWindows = false, usePlatformDefaultWidth = false) 설정 및 Box(Modifier.fillMaxSize().imePadding().systemBarsPadding()) 래퍼와 weight(1f) + verticalScroll 구조를 결합하여 키보드 가림 원천 방지 및 스크롤 보장"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-14-FGS-LOCATION-BG-CRASH",
+                                           "name":  "Android 14 (API 34) 백그라운드 브로드캐스트에서 Foreground Service Location 기동 시 SecurityException 크래시",
+                                           "description":  "Android 14부터 앱이 백그라운드 상태(UI가 화면에 없을 때)에서 블루투스 브로드캐스트 리시버 등을 통해 FOREGROUND_SERVICE_TYPE_LOCATION 서비스 기동 시, OS 보안 정책에 의해 SecurityException이 발생하고 ActivityThread에서 Unable to start service 런타임 크래시로 앱이 강제 종료되는 패턴",
+                                           "checklist":  [
+                                                             "AndroidManifest.xml에 ACCESS_BACKGROUND_LOCATION 및 FOREGROUND_SERVICE_DATA_SYNC 권한과 서비스 foregroundServiceType=\"location|dataSync\"를 복합 선언하였는가?",
+                                                             "Service startForeground 호출부에서 SecurityException 발생 시 dataSync 또는 일반 타입으로 동적 다운그레이드하는 안전 다단계 Fallback을 탑재하였는가?"
+                                                         ],
+                                           "solution":  "Service의 onStartCommand 내 startForeground 호출을 3단계 try-catch로 격리하여 1단계 LOCATION 시도 실패 시 2단계 DATA_SYNC, 3단계 일반 FGS로 동적 다운그레이드 처리하여 서비스 기동 크래시 100% 방어"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-DIARY-STEP-DUPLICATE-ACCUMULATION",
+                                           "name":  "랜덤 UUID 기반 RouteStep 생성 및 DB 병합 시 중복 데이터 무한 누적 패턴",
+                                           "description":  "다이어리 동기화 및 갱신 시 RouteStep에 새로운 random UUID를 부여하고, DB 병합 시 ID만으로 중복 판별(distinctBy)을 수행하여 앱 재시작/동기화마다 동일한 사진·경로 카드가 n배수로 무한 증식 누적되는 패턴",
+                                           "checklist":  [
+                                                             "RouteStep의 중복 여부를 단순 ID가 아닌 내용(공통 사진 URI, 동일 날짜/시간대/위치좌표, 동일 결제/주행/골프) 기반으로 지능형 병합(deduplicateRouteSteps)하도록 구현하였는가?",
+                                                             "앱 시작(cleanDuplicates) 시 기존 Room DB 내 엔터티들의 routeSteps에 잔존하는 중복 스텝들을 자동 탐지하여 1회 즉시 정제 및 영속 갱신하도록 조치하였는가?"
+                                                         ],
+                                           "solution":  "DailyRouteAggregator.deduplicateRouteSteps를 통해 사진 URI 중복, 시간대 및 장소 근접도를 종합 대조하여 단일 스텝으로 안전 병합하고, cleanDuplicates()에서 기존 DB 내의 routeSteps도 자동 마이그레이션 정제 처리"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-SLIP-BOTTOM-LAYOUT",
+                                           "name":  "라커룸/영수증 OCR 시 상단 우선 탐색으로 인한 최하단 구장명 및 비표준 날짜/시간 누락 패턴",
+                                           "description":  "영수증 헤더(상단 4줄 등)에만 골프장명이 있을 것이라 가정하거나, 구분자 없는 8자리 날짜(YYYYMMDD) 및 코스명에 시간이 결합된 포맷(Hill 0651), \u0027고객님\u0027 호칭 뒤의 플레이어명을 고려하지 않아 일반 사진으로 오인되거나 파싱이 누락되는 패턴",
+                                           "checklist":  [
+                                                             "상단뿐 아니라 최하단 감사/환영 안내문구(\u0027...을 방문해 주셔서 감사합니다\u0027 등)에서도 구장명을 역탐색하도록 지원하였는가?",
+                                                             "20260907 등 구분자 없는 8자리 숫자(YYYYMMDD) 및 \u0027Hill 0651\u0027 등 4자리 시간 결합 패턴을 파싱하는가?",
+                                                             "\u0027정선우 고객님\u0027에서 \u0027고객\u0027이 이름으로 오탐되지 않도록 정규식 및 예외 필터링을 적용하였는가?"
+                                                         ],
+                                           "solution":  "상단/하단 동시 탐색 및 하단 방문 감사/환영 정규식 추출기 탑재, 8자리 연속 날짜 포맷 지원, 코스 라인 시간(HHmm) 결합 파싱 및 호칭 오탐 방지 필터 적용"
+                                       },
+                                       {
+                                           "id":  "AP-COMPOSE-PROP-LOCAL-STATE-OUT-OF-SYNC",
+                                           "name":  "Compose Dialog 내부 local remember 상태가 부모 비동기 업데이트(Prop)와 동기화되지 않는 결함",
+                                           "description":  "다이얼로그 내부에서 var text by remember { mutableStateOf(prop) }로 초기화한 뒤, OCR 스캔 등 비동기 작업으로 부모 State가 갱신되어도 local remember 값이 자동 갱신되지 않아 화면에 미반영되거나 저장 시 이전 값으로 덮어씌워지는 패턴",
+                                           "checklist":  [
+                                                             "외부 비동기 작업(OCR 스캔, 네트워크 응답 등)으로 갱신되는 Prop에 대해 LaunchedEffect(prop)로 로컬 입력 상태를 동기화하였는가?",
+                                                             "다이얼로그를 닫았다 열지 않아도 실시간으로 추출된 값이 입력 폼에 즉시 채워지는가?"
+                                                         ],
+                                           "solution":  "LaunchedEffect(prop) 블록을 선언하여 부모 State 변경 시 로컬 MutableState 값을 즉시 갱신하도록 양방향/단방향 동기화 보장"
+                                       },
+                                       {
+                                           "id":  "AP-OCR-MOBILE-SCORECARD-MULTI-LINE-DOWNSAMPLE",
+                                           "name":  "모바일 스코어카드 OCR의 과도한 다운샘플링 텍스트 뭉개짐 및 줄바꿈 라벨 분리로 인한 수치 누락 패턴",
+                                           "description":  "스마트폰 세로 스크린샷(1080x2400 등)을 1024px로 다운샘플링하여 10개 열의 미세 폰트가 2~3픽셀로 뭉개져 테이블이 읽히지 않거나, 모바일 OCR 블록 분할로 인해 라벨(Dist, Tempo, Penalty)과 수치 행이 서로 다른 줄로 인식되어 단일 줄 정규식이 매칭되지 않는 패턴",
+                                           "checklist":  [
+                                                             "비트맵 다운샘플링 maxDimension을 2560px로 설정하고 RGB_565를 적용하여 텍스트 선명도 100%와 OOM 방지(5MB 이하)를 동시 달성하였는가?",
+                                                             "한국어 공백 불일치(걸음 수 vs 걸음수) 및 윈도우 탐색(±3줄)을 적용하였는가?",
+                                                             "라벨 라인 이후 1~2줄 내 인접 탐색 및 테이블 내 3자리 비거리/소수 템포 패턴 자동 감지 폴백을 탑재하였는가?"
+                                                         ],
+                                           "solution":  "maxDimension 2560px 상향 + RGB_565 설정 및 라벨 인접 줄 룩어헤드 + 비거리/템포/페널티/걸음수 고유 수치 패턴 기반 자율 감지 다단계 폴백 아키텍처 적용"
+                                       },
+                                       {
+                                           "id":  "AP-OCR-MOBILE-SCORECARD-DARK-BADGE-GRID-MISALIGNMENT",
+                                           "name":  "모바일 스코어카드 다크 테마/배지 인식 누락 및 2D 공간 슬롯 정렬 부재로 인한 스코어 매트릭스 파괴 패턴",
+                                           "description":  "다크 테마 스코어카드에서 배지(원/사각형) 색상 대비 부족으로 1~3개 홀이 미검출되거나 연속된 셀이 \u00275566\u0027 등으로 결합되어, 18홀 스코어 매트릭스가 누락되고 파 기준 점수로 오인되는 패턴",
+                                           "checklist":  [
+                                                             "저해상도 이미지(최대 치수 1600px 이하)에 대해 텍스트 인식률 향상을 위한 2x 선명 업스케일링을 탑재하였는가?",
+                                                             "다크 테마 연속 셀 결합 토큰(\u002754\u0027, \u00275566\u0027 등)을 각 자릿수별로 안전하게 자동 분해하였는가?",
+                                                             "상단 Hole 행의 centerX 기준 9개 2D 공간 슬롯을 매칭하고, 누락 홀에 코스 표준 Par 채움 및 Total 차이 분배 시 Par 오름차순(Par 3 우선)을 적용하여 실제 홀별 스코어를 100% 복원하였는가?"
+                                                         ],
+                                           "solution":  "저해상도 2x 업스케일링 + 결합 토큰 분해 + 2D 공간 슬롯 투영 및 Par 오름차순 차이 분배 알고리즘 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-GPS-GETLASTKNOWNLOCATION-STALE",
+                                           "name":  "백그라운드 주행 추적 시 getLastKnownLocation 정적 캐시 반복 조회로 인한 0km 계산 패턴",
+                                           "description":  "백그라운드 FGS에서 GPS 하드웨어를 구동하는 실시간 LocationListener(requestLocationUpdates) 없이 getLastKnownLocation만 주기적으로 호출하여, 차량이 주행 중임에도 출발지 정적 캐시 좌표만 반복 수집되어 이동 거리가 0km(또는 최소 기본값 1km)로 계산되는 패턴",
+                                           "checklist":  [
+                                                             "서비스 기동 시 LocationListener를 통해 GPS_PROVIDER, PASSIVE_PROVIDER(내비게이션 연동), NETWORK_PROVIDER에 requestLocationUpdates를 등록하였는가?",
+                                                             "일정 거리(30~50m) 이상 이동 시 실시간으로 waypoint를 누적하고 알림 배너를 갱신하도록 구현하였는가?",
+                                                             "서비스 종료(onDestroy, stopTracking) 시 removeUpdates를 안전하게 호출하여 배터리 누수를 방지하였는가?"
+                                                         ],
+                                           "solution":  "LocationListener를 통한 GPS/PASSIVE/NETWORK 3중 공급자 실시간 위치 수신 및 40m 이동 감지 궤적 누적 파이프라인 구축, 최신 수신 좌표(latestLocation) 우선 활용 아키텍처 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-SCREENSHOT-FALLBACK-CONTAMINATION",
+                                           "name":  "스크린샷의 일상 다이어리 무분별 유입 및 EXIF 부재 시 특정 지역 강제 하드코딩 왜곡 패턴",
+                                           "description":  "기기 MediaStore 쿼리 시 스크린샷 여부를 필터링하지 않아 화면 캡처 이미지가 일상 다이어리에 무분별하게 추가되고, EXIF GPS 메타데이터가 없는 사진에 대해 특정 지역(예: 서울 방이동)을 fallback으로 하드코딩하여 사용자의 실제 이동 경로 및 일상 기록을 심각하게 왜곡시키는 패턴",
+                                           "checklist":  [
+                                                             "MediaStore 쿼리 및 사진 스캔 시 경로(Screenshots, 스크린샷, 화면캡처) 및 파일명/플래그 기반 스크린샷 필터링이 적용되어 있는가?",
+                                                             "EXIF GPS 정보가 없는 사진에 대해 특정 지역 좌표나 주소를 강제 폴백하지 않고 null 또는 안전한 기본 라벨(\u0027사진 기록\u0027)로 처리하는가?",
+                                                             "기존 DB 내 오염된 스크린샷 및 하드코딩 지역명이 존재할 때 자가 치유(cleanDuplicates) 루틴을 통해 자동 정제되는가?"
+                                                         ],
+                                           "solution":  "isScreenshot 다단계 판별 유틸리티로 캡처 이미지의 일상 기록 수집을 원천 차단하고, EXIF 위치 부재 시 null을 반환하며, cleanDuplicates()를 통해 기존 다이어리의 잔존 스크린샷과 비정상 위치명을 자동 정제"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-TABLE-MERGED-TOKEN-MISDETECTION",
+                                           "name":  "모바일 스코어카드 OCR 테이블 인접 홀 병합 토큰으로 인한 요약 스코어 오탐 및 홀 누락 결함",
+                                           "description":  "홀 선택선/가이드라인 등으로 인해 1-2번 홀이 공백 없이 단일 2자리 토큰(예: 54)으로 인식될 때, 테이블 내 Score 라인을 단일 요약 스코어로 오탐하거나(Score: 54), 단일 홀 파싱 정규식이 해당 토큰을 누락하여 9홀/18홀 스코어가 깨지고 총 타수가 엉뚱한 값으로 계산되는 패턴. 또한 토큰 분리 시 마지막 Total 열의 소계(예: 44, 48 등)까지 무분별하게 분리하여 홀 개수가 11개로 초과되는 부작용 방지",
+                                           "checklist":  [
+                                                             "Score 행 내 숫자가 3개 이상인 테이블 라인을 상단 요약 스코어 정규식 매칭에서 완전 배제하였는가?",
+                                                             "1번 홀 선택선 등으로 첫 번째 토큰만 뭉친 경우(8~9개 토큰 중 첫 토큰이 2자리)에만 첫 토큰을 분리하고, 10번째 Total 열(소계 30~55)은 분리하지 않도록 보호하였는가?",
+                                                             "전/후반 9홀 Total 합산(subTotalSum) 및 18홀 스코어 합산(holeScoreSum)을 최우선 스코어로 확정하도록 설계하였는가?"
+                                                         ],
+                                           "solution":  "Score 테이블 라인 요약 매칭 제외 + 8~9개 토큰 시 첫 토큰 조건부 분리 복원 + 전/후반 소계 및 18홀 합산 최우선 스코어 확정 3중 파이프라인 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-SCORECARD-PAR-MISDETECTION-AND-FRAGMENTATION",
+                                           "name":  "스코어카드 OCR Par 행 오탐(총타수/퍼트수 36타) 및 홀 선택선 파편화로 인한 후반홀 누락 결함",
+                                           "description":  "스코어카드 파싱 시 Score 라벨 인식 실패 후 폴백 루프에서 합계 조건(합=36)을 만족하는 Par 행을 스코어나 퍼트로 오인 채택하여 총타수/퍼트수가 36으로 왜곡되고, 1번 홀 선택 박스 등으로 1번 홀 토큰이 분리되어 8개 홀만 남거나 후반 코스가 누락되어 전반 9홀만 표시되는 패턴",
+                                           "checklist":  [
+                                                             "Par/파/Hole/홀/Putt/퍼트 라인을 스코어 및 퍼트 폴백 루프에서 완전 배제하였는가?",
+                                                             "8개 홀 + Total 토큰 시 수학적 역산(Total - sum8)으로 누락된 홀 스코어를 자율 복원하였는가?",
+                                                             "18홀 경기에서 58타 미만(36타 등)의 값을 총 타수로 채택하지 않도록 가드레일을 설정하였는가?",
+                                                             "mergeResults에서 18홀과 정상 스코어를 가진 파싱 결과를 최우선 채택하도록 품질 기반 병합을 구현하였는가?"
+                                                         ],
+                                           "solution":  "Par 행 폴백 필터링 가드레일 + 수학적 역산(Mathematical Deduction) 복원 + 18홀 정상 스코어 확정 가드레일 + 품질 기반 mergeResults 4중 방어 파이프라인 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-NOTIFICATION-DUPLICATE-AND-MISCLASSIFICATION",
+                                           "name":  "알림 리스너 연속 이벤트 수신으로 인한 거래 내역 중복 등록 및 금융 알림 키워드 삭제로 인한 카테고리 오분류 패턴",
+                                           "description":  "Android NotificationListenerService에서 알림 업데이트 시 동일 알림이 밀리초 단위로 2회 이상 연속 발송되어 DB에 중복 저장되고, 나노초 타임스탬프 차이로 정확 매칭이 실패하며, 텍스트 정제 시 \u0027출금\u0027 등의 키워드를 삭제하여 규칙 엔진이 이체/출금 카테고리를 찾지 못하고 \u0027기타\u0027로 오분류하는 패턴",
+                                           "checklist":  [
+                                                             "알림 리스너 서비스 단에서 10초 이내 동일 패키지/제목/내용 수신 차단 디바운스 인메모리 캐시를 적용하였는가?",
+                                                             "DB 저장 레벨에서 ±5분 윈도우 기반 동일 금액 및 가맹점 중복 거래 탐지 가드레일을 적용하였는가?",
+                                                             "알림 본문의 정밀 날짜/시간(MM/dd HH:mm)을 파싱하여 타임스탬프를 통일하였는가?",
+                                                             "은행 이체/출금 알림 시 수취인을 \u0027수취인 (출금)\u0027으로 정제하고 카테고리를 TRANSFER로 우선 배정하였는가?",
+                                                             "기존 DB에 오염된 중복 데이터 및 기타 오분류 건을 cleanDuplicates()에서 자동 탐지하여 1건만 남기고 정제/교정하는가?"
+                                                         ],
+                                           "solution":  "알림 리스너 10초 디바운스 캐시 + 은행 이체 전용 파서(TRANSFER 카테고리 직결) + DB ±5분 윈도우 중복 차단 + UI 레벨 3중 distinctBy + cleanDuplicates 자가 치유 파이프라인 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-FINANCE-ACCOUNT-MASKING-AND-RECURRING-DEFERRED",
+                                           "name":  "금융 문자/알림 잔액 오인 및 계좌번호 평문 노출과 공휴일 이연 결제일 정기지출 누락 결함",
+                                           "description":  "금융 문자/알림 파싱 시 잔액과 거래금액 혼재 시 잔액을 거래금액으로 오추출하거나 계좌번호가 가맹점명(제목)으로 적나라하게 노출되는 문제, 본인 명의 카드 승인 문자가 본인 계좌간 이체로 오인되어 지출에서 누락되는 문제, 그리고 전월 결제일이 주말/공휴일이라 익영업일로 1~3일 이연된 정기결제 건을 단순 날짜 불일치로 정기지출에서 누락시키는 결함",
+                                           "checklist":  [
+                                                             "금융 문자/알림 파싱 시 \u0027잔액\u0027 표기를 선분리하여 실제 결제/거래 금액을 정확히 추출하였는가?",
+                                                             "계좌번호 패턴을 가맹점명에서 은닉하고 사전 등록된 계좌 정보와 매칭하여 은행계좌 뱃지([은행명 · 별칭])로 치환하였는가?",
+                                                             "본인 이름이 포함된 카드 승인 문자(\u0027승인 정선우\u0027)가 본인 계좌간 이체(지출 제외)로 오분류되지 않도록 방어하였는가?",
+                                                             "전월 동일 금액 대비 결제일이 동일하거나 주말/공휴일 이연(1~3일)된 케이스를 자동 보정하여 정기지출 뱃지 및 모아보기를 제공하는가?"
+                                                         ],
+                                           "solution":  "잔액 키워드 선제거 후 순수 거래금액 추출 + 계좌 관리 레포지토리(UserAccountPreferences) 패턴 매칭 기반 뱃지 변환 + 신용카드 승인 제외 가드레일 + RecurringExpenseDetector 주말/공휴일 1~3일 결제일 이연 보정 알고리즘 적용"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-HISTORICAL-SYNC-MEDIA-TRUNCATION-AND-DOUBLE-PASS-BOTTLENECK",
+                                           "name":  "과거 미디어 동기화 시 과소 상한선(limit) 및 최신순 정렬에 의한 스코어카드 누락과 2-Pass OCR 비효율 병목 결함",
+                                           "description":  "미디어 쿼리 시 limit=25~60 등 과소한 상한선과 최신순(DATE_ADDED DESC) 정렬로 인해 과거 스코어카드 사진이 일상 사진들에 밀려 쿼리에서 잘려나가고, 라커룸과 스코어카드를 각각 별도 2-Pass로 중복 OCR을 실행하여 극심한 속도 저하 및 백그라운드 코루틴 지연/취소가 발생하는 패턴",
+                                           "checklist":  [
+                                                             "과거 골프 후보 미디어 쿼리 시 limit을 200 이상으로 넉넉히 확보하고 키워드/스크린샷/다운로드/카메라 3-Tier 지능형 우선순위 수집을 적용하였는가?",
+                                                             "1회 비트맵 디코딩 및 ML Kit OCR 추출 텍스트를 재활용하여 스코어카드와 라커룸 안내지를 단일 패스(1-Pass)로 고속 동시 판별하도록 최적화하였는가?",
+                                                             "유효한 스코어가 존재하는 실제 라운드가 클럽명 미확정 상태(\u0027필드 골프장\u0027)라는 이유로 cleanUpDummyRounds()에서 영구 삭제되는 부작용을 가드레일로 방어하였는가?"
+                                                         ],
+                                           "solution":  "3-Tier 지능형 후보 큐레이션(limit=200+) + 단일 패스(1-Pass) 고속 통합 OCR 분석 파이프라인 + 유효 스코어카드 영구 보존 가드레일 결합"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-CANDIDATE-FILE-NAME-FILTERING-FALLACY",
+                                           "name":  "갤러리 미디어 OCR 스캔 시 파일명/경로 키워드 필터링 오류 및 전수 텍스트 지문 프로브 부재 결함",
+                                           "description":  "스마트폰 카메라 촬영 원본(20260911_...)이나 스크린샷(Screenshot_...)은 파일명이나 폴더 경로에 \u0027golf\u0027, \u0027score\u0027 등의 키워드가 전혀 존재하지 않음에도, 파일명/경로 문자열 매칭으로 우선순위를 매기거나 후보를 잘라내어 실제 종이/모바일 스코어카드가 OCR 분석 대상에서 원천 누락되고, 대량 사진 OCR 시 무거운 정밀 파이프라인을 전수 적용하려다 지연을 우려해 자의적 limit으로 과거 기록 동기화가 실패하는 패턴",
+                                           "checklist":  [
+                                                             "카메라 촬영 및 스크린샷 이미지의 파일명/경로에 골프 키워드가 없으므로 문자열 필터링을 전면 배제하였는가?",
+                                                             "기간 내 사진을 메타데이터 크기 필터(400px 이상, 20KB 이상)만 거쳐 누락 없이 수집하였는가?",
+                                                             "경량 비트맵(1024px) 기반 \u0027Fast OCR Probe(~50ms)\u0027를 통해 비-골프 사진(95%)을 0.05초 만에 즉시 패스하도록 구현하였는가?",
+                                                             "골프 지문이 검출된 유력 사진에 한해서만 2560px 2D 공간 복원 및 18홀 정밀 파싱을 실행하도록 2단계 파이프라인(Two-Stage Pipeline)을 구축하였는가?",
+                                                             "사진 분석 진행률과 발견 건수가 실시간으로 사용자 UI에 통보되도록 onProgress 콜백을 연동하였는가?"
+                                                         ],
+                                           "solution":  "파일명 키워드 필터링 전면 폐기 + 400px 메타데이터 컷 전수 수집 + Two-Stage Fast Fingerprint OCR Pipeline(1단계 50ms 지문 판별 / 2단계 2560px 정밀 파싱) + 실시간 진행률 피드백 콜백 결합"
+                                       },
+                                       {
+                                           "id":  "AP-COROUTINE-FLOW-INVARIANT-VIOLATION-CATCH-DROP",
+                                           "name":  "Flow 빌더 내 자식 코루틴/withContext emit 호출로 인한 Flow Invariant 위반 및 runCatching 조용히 삼킴 결함",
+                                           "description":  "flow { ... } 빌더 내부에서 withContext(Dispatchers.IO)나 자식 코루틴/비동기 콜백에서 emit()을 호출할 때 Kotlin Flow의 Context Preservation 가드레일(checkContext)에 의해 즉시 IllegalStateException: Flow invariant is violated가 발생하며, 이를 감싼 runCatching이 예외를 조용히 삼켜버려 배치 루프나 데이터 처리가 도중에 원인 불명으로 중단되는 패턴",
+                                           "checklist":  [
+                                                             "flow { ... } 블록 내에서 withContext나 다른 스레드/코루틴의 콜백으로부터 emit을 호출하고 있지 않은가?",
+                                                             "비동기 콜백이나 자식 코루틴에서 실시간 진행률이나 이벤트를 방출해야 할 경우 channelFlow { ... }와 send()를 사용하였는가?",
+                                                             "runCatching으로 감싼 배치/동기화 로직에서 onFailure를 통해 실패 원인 로그를 명확히 남기고 있는가?"
+                                                         ],
+                                           "solution":  "flow { ... } 대신 channelFlow { ... } 및 send()를 사용하고, runCatching에 onFailure 로깅을 필수 결합하여 Context Preservation 위반 원천 방지 및 투명한 에러 추적 보장"
+                                       },
+                                       {
+                                           "id":  "AP-OCR-MEDICAL-RECEIPT-FALSE-POSITIVE",
+                                           "name":  "의료/일반 영수증(외래 진료비, 계산서 등)의 골프 스코어카드/라운드 오탐 및 비정상 타수·코스명 허위 등록 결함",
+                                           "description":  "진료비/약제비 영수증 상의 \u0027합계\u0027, \u0027정산\u0027, \u0027안내서\u0027 등의 일반 단어를 골프 지문으로 오인하고, 비골프 단어(\u0027외래\u0027)를 코스명으로, 항목 금액/숫자를 39타 등의 비정상 골프 스코어로 등록하는 결함",
+                                           "checklist":  [
+                                                             "진료비, 계산서, 영수증, 외래, 환자, 처방, 약국, 병원, 급여, 비급여 등 의료/영수증 네거티브 가드레일(MEDICAL_AND_RECEIPT_NEGATIVES)을 즉시 적용하였는가?",
+                                                             "골프 지문 매칭 시 \u0027SCORE\u0027, \u0027PAR\u0027, \u0027HOLE\u0027, \u0027PUTT\u0027 등 찐 골프 핵심 키워드가 최소 1개 이상 필수 포함되도록 제한하였는가?",
+                                                             "9홀 경기(27~72타) 및 18홀 경기(54~144타)에 대한 유효 타수 및 최소 홀수(8홀 이상) 검증을 엄격히 적용하였는가?",
+                                                             "기존 DB에 오탐되어 저장된 가짜 의료 영수증 라운드를 cleanUpDummyRounds에서 자동 탐색하여 영구 삭제하는가?"
+                                                         ],
+                                           "solution":  "의료/영수증 네거티브 키워드 필터 + 골프 핵심 지문 필수화 + 유효 홀수/타수 엄격 검증 + DB 자가 치유 청소 파이프라인 결합"
+                                       },
+                                       {
+                                           "id":  "AP-ROOM-FLOW-FIRST-DEADLOCK-AND-MISSING-PROGRESS",
+                                           "name":  "단발성 Room DB 조회 시 Flow.first() 호출로 인한 블로킹/데드락 및 대량 엔트리 연속 I/O 시 실시간 진행률 부재 결함",
+                                           "description":  "단발성 데이터 조회가 필요한 배치/동기화 유스케이스에서 Room의 Flow.first()를 호출할 경우 백그라운드 스레드 및 트랜잭션 경합으로 인해 SQLite 락이 걸려 코루틴이 영원히 멈추는(Hang) 현상이 발생하고, 수십 개 엔트리를 단건 루프로 연속 insert할 때 실시간 진행률(Progress) 방출 및 yield() 스케줄링이 없어 사용자가 무한 멈춤으로 오인하는 결함",
+                                           "checklist":  [
+                                                             "단발성 Room DB 조회 시 Flow.first() 대신 suspend fun ...List(): List\u003c...\u003e 형태의 Direct Suspend Query를 사용하였는가?",
+                                                             "다이어리/로그 일괄 생성 및 DB 삽입 루프에서 진행률(current/total)을 실시간으로 UI에 방출하고 있는가?",
+                                                             "루프마다 kotlinx.coroutines.yield()를 호출하여 메인 스레드 렌더링 및 디스패처 양보를 보장하였는가?"
+                                                         ],
+                                           "solution":  "Direct Suspend DAO Query 전환(데드락 원천 배제) + 세분화된 진행률(Progress) 방출 + 코루틴 yield() 결합"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-DATE-CORRUPTION-AND-FRAGMENTED-SCORECARD",
+                                           "name":  "스코어카드 OCR 1자리 일자 오매칭(9.11 -\u003e 9.01) 및 9홀 조각 다중 라운드 분산 등록 결함",
+                                           "description":  "정규식에서 2자리 일자보다 1자리 일자가 우선 매칭되거나 요일/시간 분리가 미흡하여 2026.09.11이 2026.09.01로 왜곡되고, 18홀 스코어카드 검증 없이 9홀 불완전 조각(42타, 50타)을 단독 라운드로 생성하여 동일 라운드가 여러 날짜로 파편화되는 결함",
+                                           "checklist":  [
+                                                             "\\b(20\\d{2})[-./년\\s]+(0[1-9]|1[0-2]|[1-9])[-./월\\s]+(0[1-9]|[12]\\d|3[01]|[1-9]) 및 8자리 날짜 지원으로 2자리 일자가 우선 매칭되는가?",
+                                                             "18홀 완주 기준(54~144타 또는 14홀 이상) 미달 스코어카드의 단독 라운드 자동 등록을 원천 차단하였는가?",
+                                                             "스코어카드 이미지가 라커룸 전표로 오탐되어 타수 없는 빈 라운드로 등록되지 않도록 차단하였는가?",
+                                                             "기존 DB에 분산된 동일 구장 9홀 조각들을 cleanUpDummyRounds에서 단일 18홀 라운드로 자가 치유(Self-Healing)하는가?"
+                                                         ],
+                                           "solution":  "2자리 일자 우선 정규식 + 사진 타임스탬프 교차 검증 + 18홀 완주(54..144타) 필수 가드레일 + DB 자가 치유 파이프라인 결합"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-OCR-MULTI-DIGIT-TOKEN-AND-PAR-SLOT-CORRUPTION",
+                                           "name":  "스코어카드 OCR 다자리 결합 토큰(655, 64) 누락 및 홀 번호 결합(12)에 의한 슬롯 좌표 왜곡 결함",
+                                           "description":  "다크 테마나 좁은 배지 간격으로 인해 홀 번호 1,2가 \u002712\u0027로 결합되어 슬롯 기준좌표가 8스텝 뒤틀려 스코어가 엉뚱한 홀에 덮여씌워지고, 다자리로 붙은 스코어(\u0027655\u0027, \u002764\u0027)가 단일 숫자 필터에서 통째로 탈락하며, 버디 배지 명도 대비 부족으로 누락된 단일 홀 스코어가 수학적 역산 없이 왜곡되어 버디/벌타 집계가 틀어지는 패턴",
+                                           "checklist":  [
+                                                             "Par 행에서 9개 숫자가 온전히 검출되었을 때 Par의 X좌표를 슬롯 센터로 우선 고정하여 슬롯 왜곡을 원천 차단하였는가?",
+                                                             "2~4자리 결합 숫자 토큰을 문자 너비 기준으로 균등 분해(CandidateScore)하여 각 홀 슬롯에 정상 배정하였는가?",
+                                                             "단 1개 홀만 누락되고 명시적 총합(explicitTotal)이 존재할 때 수학적 역산(explicitTotal - currentSum)으로 100% 확정 복원하였는가?",
+                                                             "골프장별 표준 코스 파 매핑(knownCourseParsMap)을 구비하여 Par 인식 누락 시에도 실제 코스 파를 정확히 매핑하였는가?",
+                                                             "기존 DB에 오집계된 라운드를 cleanUpDummyRounds/normalizeExistingRoundsOnce에서 자가 치유(Self-Healing)하는가?"
+                                                         ],
+                                           "solution":  "Par 9개 검출 좌표 최우선 슬롯 센터화 + 다자리 토큰 너비 기반 분해 슬롯 배정 + 단일 누락 홀 수학적 역산 복원 + 표준 코스 파 매핑 + DB 자가 치유 파이프라인 결합"
+                                       },
+                                       {
+                                           "id":  "AP-OCR-MOBILE-APP-UI-TEXT-CORRUPTION",
+                                           "name":  "모바일 앱 스크린샷 OCR 시 상하단 UI 버튼 텍스트(FIELD, 기록 삭제, 저장하기 등)의 구장/코스명 오탐 및 동선 더미 문자열 유입 결함",
+                                           "description":  "골프 앱 스크린샷 OCR 시 상하단에 위치한 모바일 앱 내비게이션 및 액션 버튼 텍스트(\u0027라운드 상세 기록 FIELD\u0027, \u0027기록 삭제 취소 저장하기\u0027 등)를 골프장명 또는 코스명으로 오채택하고 접미사(\u0027CC\u0027, \u0027GC\u0027)를 무분별하게 덧붙여 다이어리 타이틀을 왜곡하며, 위치 메타데이터가 없는 사진의 기본 라벨(\u0027사진 기록\u0027)이 이동 동선 요약 체인(movementSummary)에 침투하고, 골프장 라운드가 존재함에도 주행거리가 0.0km로 방치되는 패턴",
+                                           "checklist":  [
+                                                             "모바일 앱 UI 버튼 및 내비게이션 단어(FIELD, 기록 삭제, 취소, 저장하기, 라운드 상세, 코스선택, 스코어입력, 공유 등)를 블랙리스트로 격리하여 구장/코스명 후보에서 원천 차단하였는가?",
+                                                             "추출된 텍스트 뒤에 무조건 CC/GC 접미사를 붙이지 않고 sanitizeClubName() 및 isRealGolfClub()으로 실제 골프장 명칭 여부를 엄격히 검증하였는가?",
+                                                             "위치 정보가 없는 사진의 플레이스홀더(\u0027사진 기록\u0027)를 distinctPlaces 및 동선 체인(movementSummary)에서 완전 배제하였는가?",
+                                                             "골프 라운드가 확정된 날에 GPS/차계부 주행 기록이 0km인 경우 구장별 표준 왕복 거리(120~160km)를 자동 연동(Fallback)하였는가?",
+                                                             "기존 DB에 오염된 타이틀(기록 삭제, FIELD, 사진 기록 일정 등)을 cleanDuplicates 및 ViewModel에서 감지하여 자가 치유(Self-Healing)하는가?"
+                                                         ],
+                                           "solution":  "MOBILE_APP_UI_KEYWORDS 블랙리스트 가드레일 + sanitizeClubName/isRealGolfClub 이중 살균 + 동선 체인 내 더미 장소 배제 + GolfCourseDistanceUtils 표준 왕복거리 자동 폴백 연동 + DB 레거시 오염 엔트리 자가 치유(Self-Healing) 엔진 결합"
+                                       },
+                                       {
+                                           "id":  "AP-HYBRID-SCRAPER-ZERO-PRICE-AND-GEO-COLLISION",
+                                           "name":  "멀티 플랫폼 가격 오름차순 정렬 시 0원(현장가/미표기) 슬롯 최상단 독점 및 시/도 미검증 부분문자열 구장 매칭 왜곡 패턴",
+                                           "description":  "외부 예약 API(SBS골프 등)에서 일부 구장 슬롯이 모든 요금 필드를 0(현장가/문의)으로 반환할 때 단순 오름차순(a.price - b.price) 정렬을 수행하여 수백 건의 0원 슬롯이 최상단 페이지를 전부 독점해 정상 유료 데이터를 가리고, 구장명 부분문자열(includes) 매칭 시 시/도 권역 호환성을 검증하지 않아 타 지역 동명 구장(해비치제주 -> 남양주 해비치 18.5km, 익산 포세븐 금강 -> 여주 금강CC 48km)으로 오매칭되어 거리 필터가 무력화되는 패턴",
+                                           "checklist":  [
+                                                             "다중 요금 필드 중 0보다 큰 첫 유효 금액을 우선 파싱하고, 동일 구장/일자 타 플랫폼 유효 가격으로 교차 보정(backfillZeroPrices)한 뒤 미표기(price <= 0) 슬롯의 상단 노출을 원천 차단하였는가?",
+                                                             "마스터 DB 내 주소는 존재하나 거리가 -1.0인 구장에 대해 주소 기반 좌표 및 하버사인(Haversine) 직선거리를 자동 보강(enrichMasterCourses)하였는가?",
+                                                             "구장명 매칭 시 시/도 권역 호환성(areBucketsCompatible)을 대조하고 비공개 구장(이천(비공개명문) 등)은 거리 미적용(-1.0)으로 보호하였는가?"
+                                                         ],
+                                           "solution":  "다중 요금 필드 양수(>0) 우선 파싱 + 타 플랫폼 교차 가격 보정(backfillZeroPrices) 및 0원 필터링 + 마스터 DB 주소 기반 거리 자동 보강 + 시/도 권역 호환성 검증 매칭 엔진 결합"
+                                       },
+                                       {
+                                           "id":  "AP-OCR-WEB-REVIEW-LIST-FALSE-POSITIVE",
+                                           "name":  "골프 부킹 웹사이트 이용후기/목록 캡처 화면의 라커룸 전표·스코어카드 오탐 및 가짜 필드 라운드 생성 패턴",
+                                           "description":  "골프 예약/커뮤니티 웹사이트(예: xgolf.com 최근 이용후기 게시판) 캡처 이미지에서 다수 구장명 중 하나(아리지 등)가 매칭되고, 구장명 숫자('88')나 지명 내 글자('남여주'의 '남')가 단독 라커번호로 오인되며, 후기 문구('코스 관리 잘 되어있고 캐디님도 좋았습니다')에서 '관리'가 코스명, '캐디'가 플레이어명으로 추출되어 라커룸 전표(isLockerSlip = true)로 통과되거나 일반 사진만으로 골프 필드 라운드가 생성되는 패턴",
+                                           "checklist":  [
+                                                             "웹/후기/부킹 보드 네거티브 키워드(이용후기, 총평점, 개인만족도, 등록일자, 추천순, XGOLF 등), 별점(★9.0) 다중 출현, 또는 한 이미지 내 서로 다른 골프장 2개 이상 검출 시 라커 전표 및 스코어카드 판정을 즉시 차단하였는가?",
+                                                             "라커 번호 추출 시 명시적 라커 라벨(락카/라커/LOCKER/입장번호) 또는 괄호 성별 표기((남)/(여))를 필수로 요구하여 지명('남여주') 및 구장 숫자('88', '72') 오탐을 원천 차단하였는가?",
+                                                             "코스명 추출 시 콜론(:) 구분자를 요구하고 후기 서술어('관리', '상태', '만족') 및 직함('캐디', '프로', '매니저')을 플레이어명에서 배제하였는가?",
+                                                             "골프 필드 기록(GolfRound)은 오직 진성 라커룸 전표(isLockerSlip) 또는 진성 스코어카드(isGenuineScorecardResult)가 확인될 때만 생성하고, 확정된 라운드 날짜의 실제 카메라 촬영 사진(!스크린샷)만 현장 사진으로 첨부되도록 격리하였는가?"
+                                                         ],
+                                           "solution":  "다중 구장/별점/이용후기 보드 네거티브 가드레일 + 명시적 라커/스코어카드 구조 검증(isGenuineScorecardResult & 엄격 isLockerSlip) + 확정 라운드 날짜 카메라 사진 조건부 첨부 + 기존 오탐 DB 레코드 자가 치유(Self-Healing) 파이프라인 적용"
+                                       },
+                                       {
+                                           "id":  "AP-COMPOSE-M3-SURFACE-ONCLICK-48DP-DISTORTION",
+                                           "name":  "Material 3 Surface(onClick = ...)의 48dp 최소 터치 영역 강제 확장으로 인한 칩 줄간격 벌어짐 및 짧은 글자 좌우 정렬 틀어짐 패턴",
+                                           "description":  "Jetpack Compose Material 3에서 Surface(onClick = ...)는 내부적으로 minimumInteractiveComponentSize(48.dp x 48.dp)를 강제 적용하여, 26~32dp 높이의 소형 필터 칩에 사용 시 상하 16~22dp의 거대한 빈 줄 간격이 생기고, 2글자 짧은 칩(쇼핑, 교통, 식비, 보험, 본인, 가족)은 시각적 가로폭(40dp)이 48dp보다 작아 박스 중앙에 배치되면서 좌측에 4dp 빈 여백이 발생해 줄 시작점 정렬이 안쪽으로 밀리는 왜곡이 발생하는 패턴",
+                                           "checklist":  [
+                                                             "소형 필터 칩 및 액션 버튼에서 Surface(onClick = ...) 대신 Box/Row + .height(30~36.dp) + .clip() + .background() + .border() + .clickable() 구조를 사용하여 48dp 강제 확장을 원천 제거하였는가?",
+                                                             "인라인 다단 필터 바(카테고리/사용자별)에서 좌측 라벨을 고정 너비(width(52.dp))로 스크롤 영역 바깥에 배치하여 모든 행의 첫 번째 칩 시작 X좌표가 수직으로 100% 일치하는가?",
+                                                             "팝업 필터 다이얼로그에서 들쭉날쭉한 FlowRow 대신 가로폭 100%에 맞춘 N열 균등 그리드(Modifier.weight(1f))를 적용하여 글자 수와 무관하게 좌우 폭과 열 정렬이 일관되게 유지되는가?"
+                                                         ],
+                                           "solution":  "Surface(onClick = ...) 대신 고정 높이(30~36.dp) Box/Row + clickable 기반 칩 컴포넌트(ExpenseInlineFilterChip)와 가로폭 100% N열 균등 그리드(ExpenseUniformFilterGrid, Modifier.weight(1f)) 및 고정폭 라벨 정렬 구조 적용"
+                                       },
+                                       {
+                                           "id":  "AP-CAPACITOR-UNBOUNDED-EUCKR-BRIDGE-STARVATION",
+                                           "name":  "Capacitor 백그라운드 대량 EUC-KR 바이너리(arraybuffer Base64) 연속 호출로 인한 브릿지 고갈 및 버튼·스크롤 먹통 패턴",
+                                           "description":  "수백 페이지(130개 구장 x 6페이지 = 780회)의 100KB EUC-KR HTML을 CapacitorHttp(responseType: arraybuffer)로 상한선 없이 연속 호출하면, 매 응답마다 135KB Base64 문자열이 webView.evaluateJavascript를 통해 안드로이드 메인 UI 스레드로 주입되고 JS 메인 스레드에서 atob() + 10만 회 charCodeAt 루프 + 정규식 파싱 + React 전체 리렌더링이 발생하여 버튼 클릭(onClick), requestAnimationFrame 모달 해제(runWithProcessing), 스크롤 제스처가 지연되거나 먹통이 되는 패턴",
+                                           "checklist":  [
+                                                             "백그라운드 자동 후기 수집 시 이미 최근 캐시된 구장은 건너뛰고 1회 실행당 수집 구장 수에 상한선(예: 20~25개)을 두었는가?",
+                                                             "자동 백그라운드 수집에서는 목록 페이지(평점 + 최근 5개 요약) 위주로 초고속 수집하고, 5개 전체 상세 본문은 사용자가 [최근후기]를 열거나 수동 갱신할 때 온디맨드로 조회하도록 최적화하였는가?",
+                                                             "runWithProcessing(z-[99999] 오버레이)에 이전 rAF 취소 및 최대 800ms 강제 해제 워치독(Failsafe Timeout)을 탑재하여 메인 스레드 부하 시에도 버튼 터치가 절대 잠기지 않도록 보호하였는가?"
+                                                         ],
+                                           "solution":  "네이티브 백그라운드 스레드 EUC-KR 디코딩(fetchHtmlDecoded) + 자동 후기 수집 캐시 우선 스킵 및 구장 수 상한선(Cap) 적용 + 청크 간 메인 스레드 Yield + runWithProcessing 강제 해제 워치독 결합"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-STICKY-KEEPALIVE-ZOMBIE-NOTIF",
+                                           "name":  "Android Foreground Keep-Alive 서비스의 START_STICKY 반환 및 포그라운드 상시 노출로 인한 알림바 무한 로딩(progress: -1) 고착 패턴",
+                                           "description":  "JS 백그라운드 수집 보호용 Foreground Service에서 START_STICKY를 반환하거나 포그라운드 상태에서도 상시 알림을 띄우고, 알림창을 내릴 때 발생하는 appStateChange(isActive: false)에서 progress: -1(무한 진행바)로 알림을 덮어쓴 뒤 복귀 시 해제하지 않거나 워치독 타임아웃이 없어 상단 알림바에 '백그라운드 수집 중' 알림이 영구 고착되는 패턴",
+                                           "checklist":  [
+                                                             "AutoCollectService에서 START_STICKY 대신 START_NOT_STICKY를 반환하고 intent == null인 OS 임의 재시작 시 즉시 안전 종료하도록 방어하였는가?",
+                                                             "AutoCollectService 내부에 Keep-Alive 최대 지속 시간(예: 90초) 워치독 타이머를 두어 JS 응답이 끊기더라도 좀비 알림이 영구 고착되지 않도록 자동 해제하는가?",
+                                                             "앱이 포그라운드(isActive: true)로 돌아오거나 수집이 종료될 때 불필요한 Keep-Alive 알림을 즉시 정리하도록 보장하였는가?"
+                                                         ],
+                                           "solution":  "AutoCollectService START_NOT_STICKY 전환 + 90초 자동 종료 워치독(Watchdog) 탑재 + 포그라운드 복귀 및 수집 완료 시 Keep-Alive 알림 즉시 해제 보장"
+                                       },
+                                       {
+                                           "id":  "AP-ANDROID-JAVA-REGEX-STACKOVERFLOW-UNCAUGHT-ERROR",
+                                           "name":  "Android 네이티브 플러그인 내 대용량 HTML 정규식((?is).*?) StackOverflowError(Throwable) 미포획으로 인한 Promise 무한 대기 및 유령 수집 상태 고착 패턴",
+                                           "description":  "Java/Android 워커 스레드에서 100KB 이상의 HTML 문자열에 재귀 역추적 정규식((?is)<script[^>]*>.*?</script> 등)을 실행하면 java.lang.StackOverflowError(Exception이 아닌 Error/Throwable)가 발생하며, catch (Exception e)로만 감싸두면 call.resolve()가 영영 호출되지 않아 JS 측 await Promise가 무한 대기(Pending)에 빠지고 수집 상태 플래그(isReviewCollectingRef)가 영구 잠기는 패턴",
+                                           "checklist":  [
+                                                             "Android 네이티브 플러그인의 비동기 워커 스레드에서 대용량 문자열에 (?is).*?와 같은 재귀 정규식 replaceAll 사용을 제거하고 원본 디코딩 문자열을 그대로 반환하였는가?",
+                                                             "네이티브 플러그인 메서드에서 catch (Exception e) 대신 반드시 catch (Throwable t)를 사용하여 StackOverflowError나 OutOfMemoryError 발생 시에도 call.resolve()가 100% 호출되도록 보장하였는가?",
+                                                             "JS 브릿지 호출부(fetchXgolfEucKrHtml)에도 Promise.race 기반 타임아웃(7초)을 이중으로 걸고, 사용자 미요청 시 앱 시작 자동 수집을 제거하며 수집 중에는 상단/탭 진행률 UI를 항상 투명하게 표시하는가?"
+                                                         ],
+                                           "solution":  "AutoCollectPlugin.fetchHtmlDecoded의 정규식 제거 + catch (Throwable t) 보장 + JS 측 7초 타임아웃 가드 + 앱 시작 시 미요청 자동 수집 제거 및 진행률 실시간 표시"
+                                       },
+                                       {
+                                           "id":  "AP-AND-EXPENSE-DELETE-STALE-AND-NAVERPAY-EXCLUSION",
+                                           "name":  "가계부 항목 삭제 시 비동기 스냅샷 경합 및 중복(쌍둥이) 레코드 부활로 인한 화면 미갱신, 그리고 특정 간편결제(네이버페이) 이력 유입 패턴",
+                                           "description":  "1) 삭제 시 metaVersionFlow 증가로 트리거된 비동기 recalculateFilteredTransactions()가 DB 삭제 완료 전의 구버전 allTransactions 스냅샷을 캡처해 최신 UI 상태를 덮어쓰거나, distinctBy 뒤에 숨어 있던 동일 거래의 쌍둥이 레코드(SMS/MMS/알림 중복 수신 건)가 단건 ID 삭제 직후 화면에 부활하여 삭제가 안 된 것처럼 보이는 현상. 2) 제외 대상인 '네이버페이' 내역이 파서·알림·직접입력·기존 DB를 통해 가계부 이력에 노출되는 현상.",
+                                           "checklist":  [
+                                                             "단건/다중 삭제 시 대상 ID뿐 아니라 동일 날짜·금액·가맹점(별칭 포함)의 쌍둥이 레코드까지 모두 찾아 삭제 서명(DAY_AMT_MER_...)에 등록하고 DB에서 동시 삭제하였는가?",
+                                                             "DB I/O 완료를 기다리지 않고 deletedTxIdsInSession 및 _uiState.update { computeFilteredUiState(...) }를 통해 인메모리 리스트와 통계를 즉시 재계산하여 화면이 0초 만에 리뉴얼되도록 보장하였는가?",
+                                                             "SmsParser, NotificationParser, ProcessTransactionUseCase, TransactionRepositoryImpl, ExpenseViewModel 전 구간에서 '네이버페이'(NAVERPAY, 네이버파이낸셜, Npay 포함) 항목을 원천 차단 및 정제하였는가?"
+                                                         ],
+                                           "solution":  "삭제 시 쌍둥이 레코드 동시 삭제 마킹 + deletedTxIdsInSession 및 원자적 _uiState.update 기반 즉시 재계산 + 전 파이프라인 네이버페이 원천 제외 필터 적용"
+                                       },
+                                       {
+                                           "id":  "AP-AND-EDGE-TO-EDGE-DOUBLE-TOP-INSET-AND-GESTURE-BAR-OVERLAP",
+                                           "name":  "Edge-to-Edge 환경에서 중첩 Scaffold/TopAppBar 이중 상단 인셋으로 인한 과도한 여백 및 하단 스와이프 홈 바의 탭 인디케이터 가림 패턴",
+                                           "description":  "1) enableEdgeToEdge()가 활성화된 루트 Scaffold가 기본 contentWindowInsets로 상단 statusBars 패딩을 적용한 상태에서, 내부 화면의 topBar(TopAppBarDefaults.windowInsets)가 소비되지 않은 statusBars 인셋을 한 번 더 중복 적용하고 Material3 TopAppBar가 64.dp 최소 높이를 강제하여 최상단 라인 주변 여백이 과도하게 넓어지는 현상. 2) 커스텀 bottomBar에 하단 여백이 부족(6.dp)하여 안드로이드 스와이프 조작 홈 바 핸들(하단 8~12.dp 영역)이 탭 명 하단의 색상 언더라인을 가리는 현상.",
+                                           "checklist":  [
+                                                             "루트 및 내부 Scaffold에 contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)를 명시하고, 루트 컨텐츠 영역에만 .statusBarsPadding()을 단 1회 적용하여 상단 이중 여백을 제거하였는가?",
+                                                             "기본 64.dp 높이를 강제하는 TopAppBar 대신 슬림한 AutoLogueCompactTopBar(vertical = 5.dp)를 사용하여 최상단 컬러 라인(TopMenuAccentBar)과 구분선(HairlineDivider) 사이의 불필요한 여백을 제거하였는가?",
+                                                             "하단 탭 패널(bottomBar)에 안드로이드 스와이프 조작 홈 바에 가려지지 않는 수준(bottomSafeMargin = 12.dp + 아이템 하단 3.dp = 총 15.dp)의 하단 여백을 부여하여 탭 하단 색상이 선명하게 노출되는가?"
+                                                         ],
+                                           "solution":  "WindowInsets 단일화(statusBarsPadding 1회 적용) + AutoLogueCompactTopBar 도입으로 상단 여백 축소 + 하단 탭 바에 스와이프 홈 바 회피용 적정 하단 여백(12.dp + 3.dp) 부여"
+                                       }
+                                   ],
+                       "document_artifact":  [
+                                                 {
+                                                     "id":  "AP-HWP-BOX-INNER-TRAILING-NEWLINE",
+                                                     "name":  "박스/컨테이너 내부 불필요한 후행 줄바꿈",
+                                                     "description":  "문서 조판 및 아티팩트 박스 요소 내부 하단에 공백 줄바꿈이 삽입되어 레이아웃이 어긋나거나 여백이 과도해지는 패턴",
+                                                     "checklist":  [
+                                                                       "박스 및 테이블 내부 텍스트의 끝부분 공백/개행 문자를 깔끔하게 제거하였는가?",
+                                                                       "렌더링 시 또는 아티팩트에서 레이아웃 오버플로우가 발생하지 않는지 확인하였는가?"
+                                                                   ],
+                                                     "solution":  "블록 및 텍스트 렌더링 시 후행 트레일링 개행 제거 및 정밀 조판 검수"
+                                                 },
+                                                 {
+                                                     "id":  "AP-HWP-TABLE-MOVEDOCEND-TRAILING-NEWLINE",
+                                                     "name":  "문서/테이블 종료 지점 트레일링 개행 누적",
+                                                     "description":  "테이블 추가 또는 문서 편집 시 문서 끝단(MoveDocEnd)으로 이동 시 불필요한 빈 줄이 계속 추가되는 패턴",
+                                                     "checklist":  [
+                                                                       "문서 끝 지점 이동 시 불필요한 개행 문자 삽입을 차단하였는가?",
+                                                                       "페이지 넘침 현상을 방지하였는가?"
+                                                                   ],
+                                                     "solution":  "문서 조작 루틴 완료 후 불필요한 빈 문단 정리 및 검수"
+                                                 },
+                                                 {
+                                                     "id":  "AP-TG-SAVED-MESSAGES-DIALOG-MATCH",
+                                                     "name":  "텔레그램 'Saved Messages' 대화방 이름과 내장 'me' 엔티티 혼동",
+                                                     "description":  "사용자의 대화 목록에 'Saved Messages'라는 이름의 별도 봇/채팅방(@MeanIt_Bot, ID: 1891538843)이 존재할 때 단순히 'me'로만 발송하면 실제 사용자가 보는 'Saved Messages' 대화방에 파일이 표시되지 않는 문제",
+                                                     "checklist":  [
+                                                                       "iter_dialogs()를 통해 사용자가 지칭한 정확한 대화방 이름('Saved Messages', ID: 1891538843)을 우선 매칭하였는가?",
+                                                                       "실제 대상 대화방으로 테스트 파일 및 메시지 첨부 전송을 검증하였는가?"
+                                                                   ],
+                                                     "solution":  "iter_dialogs()에서 dialog.name == 'Saved Messages' (ID: 1891538843 / @MeanIt_Bot) 엔티티를 우선 탐색하여 전송하도록 구성"
+                                                 },
+                                                 {
+                                                     "id":  "AP-MCP-KOREAN-LAW-ZERO-COST-AND-QUERY-TRAP",
+                                                     "name":  "korean-law-mcp 연동 시 외부 유료 LLM 쿼터(429) 의존, 법제처 판례 API 공백 AND 조건 0건 함정 및 동일 텔레그램 봇 토큰 경합",
+                                                     "description":  "1) 텔레그램 법률자문 봇을 외부 유료 LLM(Gemini API 등)에 의존하여 구현하면 무료 티어 쿼터 초과(429) 시 봇이 먹통이 되며, 2) 법제처 판례/해석례 API(search_decisions)는 공백으로 구분된 어절을 모두 AND 조건으로 처리하므로 일상 구어체 문장을 그대로 전달하면 [NOT_FOUND]가 반환되고, get_law_text에 jo 파라미터 없이 호출하면 본문 대신 목차만 반환되며, 3) Windows 시작프로그램의 레거시 봇(remoteBot 등)이 동일한 텔레그램 봇 토큰으로 폴링하면 getUpdates 경합으로 메시지가 유실되는 패턴",
+                                                     "checklist":  [
+                                                                       "외부 유료 LLM API 호출을 배제하고 korean-law-mcp(Node 24 런타임 바인딩)의 search_ai_law(자연어 시맨틱 검색), search_law + get_law_text(핵심 조문 지정 본문 추출), search_decisions + get_decision_text(법률 시소러스 압축 키워드 기반 판결요지 조회)를 병렬 오케스트레이션하였는가?",
+                                                                       "동일한 TELEGRAM_BOT_TOKEN을 점유하는 타 폴더/시작프로그램 프로세스(remoteBot 등)를 전수 조사하여 토큰 경합을 원천 분리하였는가?",
+                                                                       "법령 텍스트 내의 <개정 ...> 꺾쇠 및 [1] 대괄호가 텔레그램 파서와 충돌하지 않도록 HTML 이스케이프 후 안전한 HTML 태그(<b>, <code>)로 변환 전송하였는가?"
+                                                                   ],
+                                                     "solution":  "Node v24.17.0 기반 korean-law-mcp 직결 오케스트레이터(legalAdvisor.js) 및 60+ 법률 시소러스 매핑, 핵심 조문(jo) 본문 직출, Node 내장 fetch 기반 무의존성 텔레그램 Long Polling 서버를 구축하여 외부 유료 API 비용 0원으로 실시간 법률자문 구현"
+                                                 },
+                                                 {
+                                                     "id":  "AP-TG-SELF-SEND-NO-PUSH-NOTIFICATION",
+                                                     "name":  "텔레그램 본인 계정(User Session) 발송 시 푸시 알림 미발생 및 봇 폴링 충돌 방지",
+                                                     "description":  "사용자의 본인 텔레그램 계정 세션으로 메시지를 발송하면 텔레그램 정책상 '내가 보낸 메시지(오른쪽 말풍선)'로 처리되어 스마트폰/PC에서 푸시 알림이 울리지 않으며, 반대로 이미 getUpdates 폴링 중인 봇에 MTProto 봇 세션을 연결하면 폴링이 끊기는 문제",
+                                                     "checklist":  [
+                                                                       "수신 알림이 필요한 자동화 전송 시 본인 계정 대신 봇 계정(TELEGRAM_BOT_TOKEN, @myfirstailawbot)이 발신자가 되어 사용자(TELEGRAM_USER_ID=7973328866)에게 보내도록 구성하였는가?",
+                                                                       "실행 중인 봇의 getUpdates Long Polling과 충돌하지 않도록 무상태 HTTP Bot API(sendDocument / sendMessage, disable_notification=false)를 기본 전송 경로로 사용하였는가?"
+                                                                   ],
+                                                     "solution":  "BotFather에서 확보한 TELEGRAM_BOT_TOKEN으로 HTTP Bot API sendDocument(chat_id=7973328866)를 호출하여 'AI변호사' 봇이 사용자에게 직접 APK와 변경내용 요약을 보내도록 구성"
+                                                 },
+                                                 {
+                                                     "id":  "AP-TG-QUEUED-MESSAGES-BATCH-CONSOLIDATION",
+                                                     "name":  "Antigravity Queued Messages(대기열 메시지) 잔존 중 중간 완료 알림/산출물 조기 발송 패턴",
+                                                     "description":  "대화 세션의 .system_generated/messages/ (undelivered 디렉토리 및 read.json 미읽음 항목)에 사용자가 추가 입력해 둔 Queued Messages가 남아 있음에도, 에이전트 직접 호출(run_command)이나 Stop 훅에서 매 턴마다 개별 알림이나 중간 빌드 산출물을 쪼개서 발송하는 패턴",
+                                                     "checklist":  [
+                                                                       "CLI 직접 호출 시(--conversation-id 미지정 포함) 활성 transcript.jsonl 및 프로젝트 루트 빈도 매칭으로 정확한 대화 세션 폴더(brain/<id>)를 자동 해석하였는가?",
+                                                                       ".system_generated/messages/undelivered 및 read.json 대조를 통해 미처리 사용자 대기열 메시지(Queued Messages) 유무를 검사하였는가?",
+                                                                       "Queued Messages가 남아 있으면 발송을 보류하고 queued_batches에 요약과 산출물을 누적한 뒤, 모든 대기열 항목이 완료되었을 때 최신 산출물과 차수별 작업 요약을 통합하여 1회만 발송하도록 구현하였는가?"
+                                                                   ],
+                                                     "solution":  "resolve_conversation_dir 및 get_queued_user_messages로 대기열 잔존 여부를 판별하여, 대기 항목 존재 시 apk_upload_state.json의 queued_batches에 보류·누적하고, 대기열이 0개가 되는 최종 완료 시점에 pop_and_merge_queued_batch로 모든 작업 요약과 최신 산출물을 통합 발송"
+                                                 },
+                                                 {
+                                                     "id":  "AP-CV-PAPERCRAFT-LINEART-AND-PART-SEGMENTATION",
+                                                     "name":  "페이퍼토이/스퀴시북 흑백 도안 생성 시 단색 음영 먹통 현상, 홍보용 말풍선 유입 및 개별 파츠 중복 추출 패턴",
+                                                     "description":  "1) 컬러 완제품 사진을 단순 그레이스케일이나 적응형 이진화로 흑백 변환하면 진한 색상 면(남색 시계줄, 캐릭터 머리 등)이 시커멓게 채워져 색칠공부가 불가능해지는 현상, 2) 상세 본문(editor_*.png)의 확대 크롭 및 말풍선 캡션이 무캡션 고해상도 원본(gallery_*.jpg)과 단일 스케일 매칭 실패로 중복 수록되는 현상, 3) 과도한 모폴로지 닫기 커널로 인접 파츠가 본체와 뭉쳐 개별 파츠 시트 8칸에 동일한 전체 이미지가 반복 출력되는 패턴",
+                                                     "checklist":  [
+                                                                       "흑백 색칠모드 변환 시 2x 업스케일링 + Bilateral 필터 + 이중 커널 모폴로지 그래디언트(MORPH_GRADIENT) + 비선형 대비 LUT를 적용하여 진한 단색 내부까지 100% 순백색(#FFFFFF)으로 비우고 외곽선만 선명한 검정 선도안으로 추출하였는가?",
+                                                                       "무캡션 고해상도 스튜디오 원본(gallery_*.jpg)을 최우선 채택하고, 다중 스케일(Multi-scale) 템플릿 매칭으로 확대/말풍선 중복 컷을 제거하며 경계 접촉 검은 옷소매를 connectedComponentsWithStats로 자동 마스킹하였는가?",
+                                                                       "파츠 분리 시 (3,3) 소형 모폴로지 커널과 다중 프레임 외부 컨투어 + 내부 계층 컨투어(RETR_TREE) 및 유사도 중복 제거를 결합하여 8칸의 확대 파츠 시트에 서로 다른 8종의 개별 소품/캐릭터만 수록하였는가?"
+                                                                   ],
+                                                     "solution":  "이중 모폴로지 그래디언트 기반 순백색 컬러링북 선도안 엔진 + 무캡션 gallery 원본 우선 및 다중 스케일 중복 제거 + 외부/내부 계층 컨투어 기반 8종 고유 개별 파츠 추출 파이프라인 적용"
+                                                 },
+                                                 {
+                                                     "id":  "AP-DOC-IM-NOT-AI-MANDATORY",
+                                                     "name":  "문서 작성 시 im-not-ai MCP 미경유로 인한 AI 번역투·관용구 잔존 및 정부보고문체 직접 작성 시 번역투 혼입 패턴",
+                                                     "description":  "1) 프로젝트 및 논프로젝트에서 작성되는 문서(보고서, 기획서, README, 가이드, implementation_plan.md, walkthrough.md 등)를 im-not-ai MCP 없이 작성하여 '~를 통해', '~에 있어서', '~되어진다', '가지고 있다', '결론적으로', 연결어미 뒤 쉼표(-고, -며,) 등 AI 번역투가 그대로 노출되는 현상. 2) 정부보고문체 요청 시 im-not-ai 윤문을 선행하지 않고 곧바로 개조식 종결어미만 붙여 'AI에 의해 생성되어짐' 같은 번역투 행정문이 만들어지는 패턴.",
+                                                     "checklist":  [
+                                                                       "새 프로젝트, 논프로젝트, 기존 프로젝트에서 작성되는 모든 문서에 대해 im-not-ai MCP(analyze_ai_tells, humanize_document, verify_humanized_document)를 실행하여 AI 번역투·관용구·기계적 쉼표를 제거하였는가?",
+                                                                       "사용자가 명시적으로 '정부보고문체'를 요청한 경우, 반드시 1단계로 im-not-ai MCP 윤문(explicit_government_style=true)을 먼저 거친 이후 2단계로 정부보고문체(□ → ㅇ → - → · 계층 및 ~함/~임/~됨 개조식 종결)로 작성하였는가?",
+                                                                       "윤문 과정에서 사실·수치·고유명사·직접 인용 및 원문의 서법(당위·유보)이 100% 보존되었는가?"
+                                                                   ],
+                                                     "solution":  "전역 im-not-ai MCP 서버 및 스킬 연동 + 모든 문서 작성 시 im-not-ai 윤문 필수 실행 + 명시적 정부보고문체 요청 시 '선(先) im-not-ai 윤문 → 후(後) 정부보고문체 변환' 2단계 파이프라인 강제"
+                                                 },
+                                                 {
+                                                     "id":  "AP-SHOT-TAKEAWAY-CLUBHEAD-IMPACT-FALSE-POSITIVE",
+                                                     "name":  "골프 스윙 영상에서 테이크어웨이 시 흰색 클럽 헤드 이탈을 공 발사(임팩트)로 오인하거나 영상 길이 비율(dur*0.38)로 임팩트 시각을 조기 클램핑하는 패턴",
+                                                     "description":  "1) 어드레스 시 골프공 바로 뒤에 밝은 흰색/실버 드라이버 헤드가 함께 놓여 있어, 테이크어웨이 시작 시 클럽 헤드가 먼저 티 영역을 떠나는 밝기 감소를 공이 날아간 임팩트 순간으로 착각하여 임팩트 전에 공 궤적이 먼저 그려지는 현상. 2) 4.2초 이상 영상의 임팩트 상한을 duration * 0.38 또는 2.35s로 고정 클램핑하여 어드레스가 1.3~1.5초인 영상의 실제 타격 시각(2.36s~2.67s)을 강제로 앞당기는 패턴.",
+                                                     "checklist":  [
+                                                                       "우측 배경(하늘/나무) 중앙값 모션을 차감한 순수 골퍼 스윙 에너지 버스트(burstStart)를 먼저 탐색하여 어드레스·테이크어웨이 구간을 분리하였는가?",
+                                                                       "[Address ∩ Backswing \\ Post-Finish] 3단계 시간차 분리(백스윙 중 클럽 헤드가 공중에 올라간 상태에서도 지면에 남아 있고 피니시 후에는 사라지는 소형 녹색 잔디 고립 점)로 클럽 헤드와 고정 티 마커를 배제하고 순수 골프공 좌표를 확정하였는가?",
+                                                                       "순수 골프공 좌표의 시간축 신호에서 단일 프레임 스텝-클리프(Step-Cliff)로 실제 타격 프레임을 확정하고, 렌더러의 인위적 조기 상한 클램핑(dur * 0.38)을 제거하였는가?"
+                                                                   ],
+                                                     "solution":  "detectExactTeeBallAndImpactFromFrames(배경 모션 차감 스윙 버스트 + 상대 명암비 소형 점 맵 + Address ∩ Backswing \\ Post-Finish 순수 공 분리 + 단일 프레임 Step-Cliff 검출) 및 reconcileKeyMomentsWithExactImpact 일괄 동기화 적용"
+                                                 }
+                                             ]
+                   }
 }

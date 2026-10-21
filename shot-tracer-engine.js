@@ -5,7 +5,7 @@
  * APEX 최고점 말풍선, 탄착지점 캐리(Carry, m) 및 런 포함 최종거리(Total, m) 렌더링 엔진
  */
 
-import { clamp } from './swing-engine.js?v=20261019_06';
+import { clamp } from './swing-engine.js?v=20261020_01';
 
 // ============================================================================
 // 1. 궤적 색상 팔레트 및 기본 설정값 (DEFAULT_SHOT_TRACER_OPTIONS)
@@ -39,8 +39,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.45,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.385, y: 0.385 },
-    landingPoint: { x: 0.255, y: 0.562 },
-    rollEndPoint: { x: 0.232, y: 0.546 }
+    landingPoint: { x: 0.285, y: 0.688 },
+    rollEndPoint: { x: 0.262, y: 0.682 }
   },
   'driver-straight': {
     labelKo: '드라이버 스트레이트 (캐리 192m / 총 205m)',
@@ -58,8 +58,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.44,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.445, y: 0.390 },
-    landingPoint: { x: 0.355, y: 0.562 },
-    rollEndPoint: { x: 0.340, y: 0.546 }
+    landingPoint: { x: 0.365, y: 0.688 },
+    rollEndPoint: { x: 0.348, y: 0.682 }
   },
   'driver-fade': {
     labelKo: '드라이버 페이드 (캐리 188m / 총 198.5m)',
@@ -77,8 +77,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.40,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.655, y: 0.382 },
-    landingPoint: { x: 0.750, y: 0.562 },
-    rollEndPoint: { x: 0.768, y: 0.548 }
+    landingPoint: { x: 0.750, y: 0.688 },
+    rollEndPoint: { x: 0.768, y: 0.682 }
   },
   'driver-pull': {
     labelKo: '드라이버 풀 (캐리 194m / 총 207m)',
@@ -96,8 +96,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.44,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.395, y: 0.392 },
-    landingPoint: { x: 0.280, y: 0.562 },
-    rollEndPoint: { x: 0.262, y: 0.546 }
+    landingPoint: { x: 0.280, y: 0.688 },
+    rollEndPoint: { x: 0.262, y: 0.682 }
   },
   'driver-push': {
     labelKo: '드라이버 푸쉬 (캐리 190m / 총 202.5m)',
@@ -115,8 +115,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.42,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.650, y: 0.388 },
-    landingPoint: { x: 0.735, y: 0.562 },
-    rollEndPoint: { x: 0.752, y: 0.547 }
+    landingPoint: { x: 0.735, y: 0.688 },
+    rollEndPoint: { x: 0.752, y: 0.682 }
   },
   'driver-hook': {
     labelKo: '드라이버 훅 (캐리 182m / 총 198m)',
@@ -134,8 +134,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.52,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.355, y: 0.408 },
-    landingPoint: { x: 0.195, y: 0.565 },
-    rollEndPoint: { x: 0.168, y: 0.548 }
+    landingPoint: { x: 0.215, y: 0.690 },
+    rollEndPoint: { x: 0.188, y: 0.684 }
   },
   'driver-slice': {
     labelKo: '드라이버 슬라이스 (캐리 174m / 총 182.5m)',
@@ -153,8 +153,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.35,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.675, y: 0.378 },
-    landingPoint: { x: 0.810, y: 0.565 },
-    rollEndPoint: { x: 0.828, y: 0.552 }
+    landingPoint: { x: 0.810, y: 0.690 },
+    rollEndPoint: { x: 0.828, y: 0.684 }
   },
   'iron-7': {
     labelKo: '7번 아이언 (캐리 142m / 총 148.5m)',
@@ -172,8 +172,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.30,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.415, y: 0.368 },
-    landingPoint: { x: 0.315, y: 0.572 },
-    rollEndPoint: { x: 0.302, y: 0.562 }
+    landingPoint: { x: 0.335, y: 0.695 },
+    rollEndPoint: { x: 0.322, y: 0.690 }
   },
   'stinger': {
     labelKo: '로우 스팅어 펀치샷 (캐리 172m / 총 190.5m)',
@@ -191,8 +191,8 @@ export const SHOT_TRACER_PRESETS = {
     rollDurationSec: 0.58,
     originPoint: { x: 0.588, y: 0.819 },
     apexPoint: { x: 0.410, y: 0.445 },
-    landingPoint: { x: 0.300, y: 0.565 },
-    rollEndPoint: { x: 0.272, y: 0.545 }
+    landingPoint: { x: 0.320, y: 0.690 },
+    rollEndPoint: { x: 0.292, y: 0.683 }
   }
 };
 
@@ -202,6 +202,10 @@ export const DEFAULT_SHOT_TRACER_OPTIONS = Object.freeze({
   shotPreset: 'driver-draw',
   shotShapeType: 'auto', // 'auto' | 'straight' | 'draw' | 'fade' | 'pull' | 'push' | 'hook' | 'slice'
   detectedShotShape: 'draw',
+  terrainSlopeMode: 'auto', // 'auto' | 'flat' | 'downhill-mild' | 'downhill' | 'downhill-steep' | 'uphill-mild' | 'uphill' | 'uphill-steep'
+  detectedTerrainSlope: 'flat', // 'flat' | 'downhill' | 'uphill'
+  elevationDeltaMeters: 0.0, // 음수(-m): 내리막, 양수(+m): 오르막, 0: 평지
+  detectedElevationDeltaMeters: 0.0,
   launchDirectionDeg: -4.2, // 초기 좌우 출발각 (음수: 좌측 Pull 방향, 양수: 우측 Push 방향)
   traceColor: '#DC2626', // 기본 빨간색 궤적
   customColorHex: '#DC2626',
@@ -219,6 +223,7 @@ export const DEFAULT_SHOT_TRACER_OPTIONS = Object.freeze({
   rollDurationSec: 0.45,
   perspectiveKz: 21.8,
   calibratedImpactTime: null,
+  manualImpactLocked: false,
   autoReadoutSource: 'video-auto', // 'video-auto' | 'manual-edited' | 'canvas-calibrated' | 'preset-sim'
   detectedFrameCount: 4,
   showApexBubble: true,
@@ -238,8 +243,8 @@ export const DEFAULT_SHOT_TRACER_OPTIONS = Object.freeze({
     { x: 0.415, y: 0.402, timeOffset: 0.140 }
   ],
   apexPoint: { x: 0.385, y: 0.385 },
-  landingPoint: { x: 0.255, y: 0.562 },
-  rollEndPoint: { x: 0.232, y: 0.546 },
+  landingPoint: { x: 0.335, y: 0.688 },
+  rollEndPoint: { x: 0.312, y: 0.682 },
   manualApexPinned: false,
   manualLandingPinned: false,
   pinTargetMode: null, // null | 'frame-ball' | 'origin' | 'mid1' | 'mid2' | 'mid3' | 'apex' | 'landing' | 'roll'
@@ -280,8 +285,7 @@ export function getPinnedWorkSummaryForTarget(opts = {}, targetKey = null, impac
       ptObj.pinned ||
       savedObj?.pinned ||
       (meta.key === 'apex' && opts.manualApexPinned) ||
-      (meta.key === 'landing' && opts.manualLandingPinned) ||
-      ((meta.key === 'origin' || meta.key === 'mid1' || meta.key === 'mid2') && opts.calibratedFromVideo)
+      (meta.key === 'landing' && opts.manualLandingPinned)
     );
 
     const x = Number(
@@ -601,11 +605,134 @@ export function applyShotShapeOptionToMetrics(opts, shapeCode) {
   return syncShotGeometryFromMetrics(next);
 }
 
+/**
+ * 코스 지형 경사(오르막 / 평지 / 내리막) 및 고도차(elevationDeltaMeters, m)를 분류하여
+ * 한국어 라벨, 배지 색상, 캐리/런 보정 계수, 화면 탄착 Y 오프셋을 반환합니다.
+ */
+export function classifyTerrainSlopeInfo(elevationDeltaMeters = 0, terrainSlopeMode = 'auto', detectedSlope = 'flat') {
+  const modePresetElevMap = {
+    flat: 0.0,
+    'downhill-mild': -5.5,
+    downhill: -10.5,
+    'downhill-steep': -16.5,
+    'uphill-mild': 5.5,
+    uphill: 10.5,
+    'uphill-steep': 16.5
+  };
+
+  const elevM = (terrainSlopeMode && terrainSlopeMode !== 'auto' && Number.isFinite(modePresetElevMap[terrainSlopeMode]))
+    ? modePresetElevMap[terrainSlopeMode]
+    : clamp(Number(elevationDeltaMeters || 0), -25.0, 25.0);
+
+  let slopeType = 'flat';
+  if (elevM <= -3.0 || (terrainSlopeMode === 'auto' && detectedSlope === 'downhill' && elevM <= -2.0)) {
+    slopeType = 'downhill';
+  } else if (elevM >= 3.0 || (terrainSlopeMode === 'auto' && detectedSlope === 'uphill' && elevM >= 2.0)) {
+    slopeType = 'uphill';
+  }
+
+  const signStr = elevM > 0.05 ? `+${elevM.toFixed(1)}m` : `${elevM.toFixed(1)}m`;
+
+  if (slopeType === 'downhill') {
+    const isSteep = elevM <= -13.0;
+    const nameKo = isSteep ? '급내리막' : '내리막';
+    return {
+      slopeType: 'downhill',
+      code: isSteep ? 'downhill-steep' : (elevM <= -7.5 ? 'downhill' : 'downhill-mild'),
+      elevationDeltaMeters: Number(elevM.toFixed(1)),
+      nameKo,
+      shortKo: `${nameKo} ${signStr}`,
+      labelKo: `${nameKo} (${signStr})`,
+      badgeColor: '#0284C7',
+      carryDeltaMeters: Number((-elevM * 0.88).toFixed(1)),
+      rollMultiplier: clamp(1 - elevM / 28, 1.05, 1.48)
+    };
+  }
+
+  if (slopeType === 'uphill') {
+    const isSteep = elevM >= 13.0;
+    const nameKo = isSteep ? '급오르막' : '오르막';
+    return {
+      slopeType: 'uphill',
+      code: isSteep ? 'uphill-steep' : (elevM >= 7.5 ? 'uphill' : 'uphill-mild'),
+      elevationDeltaMeters: Number(elevM.toFixed(1)),
+      nameKo,
+      shortKo: `${nameKo} ${signStr}`,
+      labelKo: `${nameKo} (${signStr})`,
+      badgeColor: '#D97706',
+      carryDeltaMeters: Number((-elevM * 0.88).toFixed(1)),
+      rollMultiplier: clamp(1 - elevM / 28, 0.52, 0.95)
+    };
+  }
+
+  return {
+    slopeType: 'flat',
+    code: 'flat',
+    elevationDeltaMeters: Number(elevM.toFixed(1)),
+    nameKo: '평지',
+    shortKo: `평지 ${Math.abs(elevM) < 0.5 ? '0.0m' : signStr}`,
+    labelKo: `평지 (${Math.abs(elevM) < 0.5 ? '0.0m' : signStr})`,
+    badgeColor: '#059669',
+    carryDeltaMeters: 0.0,
+    rollMultiplier: 1.0
+  };
+}
+
+/**
+ * 사용자가 코스 지형 경사(자동 판독 / 평지 / 내리막 / 오르막)를 선택했을 때
+ * 고도차(elevationDeltaMeters)에 맞춰 캐리 거리, 런 거리, 체공 시간 및 탄착 지점 고도(landingPoint.y)를 즉시 동기화합니다.
+ */
+export function applyTerrainSlopeOptionToMetrics(opts, slopeMode = 'auto') {
+  const prevElev = Number(opts.elevationDeltaMeters ?? 0);
+  const baseFlatCarry = Number.isFinite(opts.baseFlatCarryMeters)
+    ? Number(opts.baseFlatCarryMeters)
+    : clamp(Number(opts.carryMeters ?? 196.0) + prevElev * 0.88, 75.0, 260.0);
+  const prevRollMult = clamp(1 - prevElev / 28, 0.52, 1.48);
+  const baseFlatRoll = Number.isFinite(opts.baseFlatRollMeters)
+    ? Number(opts.baseFlatRollMeters)
+    : clamp(Number(opts.rollMeters ?? 13.5) / prevRollMult, 3.0, 25.0);
+
+  const detElev = Number(opts.detectedElevationDeltaMeters ?? opts.fairwayAnchor?.elevationDeltaMeters ?? 0);
+  const detSlope = opts.detectedTerrainSlope || opts.fairwayAnchor?.terrainSlopeType || 'flat';
+
+  const slopeInfo = slopeMode === 'auto'
+    ? classifyTerrainSlopeInfo(detElev, 'auto', detSlope)
+    : classifyTerrainSlopeInfo(0, slopeMode, detSlope);
+
+  const nextElev = slopeInfo.elevationDeltaMeters;
+  const nextCarry = Number(clamp(baseFlatCarry - nextElev * 0.88, 70.0, 275.0).toFixed(1));
+  const nextRoll = Number(clamp(baseFlatRoll * slopeInfo.rollMultiplier, 2.0, 34.0).toFixed(1));
+  const nextFlightDur = Number(clamp(2.45 + (nextCarry / 220) * 0.45 - nextElev * 0.015, 2.05, 3.35).toFixed(2));
+  const nextRollDur = Number(clamp(0.38 + (nextRoll / 20) * 0.18, 0.25, 0.72).toFixed(2));
+
+  const next = {
+    ...opts,
+    terrainSlopeMode: slopeMode,
+    elevationDeltaMeters: nextElev,
+    baseFlatCarryMeters: Number(baseFlatCarry.toFixed(1)),
+    baseFlatRollMeters: Number(baseFlatRoll.toFixed(1)),
+    carryMeters: nextCarry,
+    rollMeters: nextRoll,
+    flightDurationSec: nextFlightDur,
+    rollDurationSec: nextRollDur,
+    manualLandingPinned: false,
+    autoReadoutSource: slopeMode === 'auto' ? 'video-auto' : 'manual-edited'
+  };
+
+  return syncShotGeometryFromMetrics(next);
+}
+
 // ============================================================================
 // 3. 업로드된 후방(DTL) 스윙 영상에서 공 출발점·다중 비행 프레임·최고점·탄착지점 및 물리 데이터 자동 판독
 // ============================================================================
 
-export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, hand = 'right') {
+export function detectBallAndFairwayFromAddressFrame(
+  frameCanvas,
+  addrSample,
+  hand = 'right',
+  extraSamples = [],
+  overrideOrigin = null
+) {
   if (!frameCanvas || typeof frameCanvas.getContext !== 'function') return null;
   const width = frameCanvas.width;
   const height = frameCanvas.height;
@@ -616,6 +743,20 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
     imageData = frameCanvas.getContext('2d').getImageData(0, 0, width, height).data;
   } catch {
     return null;
+  }
+
+  const extraImageDataList = [];
+  if (Array.isArray(extraSamples)) {
+    for (const s of extraSamples) {
+      const c = s?.frameCanvas;
+      if (c && c !== frameCanvas && c.width === width && c.height === height && typeof c.getContext === 'function') {
+        try {
+          extraImageDataList.push(c.getContext('2d').getImageData(0, 0, width, height).data);
+        } catch {
+          // ignore
+        }
+      }
+    }
   }
 
   const dirSign = hand === 'left' ? -1 : 1;
@@ -630,7 +771,7 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
     ? clamp(Math.max(xMinNorm + 0.14, (grip.x ?? 0.39) + 0.28), 0.54, 0.82)
     : clamp(Math.min(0.57, (grip.x ?? 0.61) - 0.07), 0.28, 0.58);
   const yMinNorm = clamp((grip.y ?? 0.715) + 0.03, 0.62, 0.80);
-  const yMaxNorm = clamp((grip.y ?? 0.715) + 0.16, yMinNorm + 0.06, 0.88);
+  const yMaxNorm = clamp((grip.y ?? 0.715) + 0.20, yMinNorm + 0.06, 0.92);
 
   const ringDistX = Math.max(6, Math.round(width * 0.025));
   const ringDistY = Math.max(6, Math.round(height * 0.015));
@@ -651,10 +792,10 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
       const g = imageData[idx + 1];
       const b = imageData[idx + 2];
       const lum = (r + g + b) / 3;
-      if (lum < 180) continue;
+      if (lum < 125) continue;
 
       const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-      if (chroma > 42) continue;
+      if (chroma > 45) continue;
 
       const idxL = (y * width + (x - ringDistX)) * 4;
       const idxR = (y * width + (x + ringDistX)) * 4;
@@ -666,8 +807,9 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
       const lumU = (imageData[idxU] + imageData[idxU + 1] + imageData[idxU + 2]) / 3;
       const lumD = (imageData[idxD] + imageData[idxD + 1] + imageData[idxD + 2]) / 3;
 
-      // 흰색 골프화(위쪽에 밝은 바지/다리가 이어짐)를 배제하기 위해 상하좌우 중 최소 3방향 이상이 어두운 잔디 매트여야 함
-      const darkNeighbors = (lumL < 172 ? 1 : 0) + (lumR < 172 ? 1 : 0) + (lumU < 172 ? 1 : 0) + (lumD < 172 ? 1 : 0);
+      // 흰색 골프화(위쪽에 밝은 바지/다리가 이어짐)를 배제하기 위해 상하좌우 중 최소 3방향 이상이 주변보다 어두운 잔디 매트여야 함
+      const neighborThr = Math.min(172, lum - 16);
+      const darkNeighbors = (lumL < neighborThr ? 1 : 0) + (lumR < neighborThr ? 1 : 0) + (lumU < neighborThr ? 1 : 0) + (lumD < neighborThr ? 1 : 0);
       if (darkNeighbors < 3) continue;
 
       const bgR = (imageData[idxL] + imageData[idxR] + imageData[idxU] + imageData[idxD]) * 0.25;
@@ -677,12 +819,13 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
       if (bgLum > 168) continue;
 
       const localContrast = lum - bgLum;
-      if (localContrast < 28) continue;
+      if (localContrast < 22) continue;
 
       const greenExcess = Math.max(0, (bgG - bgR) + (bgG - bgB));
-      if (greenExcess < 12) continue;
+      if (greenExcess < 10) continue;
 
-      const score = (lum - chroma) + localContrast * 0.9 + greenExcess * 0.85;
+      const relContrast = (localContrast / Math.max(35, bgLum * 0.75)) * 55;
+      const score = (lum - chroma) * 0.75 + localContrast * 0.8 + relContrast + greenExcess * 0.85;
       if (score > bestScore) {
         bestScore = score;
         peakXNorm = x / width;
@@ -692,7 +835,7 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
   }
 
   let ballOrigin = null;
-  if (bestScore > 220 && peakXNorm !== null && peakYNorm !== null) {
+  if (bestScore > 185 && peakXNorm !== null && peakYNorm !== null) {
     const radX = Math.max(4, Math.round(width * 0.022));
     const radY = Math.max(4, Math.round(height * 0.016));
     const cxPx = Math.round(peakXNorm * width);
@@ -712,10 +855,10 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
         const b = imageData[idx + 2];
         const lum = (r + g + b) / 3;
         const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-        if (lum >= 182 && chroma <= 42) {
+        if (lum >= 130 && chroma <= 44) {
           const nx = xx / width;
           const ny = yy / height;
-          const w = lum - 175;
+          const w = Math.max(1, lum - 120);
           sumX += nx * w;
           sumY += ny * w;
           sumW += w;
@@ -738,84 +881,839 @@ export function detectBallAndFairwayFromAddressFrame(frameCanvas, addrSample, ha
 
     ballOrigin = {
       x: Number(clamp(ballX, 0.15, 0.85).toFixed(3)),
-      y: Number(clamp(ballY, 0.55, 0.90).toFixed(3))
+      y: Number(clamp(ballY, 0.55, 0.92).toFixed(3))
     };
   }
 
-  const effectiveOrigin = ballOrigin
+  const effectiveOrigin = overrideOrigin
+    || ballOrigin
     || (addrSample?.ballPoint && addrSample.ballPoint.x >= 0.42 ? addrSample.ballPoint : null)
     || { x: 0.588, y: 0.819 };
 
-  // 2) 원거리 초록 페어웨이 탄착 영역(Fairway Landing Zone) 자동 검출
-  // 전경 인조잔디 티박스 매트(y > 0.62)나 골퍼 다리/신발 영역이 검출되지 않도록 실제 원거리 페어웨이 고도(y = 0.48 ~ 0.60)만 탐색
-  const fwYMinNorm = clamp(effectiveOrigin.y - (isPortrait ? 0.31 : 0.38), 0.36, 0.54);
-  const fwYMaxNorm = clamp(effectiveOrigin.y - (isPortrait ? 0.22 : 0.25), fwYMinNorm + 0.03, isPortrait ? 0.60 : 0.54);
-  const fwXMinNorm = 0.26;
-  const fwXMaxNorm = 0.68;
+  // 2) [산림-잔디 경계선(Tree-to-Grass Horizon), 열린 잔디 땅(Open Fairway Ground) 및 오르막/평지/내리막 경사 정밀 판독]
+  // - 하늘 하단 경계(skyBottomY)와 깎인 잔디 카펫 점수(carpetScore = grassRatio - darkCavityRatio * 0.82)를 결합하여
+  //   오르막 홀(잔디가 y=0.51~0.60까지 솟아오름), 평지 홀(y=0.64~0.67), 내리막 홀(골짜기 페어웨이 y=0.68~0.73) 모두에서
+  //   산/나무 숲과 실제 잔디 지면의 경계(treeLineY)를 정확히 분리하고 홀의 고도차(elevationDeltaMeters)를 자동 판독합니다.
+  const xScanMin = 0.14;
+  const xScanMax = clamp(effectiveOrigin.x - 0.04, 0.44, 0.64);
+  const numBins = 12;
 
-  const fx0 = Math.max(2, Math.floor(width * fwXMinNorm));
-  const fx1 = Math.min(width - 3, Math.ceil(width * fwXMaxNorm));
-  const fy0 = Math.max(2, Math.floor(height * fwYMinNorm));
-  const fy1 = Math.min(height - 3, Math.ceil(height * fwYMaxNorm));
-
-  let fwSumX = 0;
-  let fwSumY = 0;
-  let fwWeight = 0;
-
-  for (let y = fy0; y <= fy1; y += 2) {
-    for (let x = fx0; x <= fx1; x += 2) {
-      const idx = (y * width + x) * 4;
-      const r = imageData[idx];
-      const g = imageData[idx + 1];
-      const b = imageData[idx + 2];
-      const lum = (r + g + b) / 3;
-      const greenVsBlue = g - b;
-      const greenVsRed = g - r;
-
-      if (g >= 85 && greenVsBlue >= 18 && greenVsRed >= 8 && lum >= 75 && lum <= 192) {
-        const nx = x / width;
-        const ny = y / height;
-        const centerBias = 1.0 - Math.abs(nx - 0.48) * 0.9;
-        const w = (greenVsBlue + greenVsRed * 1.2) * Math.max(0.25, centerBias);
-        fwSumX += nx * w;
-        fwSumY += ny * w;
-        fwWeight += w;
+  // 2-A) 하늘-산 능선 경계(skyBottomY) 검출
+  let skyBottomY = isPortrait ? 0.46 : 0.36;
+  const sx0 = Math.max(2, Math.floor(xScanMin * width));
+  const sx1 = Math.min(width - 3, Math.ceil(xScanMax * width));
+  for (let ny = 0.16; ny <= 0.58; ny += 0.015) {
+    const ry0 = Math.max(2, Math.floor(ny * height));
+    const ry1 = Math.min(height - 3, Math.ceil((ny + 0.015) * height));
+    let skyPixels = 0;
+    let totalPixels = 0;
+    for (let py = ry0; py <= ry1; py += 2) {
+      for (let px = sx0; px <= sx1; px += 3) {
+        const idx = (py * width + px) * 4;
+        const r = imageData[idx];
+        const g = imageData[idx + 1];
+        const b = imageData[idx + 2];
+        const lum = (r + g + b) / 3;
+        totalPixels++;
+        if (lum >= 145 && b >= r - 12 && (g - b) < 18) {
+          skyPixels++;
+        }
       }
+    }
+    if (totalPixels > 0 && (skyPixels / totalPixels) >= 0.35) {
+      skyBottomY = Number((ny + 0.015).toFixed(3));
     }
   }
 
-  let fairwayAnchor;
-  if (fwWeight > 150) {
-    fairwayAnchor = {
-      x: Number(clamp(fwSumX / fwWeight, 0.34, 0.62).toFixed(3)),
-      y: Number(clamp(fwSumY / fwWeight, isPortrait ? 0.53 : 0.42, isPortrait ? 0.59 : 0.52).toFixed(3)),
-      isPortrait
-    };
-  } else {
-    fairwayAnchor = {
-      x: Number(clamp(isPortrait ? effectiveOrigin.x - 0.085 : effectiveOrigin.x + 0.02, 0.38, 0.58).toFixed(3)),
-      y: Number(clamp(effectiveOrigin.y - (isPortrait ? 0.252 : 0.32), isPortrait ? 0.54 : 0.42, isPortrait ? 0.59 : 0.52).toFixed(3)),
-      isPortrait
-    };
+  // 2-B) 깎인 페어웨이 잔디 픽셀 vs 산림 그림자 공동(Dark Canopy Cavity) 픽셀 판별
+  const isMowedGrassPixel = (r, g, b) => {
+    const lum = (r + g + b) / 3;
+    return (
+      g > r &&
+      r > b &&
+      (g - b) >= 18 &&
+      (r - b) >= 10 &&
+      (g - r) >= 4 &&
+      lum >= 52 &&
+      lum <= 218
+    );
+  };
+  const isDarkCanopyCavity = (r, g, b) => {
+    const lum = (r + g + b) / 3;
+    return lum < 62 || ((r - b) < 8 && lum < 88);
+  };
+
+  // 오르막 홀에서도 솟아오른 잔디면(y ≈ 0.50~0.60)을 놓치지 않도록 skyBottomY 바로 아래부터 스캔
+  const yStartNorm = clamp(skyBottomY + 0.02, isPortrait ? 0.38 : 0.30, 0.56);
+  const yEndNorm = clamp(effectiveOrigin.y - 0.065, isPortrait ? 0.68 : 0.56, isPortrait ? 0.80 : 0.68);
+
+  const rowInfos = [];
+  for (let ny = yStartNorm; ny <= yEndNorm + 1e-6; ny += 0.01) {
+    const ry0 = Math.max(2, Math.floor(ny * height));
+    const ry1 = Math.min(height - 3, Math.ceil((ny + 0.015) * height));
+    const colGrassRatios = new Array(numBins).fill(0);
+    const colCarpetScores = new Array(numBins).fill(0);
+
+    for (let bIdx = 0; bIdx < numBins; bIdx++) {
+      const bx0Norm = xScanMin + ((xScanMax - xScanMin) * bIdx) / numBins;
+      const bx1Norm = xScanMin + ((xScanMax - xScanMin) * (bIdx + 1)) / numBins;
+      const bx0 = Math.max(2, Math.floor(bx0Norm * width));
+      const bx1 = Math.min(width - 3, Math.ceil(bx1Norm * width));
+
+      let grassCount = 0;
+      let darkCavityCount = 0;
+      let totalCount = 0;
+      for (let py = ry0; py <= ry1; py += 2) {
+        for (let px = bx0; px <= bx1; px += 2) {
+          const idx = (py * width + px) * 4;
+          const r = imageData[idx];
+          const g = imageData[idx + 1];
+          const b = imageData[idx + 2];
+          totalCount++;
+          if (isMowedGrassPixel(r, g, b)) {
+            grassCount++;
+          }
+          if (isDarkCanopyCavity(r, g, b)) {
+            darkCavityCount++;
+          }
+        }
+      }
+      const gRatio = totalCount > 0 ? grassCount / totalCount : 0;
+      const dRatio = totalCount > 0 ? darkCavityCount / totalCount : 0;
+      colGrassRatios[bIdx] = gRatio;
+      colCarpetScores[bIdx] = Math.max(0, gRatio - dRatio * 0.82);
+    }
+
+    let best4Grass = 0;
+    let best4Carpet = 0;
+    for (let i = 0; i <= numBins - 4; i++) {
+      const avgG = (colGrassRatios[i] + colGrassRatios[i + 1] + colGrassRatios[i + 2] + colGrassRatios[i + 3]) * 0.25;
+      const avgC = (colCarpetScores[i] + colCarpetScores[i + 1] + colCarpetScores[i + 2] + colCarpetScores[i + 3]) * 0.25;
+      if (avgG > best4Grass) best4Grass = avgG;
+      if (avgC > best4Carpet) best4Carpet = avgC;
+    }
+    const meanGrass = colGrassRatios.reduce((a, v) => a + v, 0) / numBins;
+    rowInfos.push({ ny: Number(ny.toFixed(3)), meanGrass, best4Bin: best4Grass, best4Carpet });
   }
+
+  // 산/나무 숲이 끝나고 깎인 잔디 카펫이 시작되는 경계선(treeLineY) 검출 (오르막·평지·내리막 전 지형 대응)
+  const minValidTreeY = Math.max(skyBottomY + 0.025, isPortrait ? 0.44 : 0.34);
+  let treeLineY = null;
+  for (let i = 0; i < rowInfos.length - 1; i++) {
+    if (
+      rowInfos[i].ny >= minValidTreeY &&
+      rowInfos[i].best4Carpet >= 0.44 &&
+      rowInfos[i].best4Bin >= 0.50 &&
+      rowInfos[i + 1].best4Carpet >= 0.42
+    ) {
+      treeLineY = rowInfos[i].ny;
+      break;
+    }
+  }
+  if (treeLineY === null) {
+    const validRows = rowInfos.filter(r => r.ny >= minValidTreeY);
+    let peakRow = null;
+    for (const r of validRows) {
+      if (!peakRow || r.best4Carpet > peakRow.best4Carpet) peakRow = r;
+    }
+    if (peakRow && peakRow.best4Carpet >= 0.22) {
+      treeLineY = Math.max(minValidTreeY, peakRow.ny - 0.012);
+    } else {
+      treeLineY = clamp(
+        effectiveOrigin.y - (isPortrait ? 0.175 : 0.22),
+        minValidTreeY,
+        effectiveOrigin.y - 0.130
+      );
+    }
+  }
+
+  // 2-C) treeLineY 아래 잔디 대역에서 골퍼 몸통/다리에 가려지지 않은 가장 넓은 열린 잔디 회랑(bestOpenX) 탐색
+  const corridorY0 = Math.max(2, Math.floor(clamp(treeLineY + 0.018, 0.35, effectiveOrigin.y - 0.11) * height));
+  const corridorY1 = Math.min(height - 3, Math.ceil(clamp(treeLineY + 0.075, treeLineY + 0.035, effectiveOrigin.y - 0.085) * height));
+  const maxCandX = Math.min(0.58, Math.max(0.28, effectiveOrigin.x - 0.08));
+
+  let bestOpenX = clamp(effectiveOrigin.x - (isPortrait ? 0.25 : 0.18), 0.24, 0.52);
+  let bestCorridorScore = -999;
+
+  for (let nx = 0.18; nx <= maxCandX + 1e-6; nx += 0.02) {
+    const gx0 = Math.max(2, Math.floor(nx * width));
+    const gx1 = Math.min(width - 3, Math.ceil((nx + 0.10) * width));
+    let grassPixels = 0;
+    let darkObstaclePixels = 0;
+    let count = 0;
+
+    for (let py = corridorY0; py <= corridorY1; py += 2) {
+      for (let px = gx0; px <= gx1; px += 2) {
+        const idx = (py * width + px) * 4;
+        const r = imageData[idx];
+        const g = imageData[idx + 1];
+        const b = imageData[idx + 2];
+        const lum = (r + g + b) / 3;
+        count++;
+
+        let isGrassHere = isMowedGrassPixel(r, g, b);
+        let isDarkObstacleHere = lum < 58;
+
+        for (const extraData of extraImageDataList) {
+          const er = extraData[idx];
+          const eg = extraData[idx + 1];
+          const eb = extraData[idx + 2];
+          const elum = (er + eg + eb) / 3;
+          if (elum < 58 || (eg - eb) < 12) {
+            isDarkObstacleHere = true;
+          }
+          if (!isMowedGrassPixel(er, eg, eb)) {
+            isGrassHere = false;
+          }
+        }
+
+        if (isGrassHere) grassPixels++;
+        if (isDarkObstacleHere) darkObstaclePixels++;
+      }
+    }
+
+    const grassRatio = count > 0 ? grassPixels / count : 0;
+    const darkRatio = count > 0 ? darkObstaclePixels / count : 0;
+    const centerX = nx + 0.05;
+    const distFromOrigin = effectiveOrigin.x - centerX;
+    const distPref = 1.0 - Math.abs(distFromOrigin - (isPortrait ? 0.26 : 0.18)) * 1.15;
+    const score = grassRatio * 2.2 - darkRatio * 2.6 + distPref * 0.35;
+
+    if (score > bestCorridorScore) {
+      bestCorridorScore = score;
+      bestOpenX = centerX;
+    }
+  }
+
+  // 2-D) [오르막(Uphill) / 평지(Flat) / 내리막(Downhill) 지형 경사 및 고도차(elevationDeltaMeters) 자동 판독]
+  // 지표 1: fairwaySpanY = origin.y - treeLineY (오르막은 잔디 경사면이 카메라를 마주 보며 넓게 펼쳐짐, 내리막은 원근 압축으로 좁음)
+  // 지표 2: mountainRatio = (treeLineY - skyBottomY) / fairwaySpanY (내리막은 골짜기 건너 산줄기가 두껍고, 오르막은 잔디 언덕이 산을 가림)
+  // 지표 3: cliffStep = 전경 티박스와 원거리 페어웨이 사이의 명도·색상 단차 (내리막 절벽 티샷에서 단차가 크게 발생)
+  const samplePatchStats = (xcNorm, ycNorm, hwNorm = 0.04, hhNorm = 0.018) => {
+    const px0 = Math.max(2, Math.floor((xcNorm - hwNorm) * width));
+    const px1 = Math.min(width - 3, Math.ceil((xcNorm + hwNorm) * width));
+    const py0 = Math.max(2, Math.floor((ycNorm - hhNorm) * height));
+    const py1 = Math.min(height - 3, Math.ceil((ycNorm + hhNorm) * height));
+    let sumLum = 0;
+    let sumGr = 0;
+    let cnt = 0;
+    for (let py = py0; py <= py1; py += 2) {
+      for (let px = px0; px <= px1; px += 2) {
+        const idx = (py * width + px) * 4;
+        const r = imageData[idx];
+        const g = imageData[idx + 1];
+        const b = imageData[idx + 2];
+        sumLum += (r + g + b) / 3;
+        sumGr += (g - r);
+        cnt++;
+      }
+    }
+    return cnt > 0
+      ? { lum: sumLum / cnt, gr: sumGr / cnt }
+      : { lum: 120, gr: 15 };
+  };
+
+  const farPatch = samplePatchStats(bestOpenX, clamp(treeLineY + 0.032, 0.38, effectiveOrigin.y - 0.11));
+  const nearPatch = samplePatchStats(
+    clamp(bestOpenX + 0.04, 0.24, effectiveOrigin.x - 0.04),
+    clamp(effectiveOrigin.y - 0.042, treeLineY + 0.07, 0.88)
+  );
+  const cliffStep = Math.abs(nearPatch.lum - farPatch.lum) * 0.22 + Math.abs(nearPatch.gr - farPatch.gr) * 0.45;
+
+  const fairwaySpanY = Math.max(0.08, effectiveOrigin.y - treeLineY);
+  const neutralSpanY = isPortrait ? 0.182 : 0.220;
+  const mountainSpanY = Math.max(0.02, treeLineY - skyBottomY);
+  const mountainRatio = mountainSpanY / fairwaySpanY;
+
+  const spanTerm = ((fairwaySpanY - neutralSpanY) / 0.032) * 8.5;
+  const mtnTerm = ((0.64 - mountainRatio) / 0.35) * 6.0;
+  const cliffDropPenalty = Math.max(0, cliffStep - 8.2) * 0.68;
+
+  let rawElevM = spanTerm + mtnTerm - cliffDropPenalty;
+  // 연속된 평탄 잔디(cliffStep 낮음, fairwaySpanY 및 mountainRatio 중립 범위)는 평지(0m 부근)로 안정화
+  if (
+    cliffStep <= 7.5 &&
+    Math.abs(fairwaySpanY - neutralSpanY) <= 0.018 &&
+    mountainRatio >= 0.42 &&
+    mountainRatio <= 0.82
+  ) {
+    rawElevM *= 0.25;
+  }
+
+  const elevationDeltaMeters = Number(clamp(rawElevM, -22.0, 20.0).toFixed(1));
+  const slopeClass = classifyTerrainSlopeInfo(elevationDeltaMeters, 'auto');
+  const terrainSlopeType = slopeClass.slopeType; // 'uphill' | 'flat' | 'downhill'
+
+  // 2-E) 판독된 지형 경사(uphill / flat / downhill)에 맞춘 동적 잔디 탄착 구간([minGrassY, maxGrassY]) 및 탄착 고도(landingY) 산출
+  let minGrassY;
+  let maxGrassY;
+  let landingY;
+
+  if (terrainSlopeType === 'uphill') {
+    // 오르막 홀: 잔디 페어웨이가 화면 위쪽(y ≈ 0.50~0.62)까지 솟아오르므로 솟아오른 오르막 잔디 사면에 정확히 탄착
+    minGrassY = Number(
+      clamp(treeLineY + 0.020, isPortrait ? 0.480 : 0.380, effectiveOrigin.y - 0.145).toFixed(3)
+    );
+    maxGrassY = Number(
+      clamp(treeLineY + 0.082, minGrassY + 0.026, effectiveOrigin.y - 0.105).toFixed(3)
+    );
+    landingY = Number(clamp(treeLineY + 0.040, minGrassY, maxGrassY).toFixed(3));
+  } else if (terrainSlopeType === 'downhill') {
+    // 내리막 홀: 높은 티박스에서 아래 골짜기 페어웨이(treeLineY 아래)를 내려다보므로 골짜기 잔디면에 정확히 탄착
+    minGrassY = Number(
+      clamp(treeLineY + 0.018, isPortrait ? 0.655 : 0.530, effectiveOrigin.y - 0.112).toFixed(3)
+    );
+    maxGrassY = Number(
+      clamp(treeLineY + 0.052, minGrassY + 0.020, effectiveOrigin.y - 0.088).toFixed(3)
+    );
+    landingY = Number(clamp(treeLineY + 0.028, minGrassY, maxGrassY).toFixed(3));
+  } else {
+    // 평지 홀: 산림 경계선(treeLineY) 아래의 평탄한 잔디 페어웨이에 안착
+    minGrassY = Number(
+      clamp(treeLineY + 0.022, isPortrait ? 0.640 : 0.520, effectiveOrigin.y - 0.125).toFixed(3)
+    );
+    maxGrassY = Number(
+      clamp(treeLineY + 0.060, minGrassY + 0.022, effectiveOrigin.y - 0.095).toFixed(3)
+    );
+    landingY = Number(clamp(treeLineY + 0.034, minGrassY, maxGrassY).toFixed(3));
+  }
+
+  const fairwayAnchor = {
+    x: Number(clamp(bestOpenX, 0.22, 0.58).toFixed(3)),
+    y: landingY,
+    treeLineY: Number(treeLineY.toFixed(3)),
+    skyBottomY: Number(skyBottomY.toFixed(3)),
+    minGrassY,
+    maxGrassY,
+    terrainSlopeType,
+    elevationDeltaMeters,
+    fairwaySpanY: Number(fairwaySpanY.toFixed(3)),
+    mountainRatio: Number(mountainRatio.toFixed(2)),
+    cliffStep: Number(cliffStep.toFixed(1)),
+    isPortrait
+  };
 
   return {
     originPoint: effectiveOrigin,
     fairwayAnchor,
+    terrainSlopeType,
+    elevationDeltaMeters,
     ballDirectlyDetected: Boolean(ballOrigin),
     ballConfidenceScore: Number(Math.max(0, bestScore).toFixed(1)),
-    fairwayDirectlyDetected: fwWeight > 150,
-    fairwayWeight: Number(fwWeight.toFixed(1))
+    fairwayDirectlyDetected: bestCorridorScore > 0.35,
+    fairwayWeight: Number((Math.max(0, bestCorridorScore) * 100).toFixed(1))
   };
 }
 
 /**
+ * [4단계 정밀 임팩트-궤적 동기화 엔진 (0-Frame Error Sync)]
+ * 1) 우측 배경(하늘/나무) 카메라 흔들림 모션을 차감한 순수 골퍼 스윙 에너지 버스트(burstStart) 탐색
+ * 2) 햇빛 티박스와 나무 그늘 티박스 모두에서 동일하게 동작하는 상대 명암비 기반 녹색 잔디 고립 소형 점(Compact Green-Surrounded Dot) 맵 생성
+ * 3) [Address ∩ Backswing \ Post-Finish] 3단계 시간차 분리로 흰색 드라이버 헤드(테이크어웨이 시 먼저 이탈)와 고정 티 마커(피니시 후에도 잔류)를
+ *    100% 배제하고 순수 골프공 좌표(originPoint) 확정
+ * 4) 확정된 순수 골프공 좌표의 시간축 신호에서 단일 프레임 스텝-클리프(Step-Cliff)를 검출하여,
+ *    임팩트 전에 궤적이 먼저 그려지거나 스윙이 끝난 뒤 늦게 출발하는 현상을 원천 차단합니다.
+ */
+export function detectExactTeeBallAndImpactFromFrames(samples, keyMoments = [], fallbackOrigin = null) {
+  const frameSamples = (samples || []).filter(
+    s => s && s.frameCanvas && typeof s.frameCanvas.getContext === 'function'
+  );
+  if (frameSamples.length < 8) return null;
+
+  const n = frameSamples.length;
+  const srcW = frameSamples[0].frameCanvas.width || 180;
+  const srcH = frameSamples[0].frameCanvas.height || 320;
+  const isPortrait = srcH >= srcW;
+  const targetW = isPortrait ? 180 : 320;
+  const targetH = isPortrait ? 320 : 180;
+
+  let workCanvas = null;
+  let workCtx = null;
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    workCanvas = document.createElement('canvas');
+    workCanvas.width = targetW;
+    workCanvas.height = targetH;
+    workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+  }
+
+  const sw = workCtx ? targetW : srcW;
+  const sh = workCtx ? targetH : srcH;
+
+  const medianOf = arr => {
+    if (!arr || !arr.length) return 0;
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const mid = sorted.length >> 1;
+    return (sorted.length & 1) ? sorted[mid] : 0.5 * (sorted[mid - 1] + sorted[mid]);
+  };
+
+  const percentileOf = (arr, q) => {
+    if (!arr || !arr.length) return 0;
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const pos = clamp((sorted.length - 1) * q, 0, sorted.length - 1);
+    const lo = Math.floor(pos);
+    const hi = Math.ceil(pos);
+    return lo === hi ? sorted[lo] : sorted[lo] * (hi - pos) + sorted[hi] * (pos - lo);
+  };
+
+  const readFrameRgba = canvas => {
+    try {
+      if (workCtx) {
+        workCtx.drawImage(canvas, 0, 0, sw, sh);
+        return workCtx.getImageData(0, 0, sw, sh).data;
+      }
+      return canvas.getContext('2d').getImageData(0, 0, sw, sh).data;
+    } catch {
+      return null;
+    }
+  };
+
+  // 티박스 탐색 그리드 설정 (중단~하단 티박스 y 0.65..0.93까지 포괄하여 카메라 앵글이 높은 티샷 공 위치 y≈0.72도 완벽 검출)
+  const rRing = Math.max(3, Math.round(sw * 0.022));
+  const rDiag = Math.max(2, Math.round(rRing * 0.75));
+  const ringOffsets = [
+    [-rRing, 0], [rRing, 0], [0, -rRing], [0, rRing],
+    [-rDiag, -rDiag], [rDiag, -rDiag], [-rDiag, rDiag], [rDiag, rDiag]
+  ];
+
+  const x0 = Math.max(rRing + 2, Math.floor(sw * 0.50));
+  const x1 = Math.min(sw - rRing - 2, Math.ceil(sw * 0.80));
+  const y0 = Math.max(rRing + 2, Math.floor(sh * 0.65));
+  const y1 = Math.min(sh - rRing - 2, Math.ceil(sh * 0.93));
+  const step = Math.max(2, Math.round(sw / 90));
+  const gw = Math.max(1, Math.floor((x1 - x0) / step) + 1);
+  const gh = Math.max(1, Math.floor((y1 - y0) / step) + 1);
+
+  const swingEnergy = new Float32Array(n);
+  const strikeEnergy = new Float32Array(n);
+  const bgPanSeries = new Float32Array(n);
+  const rawMaps = new Array(n);
+  const pooledMaps = new Array(n);
+
+  // 배경 흔들림(bgMed) 샘플링 영역: 구름 없는 파란 하늘(y < 0.36)에서는 카메라가 흔들려도 픽셀 차분이 0이 되어
+  // 후반부 카메라 패닝이 스윙 버스트로 오인되므로, 텍스처가 존재하는 우측 중단~하단 산림·잔디(y 0.36..0.88)만 샘플링
+  const bgX0 = Math.floor(sw * 0.72);
+  const bgX1 = Math.floor(sw * 0.96);
+  const bgY0 = Math.floor(sh * 0.36);
+  const bgY1 = Math.floor(sh * 0.88);
+  const bgStep = Math.max(3, Math.round(sw / 45));
+
+  const gfX0 = Math.floor(sw * 0.16);
+  const gfX1 = Math.floor(sw * 0.64);
+  const gfY0 = Math.floor(sh * 0.16);
+  const gfY1 = Math.floor(sh * 0.84);
+  const upY0 = Math.floor(sh * 0.14);
+  const upY1 = Math.floor(sh * 0.46);
+  const stX0 = Math.floor(sw * 0.35);
+  const stX1 = Math.floor(sw * 0.78);
+  const stY0 = Math.floor(sh * 0.52);
+  const stY1 = Math.floor(sh * 0.88);
+  const motStep = Math.max(2, Math.round(sw / 60));
+
+  let prevGray = null;
+  const ringW = new Float32Array(8);
+  const ringG = new Float32Array(8);
+
+  for (let i = 0; i < n; i++) {
+    const data = readFrameRgba(frameSamples[i].frameCanvas);
+    if (!data) {
+      rawMaps[i] = new Float32Array(gh * gw);
+      pooledMaps[i] = new Float32Array(gh * gw);
+      continue;
+    }
+
+    const gray = new Float32Array(sw * sh);
+    for (let p = 0, len = sw * sh; p < len; p++) {
+      const idx = p * 4;
+      gray[p] = (data[idx] + data[idx + 1] + data[idx + 2]) * 0.3333333;
+    }
+
+    if (prevGray) {
+      const bgDiffs = [];
+      const bgAllDiffs = [];
+      for (let py = bgY0; py < bgY1; py += bgStep) {
+        const rowOff = py * sw;
+        for (let px = bgX0; px < bgX1; px += bgStep) {
+          const dVal = Math.abs(gray[rowOff + px] - prevGray[rowOff + px]);
+          bgAllDiffs.push(dVal);
+          // 공간 텍스처 기울기가 있는 픽셀만 골라내어 평탄한 하늘/단색 영역에 의한 bgMed=0 왜곡 방지
+          const gxGrad = Math.abs(gray[rowOff + Math.min(sw - 1, px + 2)] - gray[rowOff + Math.max(0, px - 2)]);
+          const gyGrad = Math.abs(gray[Math.min(sh - 1, py + 2) * sw + px] - gray[Math.max(0, py - 2) * sw + px]);
+          if (gxGrad + gyGrad >= 3.0) {
+            bgDiffs.push(dVal);
+          }
+        }
+      }
+      const rawBgMed = bgDiffs.length >= 6 ? medianOf(bgDiffs) : percentileOf(bgAllDiffs, 0.70);
+      const bgMed = rawBgMed * 1.25;
+      bgPanSeries[i] = rawBgMed;
+
+      let gfSum = 0, gfCnt = 0;
+      let upSum = 0, upCnt = 0;
+      let stSum = 0, stCnt = 0;
+
+      for (let py = upY0; py < stY1; py += motStep) {
+        const rowOff = py * sw;
+        for (let px = gfX0; px < stX1; px += motStep) {
+          const d = Math.max(0, Math.abs(gray[rowOff + px] - prevGray[rowOff + px]) - bgMed);
+          if (px >= gfX0 && px < gfX1 && py >= gfY0 && py < gfY1) {
+            gfSum += d;
+            gfCnt++;
+          }
+          if (px >= gfX0 && px < gfX1 && py >= upY0 && py < upY1) {
+            upSum += d;
+            upCnt++;
+          }
+          if (px >= stX0 && px < stX1 && py >= stY0 && py < stY1) {
+            stSum += d;
+            stCnt++;
+          }
+        }
+      }
+
+      const gfM = gfCnt > 0 ? gfSum / gfCnt : 0;
+      const upM = upCnt > 0 ? upSum / upCnt : 0;
+      const stM = stCnt > 0 ? stSum / stCnt : 0;
+      // 카메라 전체가 패닝(rawBgMed > 3.5)될 때 배경 숲 흔들림이 스윙 에너지로 둔갑하는 현상 억제
+      const panSuppress = rawBgMed > 3.5 ? 1 / (1 + (rawBgMed - 3.5) * 0.45) : 1.0;
+      swingEnergy[i] = (gfM + upM * 1.2 + stM * 0.8) * panSuppress;
+      strikeEnergy[i] = stM * panSuppress;
+    }
+    prevGray = gray;
+
+    // 티박스 소형 녹색 잔디 고립 점(Compact Green-Surrounded Dot) 특징 추출
+    const rawGrid = new Float32Array(gh * gw);
+    for (let gy = 0; gy < gh; gy++) {
+      const py = y0 + gy * step;
+      for (let gx = 0; gx < gw; gx++) {
+        const px = x0 + gx * step;
+        const cIdx = (py * sw + px) * 4;
+        const r = data[cIdx];
+        const g = data[cIdx + 1];
+        const b = data[cIdx + 2];
+        const lum = (r + g + b) * 0.3333333;
+        const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+        const white = lum - chroma * 0.6;
+        if (white < 65) continue;
+
+        for (let d = 0; d < 8; d++) {
+          const ry = py + ringOffsets[d][1];
+          const rx = px + ringOffsets[d][0];
+          const rIdx = (ry * sw + rx) * 4;
+          const rr = data[rIdx];
+          const rg = data[rIdx + 1];
+          const rb = data[rIdx + 2];
+          ringW[d] = (rr + rg + rb) * 0.3333333;
+          ringG[d] = (rg - rr) + (rg - rb);
+        }
+        ringW.sort();
+        ringG.sort();
+
+        const bgMed = 0.5 * (ringW[3] + ringW[4]);
+        const bgP75 = 0.5 * (ringW[5] + ringW[6]);
+        const grnMed = 0.5 * (ringG[3] + ringG[4]);
+        const diffMed = white - bgMed;
+
+        if (diffMed < 14 || grnMed < 8 || bgP75 >= white - 6) continue;
+
+        const relContrast = (diffMed / Math.max(35, bgMed * 0.75)) * 65;
+        const bigPen = Math.max(0, bgP75 - bgMed - 16) * 1.8;
+        const score = Math.min(
+          120,
+          Math.max(0, relContrast + diffMed * 0.45 + Math.min(25, grnMed * 0.6) - bigPen)
+        );
+        rawGrid[gy * gw + gx] = score;
+      }
+    }
+    rawMaps[i] = rawGrid;
+
+    // 5x5 로컬 최댓값 풀링 (카메라 미세 흔들림 ±2% 허용)
+    const pooledGrid = new Float32Array(gh * gw);
+    for (let gy = 0; gy < gh; gy++) {
+      const dy0 = Math.max(0, gy - 2);
+      const dy1 = Math.min(gh - 1, gy + 2);
+      for (let gx = 0; gx < gw; gx++) {
+        const dx0 = Math.max(0, gx - 2);
+        const dx1 = Math.min(gw - 1, gx + 2);
+        let maxVal = 0;
+        for (let yy = dy0; yy <= dy1; yy++) {
+          const rOff = yy * gw;
+          for (let xx = dx0; xx <= dx1; xx++) {
+            const v = rawGrid[rOff + xx];
+            if (v > maxVal) maxVal = v;
+          }
+        }
+        pooledGrid[gy * gw + gx] = maxVal;
+      }
+    }
+    pooledMaps[i] = pooledGrid;
+  }
+
+  // [1단계] 액티브 스윙 에너지 버스트(burstStart) 탐색
+  const smoothE = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = swingEnergy[Math.max(0, i - 1)];
+    const b = swingEnergy[i];
+    const c = swingEnergy[Math.min(n - 1, i + 1)];
+    smoothE[i] = a * 0.25 + b * 0.50 + c * 0.25;
+  }
+
+  const startTime = frameSamples[0].time ?? 0;
+  const endTime = frameSamples[n - 1].time ?? 3.2;
+  const totalDur = Math.max(0.5, endTime - startTime);
+  const minBurst = startTime + Math.max(0.20, Math.min(0.45, totalDur * 0.10));
+  // 4.2초 이상 긴 영상은 후반부(2.5초 이후)가 공 비행 및 카메라 패닝 구간이므로 스윙 버스트 시작 탐색을 전반부(<=2.15초)로 엄격히 제한
+  const maxBurst = totalDur >= 4.2
+    ? startTime + Math.min(2.15, totalDur * 0.44)
+    : startTime + Math.min(2.48, Math.max(1.2, totalDur * 0.65));
+
+  let burstStart = startTime + Math.min(1.5, totalDur * 0.30);
+  let bestBurstAvg = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const t0 = frameSamples[i].time;
+    if (t0 < minBurst || t0 > maxBurst) continue;
+    let sum = 0;
+    let cnt = 0;
+    for (let k = i; k < n; k++) {
+      const dt = frameSamples[k].time - t0;
+      if (dt > 0.85) break;
+      sum += smoothE[k];
+      cnt++;
+    }
+    if (cnt >= 3) {
+      // 초반에 실제 스윙이 먼저 일어나는 특성을 반영하여 극후반부 프레임에 미세 시간 감쇠 부여
+      const earlyBias = 1.0 - Math.max(0, (t0 - startTime) / Math.max(2.0, totalDur)) * 0.12;
+      const avg = (sum / cnt) * earlyBias;
+      if (avg > bestBurstAvg) {
+        bestBurstAvg = avg;
+        burstStart = t0;
+      }
+    }
+  }
+
+  // [3단계] 3단계 시간차 분리 (Address ∩ Backswing \ Post-Finish)로 클럽 헤드와 티 마커 배제 후 순수 골프공 확정
+  const estBsStart = Math.max(startTime + 0.22, burstStart - 0.45);
+  const estBsEnd = burstStart + 0.15;
+  const estPostStart = Math.min(endTime - 0.20, burstStart + 0.75);
+  const estPostEnd = Math.min(endTime - 0.04, burstStart + 1.65);
+
+  let addrIndices = [];
+  let bsIndices = [];
+  let postIndices = [];
+  for (let i = 0; i < n; i++) {
+    const t = frameSamples[i].time;
+    if (t >= startTime + 0.08 && t <= Math.max(startTime + 0.28, estBsStart - 0.10)) {
+      addrIndices.push(i);
+    }
+    if (t >= estBsStart && t <= estBsEnd) {
+      bsIndices.push(i);
+    }
+    if (t >= estPostStart && t <= estPostEnd) {
+      postIndices.push(i);
+    }
+  }
+  if (addrIndices.length < 2) addrIndices = [0, 1, 2, Math.min(n - 1, 3)];
+  if (bsIndices.length < 2) {
+    const midIdx = Math.max(2, Math.floor(n * 0.28));
+    bsIndices = [midIdx - 1, midIdx, Math.min(n - 1, midIdx + 1)];
+  }
+  if (postIndices.length < 2) {
+    postIndices = [Math.max(0, n - 4), Math.max(0, n - 3), Math.max(0, n - 2)];
+  }
+
+  let bestCellIdx = 0;
+  let bestPresenceScore = -Infinity;
+  const hasFallbackOrigin = Boolean(fallbackOrigin && Number.isFinite(fallbackOrigin.x) && Number.isFinite(fallbackOrigin.y));
+
+  for (let cell = 0, totalCells = gh * gw; cell < totalCells; cell++) {
+    const cellGy = Math.floor(cell / gw);
+    const cellGx = cell % gw;
+    const cellNormX = (x0 + cellGx * step) / sw;
+    const cellNormY = (y0 + cellGy * step) / sh;
+    // y < 0.74 상단에서는 골퍼의 손/그립(x < 0.56) 오검출을 방지
+    if (cellNormY < 0.74 && cellNormX < 0.56) continue;
+
+    const addrVals = addrIndices.map(f => pooledMaps[f][cell]);
+    const bsVals = bsIndices.map(f => pooledMaps[f][cell]);
+    const postVals = postIndices.map(f => pooledMaps[f][cell]);
+    const bsRawVals = bsIndices.map(f => rawMaps[f][cell]);
+
+    const addrMed = medianOf(addrVals);
+    const bsMed = medianOf(bsVals);
+    const postMed = medianOf(postVals);
+    const postP80 = percentileOf(postVals, 0.80);
+    const bsRawMed = medianOf(bsRawVals);
+
+    let fallbackBonus = 0;
+    if (hasFallbackOrigin) {
+      const dist = Math.hypot(cellNormX - fallbackOrigin.x, cellNormY - fallbackOrigin.y);
+      if (dist <= 0.08) {
+        fallbackBonus = (1 - dist / 0.08) * 14;
+      }
+    }
+
+    // 5x5 풀링 평탄부 내에서는 실제 공 중심 픽셀(bsRawMed)이 가장 높은 정확한 중심 좌표를 선택
+    const presenceScore = (Math.min(addrMed, bsMed) * 1.3 + bsMed * 0.9 + bsRawMed * 0.15 + fallbackBonus) - (postMed * 1.8 + postP80 * 1.0);
+    if (presenceScore > bestPresenceScore) {
+      bestPresenceScore = presenceScore;
+      bestCellIdx = cell;
+    }
+  }
+
+  const bestGy = Math.floor(bestCellIdx / gw);
+  const bestGx = bestCellIdx % gw;
+  const detectedOrigin = (bestPresenceScore >= 28)
+    ? {
+        x: Number(clamp((x0 + bestGx * step) / sw, 0.15, 0.85).toFixed(3)),
+        y: Number(clamp((y0 + bestGy * step) / sh, 0.55, 0.93).toFixed(3))
+      }
+    : (fallbackOrigin || { x: 0.588, y: 0.819 });
+
+  // 만약 bestPresenceScore < 28이어서 fallbackOrigin을 사용하는 경우, bestCellIdx도 fallbackOrigin에 가장 가까운 그리드 셀로 맞춤
+  if (bestPresenceScore < 28 && hasFallbackOrigin) {
+    const fGx = clamp(Math.round((fallbackOrigin.x * sw - x0) / step), 0, gw - 1);
+    const fGy = clamp(Math.round((fallbackOrigin.y * sh - y0) / step), 0, gh - 1);
+    bestCellIdx = fGy * gw + fGx;
+  }
+
+  // [4단계] 순수 골프공 좌표의 시간축 1D 신호에서 단일 프레임 스텝-클리프(Step-Cliff) 검출
+  const ts = frameSamples.map((_, i) => pooledMaps[i][bestCellIdx]);
+  const beforeVals = [];
+  for (let i = 0; i < n; i++) {
+    const t = frameSamples[i].time;
+    if (t >= startTime + 0.12 && t <= burstStart) {
+      beforeVals.push(ts[i]);
+    }
+  }
+  const beforeMed = Math.max(25, medianOf(beforeVals));
+
+  let bestK = -1;
+  let bestCliffScore = -Infinity;
+  const maxImpactSearchTime = totalDur >= 4.2
+    ? Math.min(startTime + 2.48, burstStart + 0.72)
+    : burstStart + 0.72;
+
+  for (let k = 1; k < n - 2; k++) {
+    const tk = frameSamples[k].time;
+    if (tk < estBsStart || tk > maxImpactSearchTime) continue;
+
+    const pre = medianOf(ts.slice(Math.max(0, k - 5), k + 1));
+    const curr = ts[k];
+    const post = medianOf(ts.slice(k + 1, Math.min(n, k + 16)));
+    const next1 = ts[k + 1];
+    const next2 = ts[Math.min(n - 1, k + 2)];
+
+    // 타격 직전 프레임(k)까지는 공이 티 위에 실제로 존재해야 함 (테이크어웨이 클럽 이탈 오인 원천 차단)
+    if (curr < beforeMed * 0.55 || pre < beforeMed * 0.65) continue;
+
+    const drop = pre - post;
+    const immDrop = curr - (next1 * 0.65 + next2 * 0.35);
+    const cScore = drop * 1.6 + immDrop * 1.2 - post * 1.2;
+
+    if (cScore > bestCliffScore) {
+      bestCliffScore = cScore;
+      bestK = k;
+    }
+  }
+
+  // 만약 공이 가려져 Step-Cliff를 찾지 못한 예외 상황에서는 burstStart 직후 타격 모션 피크 프레임 선택
+  if (bestK < 0 || bestCliffScore < 18) {
+    let maxStrikeScore = -Infinity;
+    let strikeK = -1;
+    for (let k = 1; k < n - 2; k++) {
+      const tk = frameSamples[k].time;
+      if (tk < burstStart - 0.05 || tk > Math.min(maxImpactSearchTime, burstStart + 0.58)) continue;
+      const sScore = strikeEnergy[k] * 1.8 + smoothE[k];
+      if (sScore > maxStrikeScore) {
+        maxStrikeScore = sScore;
+        strikeK = k;
+      }
+    }
+    if (strikeK >= 0) bestK = strikeK;
+  }
+
+  if (bestK < 0) {
+    bestK = Math.max(1, Math.min(n - 2, Math.floor(n * (totalDur >= 4.2 ? 0.33 : 0.36))));
+  }
+
+  const exactImpactTime = Number(frameSamples[bestK].time.toFixed(3));
+  return {
+    originPoint: detectedOrigin,
+    impactTime: exactImpactTime,
+    impactFrameIndex: bestK,
+    burstStart: Number(burstStart.toFixed(3)),
+    ballPresenceScore: Number(bestPresenceScore.toFixed(1)),
+    cliffScore: Number(bestCliffScore.toFixed(1)),
+    confident: Boolean(bestPresenceScore >= 28 && bestCliffScore >= 32)
+  };
+}
+
+/**
+ * 검출된 실제 타격 시각(exactImpactTime) 및 스윙 버스트 시작점(burstStart)에 맞춰
+ * 7단계 스윙 시퀀스(address, backswing, top, downswing, impact, follow, finish) 타임스탬프를
+ * 역전이나 어긋남 없이 일관되게 동기화합니다.
+ */
+export function reconcileKeyMomentsWithExactImpact(keyMoments, exactImpactTime, burstStart = null, samples = [], forceReconcile = false) {
+  if (!Array.isArray(keyMoments) || !keyMoments.length || !Number.isFinite(exactImpactTime)) {
+    return keyMoments;
+  }
+
+  const startTime = samples?.[0]?.time ?? 0;
+  const endTime = samples?.[samples.length - 1]?.time ?? Math.max(3.2, exactImpactTime + 1.0);
+  const byKey = Object.fromEntries(keyMoments.map(m => [m.key, m]));
+
+  if (!forceReconcile && byKey.impact?.source === 'marked') {
+    return keyMoments;
+  }
+
+  const estTop = Number.isFinite(burstStart) && (exactImpactTime - burstStart >= 0.14 && exactImpactTime - burstStart <= 0.55)
+    ? clamp(burstStart + (exactImpactTime - burstStart) * 0.25, exactImpactTime - 0.42, exactImpactTime - 0.18)
+    : clamp(exactImpactTime - 0.28, startTime + 0.15, Math.max(startTime + 0.15, exactImpactTime - 0.16));
+
+  const curTop = byKey.top?.time;
+  const topTime = (!forceReconcile && Number.isFinite(curTop) && exactImpactTime - curTop >= 0.15 && exactImpactTime - curTop <= 0.48)
+    ? curTop
+    : Number(estTop.toFixed(3));
+
+  const curAddr = byKey.address?.time;
+  const addrTime = (!forceReconcile && Number.isFinite(curAddr) && topTime - curAddr >= 0.42 && topTime - curAddr <= 1.25)
+    ? curAddr
+    : Number(clamp(topTime - 0.80, startTime + 0.08, Math.max(startTime + 0.12, topTime - 0.35)).toFixed(3));
+
+  const curFin = byKey.finish?.time;
+  const finTime = (!forceReconcile && Number.isFinite(curFin) && curFin - exactImpactTime >= 0.42 && curFin - exactImpactTime <= 1.25)
+    ? curFin
+    : Number(clamp(exactImpactTime + 0.72, exactImpactTime + 0.35, Math.max(exactImpactTime + 0.38, endTime - 0.08)).toFixed(3));
+
+  const targetTimes = {
+    address: addrTime,
+    backswing: Number((addrTime + (topTime - addrTime) * 0.46).toFixed(3)),
+    top: topTime,
+    downswing: Number((topTime + (exactImpactTime - topTime) * 0.52).toFixed(3)),
+    impact: Number(exactImpactTime.toFixed(3)),
+    follow: Number((exactImpactTime + (finTime - exactImpactTime) * 0.36).toFixed(3)),
+    finish: finTime
+  };
+
+  for (const m of keyMoments) {
+    if ((forceReconcile || m.source !== 'marked') && Number.isFinite(targetTimes[m.key])) {
+      m.time = targetTimes[m.key];
+    }
+  }
+  return keyMoments;
+}
+
+/**
  * 티(originPoint) 위의 골프공이 실제로 타격되어 사라지는 프레임 전환(Ball Disappearance on Tee)과
- * 임팩트 존 클럽헤드/볼 모션 피크, 그리고 다운스윙 손 최저점(피니시 이전 골짜기)을 결합하여
- * 스윙이 끝난 뒤(피니시 이후)에 공이 늦게 출발하는 현상을 원천 방지하고 실제 타격 순간을 정밀 검출합니다.
+ * 액티브 스윙 버스트 앵커링을 결합하여 실제 타격 순간을 정밀 검출합니다.
  */
 export function detectVisualBallLaunchImpactTime(samples, keyMoments, originPoint) {
   if (!samples || samples.length < 6) return null;
+
+  // 최우선: 4단계 정밀 티 볼 & 스텝-클리프 동기화 엔진 호출
+  const exactSync = detectExactTeeBallAndImpactFromFrames(samples, keyMoments, originPoint);
+  if (exactSync && Number.isFinite(exactSync.impactTime)) {
+    return exactSync.impactTime;
+  }
 
   const momentsMap = Object.fromEntries((keyMoments || []).map(m => [m.key, m.time]));
   const totalDur = Math.max(0.5, (samples[samples.length - 1]?.time ?? 3.0) - (samples[0]?.time ?? 0));
@@ -823,7 +1721,7 @@ export function detectVisualBallLaunchImpactTime(samples, keyMoments, originPoin
   const rawImpTime = momentsMap.impact;
   const rawFinTime = momentsMap.finish;
 
-  // 1. 샘플 내 손 높이(hand.y)에서 [백스윙 탑 -> 임팩트 최저점 -> 피니시 최고점] 구조 재확인
+  // 샘플 내 손 높이(grip.y)에서 [백스윙 탑 -> 임팩트 최저점 -> 피니시 최고점] 구조 재확인
   let handValleyTime = null;
   let boundedTopTime = Number.isFinite(rawTopTime) ? rawTopTime : totalDur * 0.28;
   let boundedFinTime = Number.isFinite(rawFinTime) ? rawFinTime : totalDur * 0.68;
@@ -835,158 +1733,21 @@ export function detectVisualBallLaunchImpactTime(samples, keyMoments, originPoin
 
   let maxHandY = -Infinity;
   for (const s of samples) {
-    if (s.time >= boundedTopTime + 0.06 && s.time <= boundedFinTime - 0.08 && Number.isFinite(s.hand?.y)) {
-      if (s.hand.y > maxHandY) {
-        maxHandY = s.hand.y;
+    const gy = s.grip?.y ?? s.hand?.y;
+    if (s.time >= boundedTopTime + 0.06 && s.time <= boundedFinTime - 0.08 && Number.isFinite(gy)) {
+      if (gy > maxHandY) {
+        maxHandY = gy;
         handValleyTime = s.time;
       }
     }
   }
 
-  // 기존 impact 시각이 피니시 근처이거나 피니시 이후로 밀려 있다면 즉시 다운스윙 골짜기 시각으로 보정
   const safeMaxImpactTime = Math.max(boundedTopTime + 0.12, boundedFinTime - 0.12);
   let anchorImpTime = Number.isFinite(rawImpTime) ? rawImpTime : (handValleyTime ?? (boundedTopTime + 0.26));
   if (anchorImpTime > safeMaxImpactTime || anchorImpTime < boundedTopTime + 0.05) {
     anchorImpTime = handValleyTime ?? clamp((boundedTopTime + boundedFinTime) * 0.46, boundedTopTime + 0.12, safeMaxImpactTime);
   }
-
-  const getImgData = canvas => {
-    if (!canvas || typeof canvas.getContext !== 'function') return null;
-    try {
-      return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-    } catch {
-      return null;
-    }
-  };
-
-  // 탐색 구간: 백스윙 탑 직후 ~ 피니시 이전
-  const windowStart = Math.max(0.15, boundedTopTime - 0.04, anchorImpTime - 0.42);
-  const windowEnd = Math.min(safeMaxImpactTime + 0.08, anchorImpTime + 0.32);
-  const candSamples = samples.filter(s => s.frameCanvas && s.time >= windowStart && s.time <= windowEnd);
-  if (candSamples.length < 4 || !originPoint) {
-    return Number(anchorImpTime.toFixed(3));
-  }
-
-  const ox = clamp(originPoint.x, 0.12, 0.88);
-  const oy = clamp(originPoint.y, 0.45, 0.93);
-
-  // 각 프레임에서 티(originPoint) 위치의 흰색 골프공 존재 점수(teeBallScore) 및 타격 영역 모션 측정
-  const frameStats = [];
-  for (let i = 0; i < candSamples.length; i++) {
-    const s = candSamples[i];
-    const width = s.frameCanvas.width;
-    const height = s.frameCanvas.height;
-    const data = getImgData(s.frameCanvas);
-    if (!data) continue;
-
-    const cx = Math.round(ox * width);
-    const cy = Math.round(oy * height);
-    const rInner = Math.max(2, Math.round(width * 0.011));
-    const rOuter = Math.max(5, Math.round(width * 0.025));
-
-    let bestPatchWhite = 0;
-    let ringLumSum = 0;
-    let ringCount = 0;
-
-    for (let dy = -rOuter; dy <= rOuter; dy += 2) {
-      const py = cy + dy;
-      if (py < 1 || py >= height - 1) continue;
-      for (let dx = -rOuter; dx <= rOuter; dx += 2) {
-        const px = cx + dx;
-        if (px < 1 || px >= width - 1) continue;
-        const dist = Math.hypot(dx, dy);
-        if (dist >= rOuter * 0.68 && dist <= rOuter * 1.15) {
-          const idx = (py * width + px) * 4;
-          ringLumSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-          ringCount++;
-        }
-      }
-    }
-    const bgLum = ringCount > 0 ? ringLumSum / ringCount : 100;
-
-    for (let dy = -rInner; dy <= rInner; dy++) {
-      const py = cy + dy;
-      if (py < 1 || py >= height - 1) continue;
-      for (let dx = -rInner; dx <= rInner; dx++) {
-        const px = cx + dx;
-        if (px < 1 || px >= width - 1) continue;
-        const idx = (py * width + px) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const lum = (r + g + b) / 3;
-        const chroma = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-        const whiteScore = Math.max(0, lum - bgLum) + lum * 0.35 - chroma * 0.65;
-        if (whiteScore > bestPatchWhite) bestPatchWhite = whiteScore;
-      }
-    }
-
-    let launchZoneMotion = 0;
-    if (frameStats.length > 0) {
-      const prevData = frameStats[frameStats.length - 1].data;
-      if (prevData && prevData.length === data.length) {
-        const mx0 = Math.max(2, Math.floor((ox - 0.12) * width));
-        const mx1 = Math.min(width - 3, Math.ceil((ox + 0.05) * width));
-        const my0 = Math.max(2, Math.floor((oy - 0.16) * height));
-        const my1 = Math.min(height - 3, Math.ceil((oy + 0.04) * height));
-        let diffSum = 0;
-        let diffCnt = 0;
-        for (let py = my0; py <= my1; py += 3) {
-          for (let px = mx0; px <= mx1; px += 3) {
-            const idx = (py * width + px) * 4;
-            const cLum = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-            const pLum = (prevData[idx] + prevData[idx + 1] + prevData[idx + 2]) / 3;
-            diffSum += Math.abs(cLum - pLum);
-            diffCnt++;
-          }
-        }
-        launchZoneMotion = diffCnt > 0 ? diffSum / diffCnt : 0;
-      }
-    }
-
-    frameStats.push({
-      time: s.time,
-      handY: s.hand?.y ?? 0.5,
-      motion: s.motion ?? 0,
-      teeBallScore: bestPatchWhite,
-      launchZoneMotion,
-      data
-    });
-  }
-
-  if (frameStats.length < 4) {
-    return Number(anchorImpTime.toFixed(3));
-  }
-
-  let bestImpactTime = anchorImpTime;
-  let bestScore = -Infinity;
-
-  for (let i = 1; i < frameStats.length - 1; i++) {
-    const prev = frameStats[i - 1];
-    const curr = frameStats[i];
-    const next = frameStats[Math.min(frameStats.length - 1, i + 1)];
-    const next2 = frameStats[Math.min(frameStats.length - 1, i + 2)];
-
-    if (curr.time > safeMaxImpactTime) continue;
-
-    // 타격 직전에는 티 위에 공이 존재하고, 타격 직후(curr, next, next2)에는 공이 떠나 점수가 지속 하락해야 함
-    const preBall = i >= 2 ? Math.max(prev.teeBallScore, frameStats[i - 2].teeBallScore * 0.92) : prev.teeBallScore;
-    const postBall = (curr.teeBallScore * 0.45 + next.teeBallScore * 0.35 + next2.teeBallScore * 0.20);
-    const ballDisappearanceDrop = Math.max(0, preBall - postBall);
-
-    const strikeMotionScore = curr.launchZoneMotion * 2.2 + curr.motion * 110;
-    const handDepthBonus = curr.handY * 45;
-    const anchorProximity = Math.max(0, 42 - Math.abs(prev.time - anchorImpTime) * 145);
-
-    const totalScore = ballDisappearanceDrop * 1.45 + strikeMotionScore + handDepthBonus + anchorProximity;
-    if (totalScore > bestScore) {
-      bestScore = totalScore;
-      // 공이 티에 마지막으로 놓여 있던 타격 프레임(prev.time)과 이륙 첫 프레임(curr.time) 중 타격 시점 선택
-      bestImpactTime = ballDisappearanceDrop >= 12 ? prev.time : curr.time;
-    }
-  }
-
-  return Number(clamp(bestImpactTime, boundedTopTime + 0.06, safeMaxImpactTime).toFixed(3));
+  return Number(anchorImpTime.toFixed(3));
 }
 
 /**
@@ -994,15 +1755,17 @@ export function detectVisualBallLaunchImpactTime(samples, keyMoments, originPoin
  * 어드레스 정적 배경 차분, 8방향 점광원 고립 필터 및 다중 프레임 공선성 상승 체인 탐색(Multi-Frame Collinear Rising Chain Search)을
  * 수행하여 실제 날아가는 골프공의 프레임별 위치 변화 체인(P1 -> P2 -> P3 -> P4)을 정확히 검출합니다.
  */
-export function detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, addrSample = null) {
+export function detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, addrSample = null, exactImpactOverride = null) {
   if (!samples || samples.length < 4) return null;
 
   const momentsMap = Object.fromEntries((keyMoments || []).map(m => [m.key, m.time]));
-  const visualImpTime = detectVisualBallLaunchImpactTime(samples, keyMoments, originPoint);
+  const visualImpTime = Number.isFinite(exactImpactOverride)
+    ? exactImpactOverride
+    : detectVisualBallLaunchImpactTime(samples, keyMoments, originPoint);
   const estImpTime = visualImpTime ?? momentsMap.impact ?? 1.75;
 
   const windowSamples = samples.filter(
-    s => s.frameCanvas && s.time >= estImpTime - 0.18 && s.time <= estImpTime + 0.46
+    s => s.frameCanvas && s.time >= estImpTime - 0.08 && s.time <= estImpTime + 0.46
   );
   if (windowSamples.length < 3) return null;
 
@@ -1166,7 +1929,10 @@ export function detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, 
 
   for (let fIdx = 0; fIdx < frameCandidatesList.length; fIdx++) {
     const firstFrame = frameCandidatesList[fIdx];
-    if (firstFrame.time < estImpTime - 0.12 || firstFrame.time > estImpTime + 0.16) continue;
+    const minFirstTime = Number.isFinite(exactImpactOverride)
+      ? estImpTime + 0.010
+      : estImpTime - 0.06;
+    if (firstFrame.time < minFirstTime || firstFrame.time > estImpTime + 0.14) continue;
 
     for (const cand1 of firstFrame.candidates) {
       if (cand1.score < 210) continue;
@@ -1180,17 +1946,20 @@ export function detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, 
       const buildChainFrom = (currentChain, lastFramePos, prevStepVec, prevStepDist) => {
         const len = currentChain.length;
         const sumScore = currentChain.reduce((acc, c) => acc + c.score, 0);
-        const timingBonus = Math.max(0, 120 - Math.abs(firstFrame.prevTime - estImpTime) * 600);
+        const timingBonus = Math.max(0, 140 - Math.abs(firstFrame.prevTime - estImpTime) * 750);
         const chainMetric = sumScore + len * 480 + timingBonus;
 
         if (chainMetric > bestChainMetric) {
           bestChainMetric = chainMetric;
+          const anchorImp = Number.isFinite(exactImpactOverride)
+            ? (Math.abs(firstFrame.prevTime - exactImpactOverride) <= 0.038 ? firstFrame.prevTime : exactImpactOverride)
+            : firstFrame.prevTime;
           bestChain = {
-            trueImpactTime: firstFrame.prevTime,
+            trueImpactTime: anchorImp,
             waypoints: currentChain.map(c => ({
               x: Number(c.x.toFixed(4)),
               y: Number(c.y.toFixed(4)),
-              timeOffset: Math.max(0.020, Number((c.time - firstFrame.prevTime).toFixed(3))),
+              timeOffset: Math.max(0.020, Number((c.time - anchorImp).toFixed(3))),
               score: Number(c.score.toFixed(1))
             }))
           };
@@ -1241,7 +2010,7 @@ export function detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, 
 
   // 검출된 실제 첫 비행 프레임 직전 시각으로 임팩트 시점 동기화
   const impMomentObj = (keyMoments || []).find(m => m.key === 'impact');
-  if (impMomentObj && Math.abs(trueImpactTime - impMomentObj.time) <= 0.25) {
+  if (impMomentObj && impMomentObj.source !== 'marked' && Math.abs(trueImpactTime - impMomentObj.time) <= 0.25) {
     impMomentObj.time = Number(trueImpactTime.toFixed(3));
   }
 
@@ -1637,9 +2406,9 @@ export function applyUserPinnedBallPoint(
     midPoint2: opts.midPoint2 || prevStore.mid2 ? { ...(opts.midPoint2 || {}), ...(prevStore.mid2 || {}) } : null,
     midPoint3: opts.midPoint3 || prevStore.mid3 ? { ...(opts.midPoint3 || {}), ...(prevStore.mid3 || {}) } : null,
     midPoint4: opts.midPoint4 ? { ...opts.midPoint4 } : null,
-    apexPoint: { ...(opts.apexPoint || { x: 0.308, y: 0.392 }), ...(prevStore.apex || {}) },
-    landingPoint: { ...(opts.landingPoint || { x: 0.215, y: 0.566 }), ...(prevStore.landing || {}) },
-    rollEndPoint: { ...(opts.rollEndPoint || { x: 0.195, y: 0.550 }), ...(prevStore.roll || {}) }
+    apexPoint: { ...(opts.apexPoint || { x: 0.385, y: 0.385 }), ...(prevStore.apex || {}) },
+    landingPoint: { ...(opts.landingPoint || { x: 0.335, y: 0.688 }), ...(prevStore.landing || {}) },
+    rollEndPoint: { ...(opts.rollEndPoint || { x: 0.312, y: 0.682 }), ...(prevStore.roll || {}) }
   };
 
   const pt = {
@@ -1690,16 +2459,49 @@ export function applyUserPinnedBallPoint(
   };
 
   if (resolvedKey === 'origin') {
+    const oldOrigin = next.originPoint || { x: 0.592, y: 0.819 };
+    const dxOrigin = pt.x - Number(oldOrigin.x ?? 0.592);
+    const dyOrigin = pt.y - Number(oldOrigin.y ?? 0.819);
+
     next.originPoint = {
       ...pinRecord
     };
     prevStore.origin = { ...next.originPoint };
-    if (frameTime >= 0.65 && frameTime <= Math.max(2.4, videoDuration * 0.62)) {
-      effectiveImpactTime = frameTime;
-      next.calibratedImpactTime = frameTime;
+
+    // 시작점(공 위치)을 새로 지정할 때는 자동 검출 중간점 고정 상태를 초기화하여
+    // 새로 찍은 공 위치에서부터 1px의 꺾임도 없이 매끄러운 단일 포물선이 뻗어나가도록 정렬
+    delete prevStore.mid1;
+    delete prevStore.mid2;
+    delete prevStore.mid3;
+    if (next.midPoint1) next.midPoint1 = { ...next.midPoint1, pinned: false };
+    if (next.midPoint2) next.midPoint2 = { ...next.midPoint2, pinned: false };
+    if (next.midPoint3) next.midPoint3 = { ...next.midPoint3, pinned: false };
+
+    // 수동 고정되지 않은 최고점(APEX)·탄착지점(Landing)도 새 시작점 이동에 맞춰 자연스럽게 평행·비례 보정
+    if (!next.manualApexPinned && !prevStore.apex?.pinned && next.apexPoint) {
+      next.apexPoint = {
+        ...next.apexPoint,
+        x: Number(clamp(Number(next.apexPoint.x ?? 0.385) + dxOrigin * 0.65, 0.08, 0.92).toFixed(3)),
+        y: Number(clamp(Number(next.apexPoint.y ?? 0.385) + dyOrigin * 0.25, 0.08, Math.min(0.62, pt.y - 0.16)).toFixed(3)),
+        pinned: false
+      };
     }
-    // 출발점을 새로 지정할 때 기존 중간점들과 자연스러운 단일 아크를 이루도록 재정렬
-    const reg = computeRegularizedMidpoints(next.originPoint, next.apexPoint, 0.035, 0.54, next);
+    if (!next.manualLandingPinned && !prevStore.landing?.pinned && next.landingPoint) {
+      next.landingPoint = {
+        ...next.landingPoint,
+        x: Number(clamp(Number(next.landingPoint.x ?? 0.335) + dxOrigin * 0.45, 0.06, 0.94).toFixed(3)),
+        y: Number(clamp(Number(next.landingPoint.y ?? 0.688), Math.max(0.48, (next.apexPoint?.y ?? 0.38) + 0.14), Math.max(0.52, pt.y - 0.08)).toFixed(3)),
+        pinned: false
+      };
+    }
+
+    const reg = computeRegularizedMidpoints(next.originPoint, next.apexPoint, 0.035, 0.54, {
+      ...next,
+      midPoint1: null,
+      midPoint2: null,
+      midPoint3: null,
+      pinnedPointsStore: { ...prevStore, mid1: null, mid2: null, mid3: null }
+    });
     next.midPoint1 = reg.midPoint1;
     next.midPoint2 = reg.midPoint2;
     next.midPoint3 = reg.midPoint3;
@@ -1754,7 +2556,7 @@ export function applyUserPinnedBallPoint(
       const descentSpan = Math.max(0.065, Math.min(0.22, Math.abs(cDx) * 0.42));
       next.landingPoint = {
         x: Number(clamp(next.apexPoint.x + dirSign * descentSpan, 0.06, 0.94).toFixed(3)),
-        y: Number(clamp(next.landingPoint?.y ?? 0.566, Math.max(0.40, next.apexPoint.y + 0.14), p0.y - 0.12).toFixed(3)),
+        y: Number(clamp(next.landingPoint?.y ?? 0.688, Math.max(0.54, next.apexPoint.y + 0.18), p0.y - 0.095).toFixed(3)),
         pinned: false
       };
     }
@@ -1791,7 +2593,7 @@ export function applyUserPinnedBallPoint(
       const dirSign = cDx <= 0 ? -1 : 1;
       next.landingPoint = {
         x: Number(clamp(pt.x + dirSign * Math.max(0.065, Math.abs(cDx) * 0.42), 0.06, 0.94).toFixed(3)),
-        y: Number(clamp(next.landingPoint?.y ?? 0.566, pt.y + 0.14, p0.y - 0.12).toFixed(3)),
+        y: Number(clamp(next.landingPoint?.y ?? 0.688, pt.y + 0.18, p0.y - 0.095).toFixed(3)),
         pinned: false
       };
     }
@@ -1815,7 +2617,7 @@ export function applyUserPinnedBallPoint(
       next.apexPoint = {
         ...next.apexPoint,
         x: Number(clamp(next.originPoint.x + dirSign * span * 0.62, 0.10, 0.90).toFixed(3)),
-        y: Number(clamp(Math.min(next.apexPoint.y, pt.y - 0.14), 0.08, pt.y - 0.12).toFixed(3))
+        y: Number(clamp(Math.min(next.apexPoint.y, pt.y - 0.18), 0.08, pt.y - 0.15).toFixed(3))
       };
     }
     const reg = computeRegularizedMidpoints(next.originPoint, next.apexPoint, 0.035, 0.54, next);
@@ -1831,12 +2633,12 @@ export function applyUserPinnedBallPoint(
     prevStore.roll = { ...next.rollEndPoint };
   }
 
-  // 탄착 후 런(rollEndPoint)이 수동 고정되지 않은 경우 탄착 진행 방향으로 자연스럽게 정렬
+  // 탄착 후 런(rollEndPoint)이 수동 고정되지 않은 경우 잔디 지면 위에서 탄착 진행 방향으로 자연스럽게 정렬
   if (!next.rollEndPoint?.pinned && !prevStore.roll?.pinned) {
-    const rollDirX = clamp((next.landingPoint.x - next.apexPoint.x) * 0.24, -0.04, 0.04);
+    const rollDirX = clamp((next.landingPoint.x - next.apexPoint.x) * 0.22, -0.035, 0.035);
     next.rollEndPoint = {
       x: Number(clamp(next.landingPoint.x + rollDirX, 0.05, 0.95).toFixed(3)),
-      y: Number(clamp(next.landingPoint.y - 0.018, 0.08, next.landingPoint.y).toFixed(3)),
+      y: Number(clamp(next.landingPoint.y - 0.005, 0.30, next.landingPoint.y).toFixed(3)),
       pinned: false
     };
   }
@@ -1859,7 +2661,7 @@ export function applyUserPinnedBallPoint(
  * 영상에서 검출된 프레임별 실제 공 위치 변화(originPoint -> mid1 -> mid2 -> mid3 -> mid4) 및
  * 3D 원근 감속비(k_z), 초기 좌우 출발각(launchDirectionDeg), 스핀 곡률(sideCurveMeters)을 판독하여
  * 과장 없는 현실적인 APEX 최고점 높이(m), 캐리 거리(m), 런 거리(m), 발사 탄도(°), 7대 구질, 볼 스피드(m/s) 및
- * 화면상 둥근 정점(apexPoint)과 원거리 페어웨이 탄착지점(landingPoint)을 자동 산출합니다.
+ * 화면상 둥근 정점(apexPoint)과 원거리 페어웨이 잔디 탄착지점(landingPoint)을 자동 산출합니다.
  */
 export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints, fairwayAnchor, samples = []) {
   const p0 = originPoint || { x: 0.592, y: 0.819 };
@@ -1898,17 +2700,19 @@ export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints,
   const normClimbRate = (p0.y - m3.y) / Math.max(0.25, sAt3);
   const launchAngleDeg = Number(clamp(8.4 + normClimbRate * (isPortrait ? 9.4 : 8.6), 7.5, 20.5).toFixed(1));
 
-  // 4) 초기 출발 방향각(launchDirectionDeg) 및 스핀 휘어짐(sideCurveMeters) 정밀 분리 판독
+  // 4) 산림 경계선(treeLineY) 아래의 실제 잔디 지면 Y 범위([minGrassY, maxGrassY]) 설정 (절대 산/나무에 떨어지지 않도록 보장)
   const lastTracked = rawList[rawList.length - 1] || m3;
+  const minGrassY = fairwayAnchor?.minGrassY ?? (isPortrait ? 0.668 : 0.54);
+  const maxGrassY = fairwayAnchor?.maxGrassY ?? Math.min(isPortrait ? 0.755 : 0.62, p0.y - 0.095);
   const baseFwY = fairwayAnchor
-    ? clamp(fairwayAnchor.y, isPortrait ? 0.53 : 0.42, isPortrait ? 0.59 : 0.52)
-    : (isPortrait ? 0.566 : 0.460);
+    ? clamp(fairwayAnchor.y, minGrassY, maxGrassY)
+    : clamp(p0.y - (isPortrait ? 0.135 : 0.20), minGrassY, maxGrassY);
 
-  // DTL 카메라에서 타석 공(p0.x ~ 0.59)과 원거리 페어웨이 중앙 소실점(x ~ 0.50)을 잇는 중립 직진 기울기
+  // DTL 카메라에서 타석 공과 원거리 열린 페어웨이 소실점을 잇는 중립 직진 기울기
   const neutralVanishX = fairwayAnchor
-    ? clamp(fairwayAnchor.x, 0.46, 0.56)
-    : (isPortrait ? p0.x - 0.088 : p0.x - 0.02);
-  const neutralSlopeX = (neutralVanishX - p0.x) / Math.max(0.18, p0.y - baseFwY);
+    ? clamp(fairwayAnchor.x, 0.28, 0.56)
+    : (isPortrait ? p0.x - 0.16 : p0.x - 0.06);
+  const neutralSlopeX = (neutralVanishX - p0.x) / Math.max(0.12, p0.y - baseFwY);
 
   // 실제 검출된 공의 초기 상승 기울기(dx / dy_up)
   const actualSlope01 = (rawList[0].x - p0.x) / Math.max(0.04, p0.y - rawList[0].y);
@@ -1926,43 +2730,72 @@ export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints,
 
   const classifiedShape = classifyShotShapeLabel(sideCurveMeters, launchDirectionDeg, 'auto');
 
-  // 5) 과장 없는 현실적인 APEX 최고점 높이(apexMeters, 일반 21~27m) 및 캐리·런 거리 산출
+  // 5) 과장 없는 현실적인 APEX 최고점 높이(apexMeters, 일반 21~27m) 및 지형 경사(오르막/평지/내리막) 반영 캐리·런 거리 산출
   const apexMeters = Number(
     clamp(14.2 + (ballSpeedMps - 45) * 0.42 + (launchAngleDeg - 10) * 1.05, 10.0, 33.5).toFixed(1)
   );
 
+  const rawElevationDeltaM = Number(fairwayAnchor?.elevationDeltaMeters ?? 0.0);
+  const rawTerrainSlopeType = fairwayAnchor?.terrainSlopeType || 'flat';
+  const slopeInfo = classifyTerrainSlopeInfo(rawElevationDeltaM, 'auto', rawTerrainSlopeType);
+
   const speedRatio = ballSpeedMps / 60.0;
   const launchEfficiency = Math.cos(((launchAngleDeg - 13.2) * Math.PI) / 180 * 1.45);
-  const carryMeters = Number(
+  const baseFlatCarryMeters = Number(
     clamp(196.0 * Math.pow(speedRatio, 1.32) * launchEfficiency, 85.0, 248.0).toFixed(1)
+  );
+  // 오르막(+Δh)은 지면이 일찍 마주쳐 캐리가 감소하고, 내리막(-Δh)은 체공 시간이 길어져 캐리가 증가함
+  const carryMeters = Number(
+    clamp(baseFlatCarryMeters + slopeInfo.carryDeltaMeters, 72.0, 268.0).toFixed(1)
   );
 
   const landingSteepness = clamp(apexMeters / 25.0, 0.65, 1.45);
-  const rollMeters = Number(
+  const baseFlatRollMeters = Number(
     clamp((13.8 * speedRatio) / Math.pow(landingSteepness, 0.75), 3.5, 26.0).toFixed(1)
   );
+  // 오르막 사면 탄착 시 런이 줄어들고, 내리막 사면 탄착 시 런이 증가함
+  const rollMeters = Number(
+    clamp(baseFlatRollMeters * slopeInfo.rollMultiplier, 2.2, 32.0).toFixed(1)
+  );
 
-  // 6) 물리적으로 원만하게 휘어지는 단일 포물선 정점(apexPoint) 및 탄착지점(landingPoint) 산출
+  // 6) 물리적으로 원만하게 휘어지는 단일 포물선 정점(apexPoint) 및 경사 지면 탄착지점(landingPoint) 산출
   const heightNorm = clamp((apexMeters - 12) / 24, 0.20, 0.95);
-  const landingY = clamp(baseFwY, isPortrait ? 0.53 : 0.42, isPortrait ? 0.59 : 0.52);
-  const apexY = clamp(landingY - (isPortrait ? (0.14 + heightNorm * 0.08) : (0.15 + heightNorm * 0.10)), 0.14, landingY - 0.11);
+  const landingY = clamp(baseFwY, minGrassY, maxGrassY);
+  const apexY = clamp(
+    landingY - (isPortrait ? (0.25 + heightNorm * 0.10) : (0.18 + heightNorm * 0.12)),
+    0.12,
+    Math.min(isPortrait ? 0.43 : 0.40, landingY - 0.16)
+  );
 
-  // 상승 구간 X 이동량과 하강 구간 X 이동량이 항상 동일 진행 부호를 유지하여 정점에서 직각 꺾임 원천 차단
+  // 상승 구간 X 이동량과 하강 구간 X 이동량이 항상 동일 진행 부호를 유지하며 열린 잔디 회랑(fairwayAnchor.x)에 안착
   const rawClimbDx = (lastTracked.x - p0.x) * 1.26;
   const climbDirSign = rawClimbDx <= 0 ? -1 : 1;
   const climbSpanX = Math.max(0.11, Math.min(0.32, Math.abs(rawClimbDx)));
-  const apexX = clamp(p0.x + climbDirSign * climbSpanX, 0.14, 0.86);
+  const rawApexX = clamp(p0.x + climbDirSign * climbSpanX, 0.14, 0.86);
+
+  const baseDescentSpan = Math.max(0.075, climbSpanX * 0.34 + Math.abs(sideCurveMeters) * 0.0042);
+  const rawLandingX = clamp(rawApexX + climbDirSign * baseDescentSpan, 0.08, 0.92);
+
+  let landingX = rawLandingX;
+  if (fairwayAnchor && Number.isFinite(fairwayAnchor.x) && climbDirSign <= 0) {
+    const curveOffsetX = clamp(sideCurveMeters * 0.0035, -0.06, 0.06);
+    const targetGrassX = clamp(fairwayAnchor.x + curveOffsetX, 0.16, Math.min(0.54, p0.x - 0.14));
+    landingX = clamp(rawLandingX * 0.30 + targetGrassX * 0.70, 0.12, Math.min(0.56, p0.x - 0.14));
+  }
+
+  const apexX = clamp(
+    climbDirSign <= 0 && fairwayAnchor && Number.isFinite(fairwayAnchor.x)
+      ? p0.x + (landingX - p0.x) * 0.58
+      : rawApexX,
+    0.14,
+    0.86
+  );
 
   const apexPoint = {
     x: Number(apexX.toFixed(3)),
     y: Number(apexY.toFixed(3))
   };
 
-  // 하강 구간 X 이동량: 정점 접선 방향(climbDirSign)을 이어받아 넓은 돔 형태로 원만하게 하강
-  const baseDescentSpan = Math.max(0.075, climbSpanX * 0.34 + Math.abs(sideCurveMeters) * 0.0042);
-  const netDescentShiftX = climbDirSign * baseDescentSpan;
-
-  const landingX = clamp(apexX + netDescentShiftX, 0.08, 0.92);
   const landingPoint = {
     x: Number(landingX.toFixed(3)),
     y: Number(landingY.toFixed(3))
@@ -1971,21 +2804,28 @@ export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints,
   // 정점(apexPoint)이 확정되면 중간점(midPoint1~4)을 동일 포물선 위에 정렬하여 M4->APEX 꺾임을 0으로 제거
   const regularized = computeRegularizedMidpoints(p0, apexPoint, dt1, 0.54, trackedWaypoints);
 
-  const rollNorm = clamp(rollMeters / 22, 0.25, 1.25);
-  const rollDirX = clamp((landingX - apexX) * 0.24, -0.035, 0.035);
+  // 탄착 후 런(rollEndPoint): 오르막은 경사면을 따라 위쪽으로 짧게 구르고, 평지·내리막은 잔디 지면 위에서 원근 방향으로 굴러가도록 설정
+  const rollNorm = clamp(rollMeters / 22, 0.20, 1.35);
+  const rollDirX = clamp((landingX - apexX) * 0.22, -0.032, 0.032);
+  const rollStepY = slopeInfo.slopeType === 'uphill'
+    ? (isPortrait ? 0.008 : 0.011) * rollNorm
+    : (slopeInfo.slopeType === 'downhill' ? (isPortrait ? 0.004 : 0.006) * rollNorm : (isPortrait ? 0.005 : 0.008) * rollNorm);
+  const rollMinY = slopeInfo.slopeType === 'uphill' ? Math.max(0.46, minGrassY - 0.010) : minGrassY;
   const rollEndPoint = {
     x: Number(clamp(landingX + rollDirX * rollNorm, 0.06, 0.94).toFixed(3)),
-    y: Number(clamp(landingY - (isPortrait ? 0.016 : 0.026) * rollNorm, 0.34, landingY - 0.008).toFixed(3))
+    y: Number(clamp(landingY - rollStepY, rollMinY, landingY - 0.002).toFixed(3))
   };
 
-  // 현실적인 슬로우 모션 체공 시간 (공이 출발하여 APEX까지 여유 있게 떠오른 뒤 서서히 떨어지는 시간)
-  const flightDurationSec = Number(clamp(2.45 + (carryMeters / 220) * 0.45, 2.20, 3.20).toFixed(2));
-  const rollDurationSec = Number(clamp(0.38 + (rollMeters / 20) * 0.18, 0.28, 0.68).toFixed(2));
+  // 지형 고도차에 따른 현실적인 슬로우 모션 체공 시간 (내리막은 체공 시간 증가, 오르막은 체공 시간 감소)
+  const flightDurationSec = Number(clamp(2.45 + (carryMeters / 220) * 0.45 - slopeInfo.elevationDeltaMeters * 0.015, 2.05, 3.35).toFixed(2));
+  const rollDurationSec = Number(clamp(0.38 + (rollMeters / 20) * 0.18, 0.25, 0.72).toFixed(2));
   const backspinRpm = Math.round(clamp(2420 + (launchAngleDeg - 12.5) * 110 - sideCurveMeters * 28, 1800, 7200));
 
   return {
     carryMeters,
     rollMeters,
+    baseFlatCarryMeters,
+    baseFlatRollMeters,
     apexMeters,
     launchAngleDeg,
     launchDirectionDeg,
@@ -1996,6 +2836,10 @@ export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints,
     detectedSideCurveMeters: sideCurveMeters,
     shotShapeType: 'auto',
     detectedShotShape: classifiedShape.code,
+    terrainSlopeMode: 'auto',
+    detectedTerrainSlope: slopeInfo.slopeType,
+    elevationDeltaMeters: slopeInfo.elevationDeltaMeters,
+    detectedElevationDeltaMeters: slopeInfo.elevationDeltaMeters,
     flightDurationSec,
     rollDurationSec,
     perspectiveKz,
@@ -2013,13 +2857,13 @@ export function estimateShotMetricsFromVideoTrack(originPoint, trackedWaypoints,
 /**
  * 캔버스 위에서 출발점·중간점·APEX·탄착지점이 수동 보정되었을 때,
  * 수동 지정(pinned: true)된 공 위치를 보존하면서 나머지 점들을 하나의 유연한 포물선으로 연결하고
- * APEX 높이(m), 캐리 거리(m), 런 거리(m), 발사 탄도(°), 7구질을 자동 재판독합니다.
+ * APEX 높이(m), 캐리 거리(m), 런 거리(m), 발사 탄도(°), 7구질 및 지형 고도차를 자동 재판독합니다.
  */
 export function recalculateMetricsFromGeometry(opts) {
   const p0 = opts.originPoint || { x: 0.592, y: 0.819 };
-  const pApex = opts.apexPoint || { x: 0.308, y: 0.392 };
-  const pLand = opts.landingPoint || { x: 0.215, y: 0.566 };
-  const pRoll = opts.rollEndPoint || { x: 0.195, y: 0.550 };
+  const pApex = opts.apexPoint || { x: 0.385, y: 0.385 };
+  const pLand = opts.landingPoint || { x: 0.335, y: 0.688 };
+  const pRoll = opts.rollEndPoint || { x: 0.312, y: 0.682 };
   const isPortrait = Boolean(opts.fairwayAnchor?.isPortrait || p0.x >= 0.53);
 
   // 수동 고정된 중간점(pinned: true)은 그대로 유지하고 미고정 중간점만 유연 곡선 위에 배치
@@ -2027,20 +2871,27 @@ export function recalculateMetricsFromGeometry(opts) {
   const reg = computeRegularizedMidpoints(p0, pApex, baseStepSec, 0.54, opts);
   const m3 = reg.midPoint3;
 
-  const screenApexSpan = clamp(pLand.y - pApex.y, 0.06, 0.45);
-  const apexMeters = Number(clamp(screenApexSpan * (isPortrait ? 138.0 : 125.0), 8.0, 48.0).toFixed(1));
+  const screenApexSpan = clamp(pLand.y - pApex.y, 0.06, 0.52);
+  const apexMeters = Number(clamp(screenApexSpan * (isPortrait ? 82.0 : 95.0), 8.0, 48.0).toFixed(1));
 
   const climbSpan = clamp(p0.y - m3.y, 0.08, 0.48);
   const launchAngleDeg = Number(clamp(7.0 + climbSpan * (isPortrait ? 17.5 : 19.0), 6.0, 26.0).toFixed(1));
 
-  const depthSpan = clamp(p0.y - pLand.y, 0.10, 0.45);
-  const carryMeters = Number(clamp(145 + depthSpan * (isPortrait ? 215 : 230) + (apexMeters - 24) * 1.1, 70, 285).toFixed(1));
+  // 탄착 지점 수동 이동 시 평지 기준선 대비 오르막(+m)/내리막(-m) 고도차 반영
+  const flatRefY = isPortrait ? 0.682 : 0.575;
+  const elevationDeltaMeters = opts.manualLandingPinned
+    ? Number(clamp((flatRefY - pLand.y) * 145.0, -22.0, 20.0).toFixed(1))
+    : Number(opts.elevationDeltaMeters ?? 0.0);
+  const slopeInfo = classifyTerrainSlopeInfo(elevationDeltaMeters, opts.manualLandingPinned ? 'auto' : (opts.terrainSlopeMode || 'auto'), opts.detectedTerrainSlope || 'flat');
+
+  const depthSpan = clamp(p0.y - pLand.y, 0.08, 0.45);
+  const carryMeters = Number(clamp(158 + depthSpan * (isPortrait ? 260 : 240) + (apexMeters - 24) * 1.1 + slopeInfo.carryDeltaMeters * 0.45, 70, 285).toFixed(1));
 
   const rollSpan = Math.hypot(pRoll.x - pLand.x, pRoll.y - pLand.y);
   const rollMeters = Number(clamp(rollSpan * (isPortrait ? 580 : 480), 0, 42).toFixed(1));
 
-  const neutralVanishX = isPortrait ? p0.x - 0.088 : p0.x - 0.02;
-  const neutralSlopeX = (neutralVanishX - p0.x) / Math.max(0.18, p0.y - pLand.y);
+  const neutralVanishX = isPortrait ? p0.x - 0.16 : p0.x - 0.06;
+  const neutralSlopeX = (neutralVanishX - p0.x) / Math.max(0.12, p0.y - pLand.y);
   const actualSlopeX = (pApex.x - p0.x) / Math.max(0.12, p0.y - pApex.y);
   const launchDirectionDeg = Number(clamp((actualSlopeX - neutralSlopeX) * 15.0, -15, 15).toFixed(1));
   const sideCurveMeters = Number(clamp((pLand.x - pApex.x) * 62.0, -22, 22).toFixed(1));
@@ -2058,6 +2909,7 @@ export function recalculateMetricsFromGeometry(opts) {
     carryMeters,
     rollMeters,
     sideCurveMeters,
+    elevationDeltaMeters: slopeInfo.elevationDeltaMeters,
     autoReadoutSource: 'canvas-calibrated'
   };
 }
@@ -2069,6 +2921,7 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
 
   let addrSample = samples?.[0];
   let impSample = samples?.[0];
+  let finishSample = samples?.length ? samples[samples.length - 1] : null;
   if (samples?.length) {
     addrSample = samples.reduce((best, s) =>
       Math.abs(s.time - addrTime) < Math.abs(best.time - addrTime) ? s : best
@@ -2078,19 +2931,21 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
     , samples[0]);
   }
 
-  // 1단계: 어드레스 프레임 이미지에서 골프채 끝 헤드 앞쪽 실제 공 위치 및 원거리 초록 페어웨이 탄착 영역 직접 검출
-  const frameDetection = detectBallAndFairwayFromAddressFrame(
+  // 1단계: 어드레스 프레임 이미지에서 골프채 끝 헤드 앞쪽 초기 공 후보 검출
+  const initialFrameDetection = detectBallAndFairwayFromAddressFrame(
     addrSample?.frameCanvas || impSample?.frameCanvas,
-    addrSample
+    addrSample,
+    'right',
+    [impSample, finishSample].filter(Boolean)
   );
 
-  let originPoint;
-  if (frameDetection?.originPoint) {
-    originPoint = frameDetection.originPoint;
+  let fallbackOrigin;
+  if (initialFrameDetection?.originPoint) {
+    fallbackOrigin = initialFrameDetection.originPoint;
   } else if (addrSample?.ballPoint && Number.isFinite(addrSample.ballPoint.x)) {
-    originPoint = {
+    fallbackOrigin = {
       x: Number(clamp(addrSample.ballPoint.x, 0.18, 0.84).toFixed(3)),
-      y: Number(clamp(addrSample.ballPoint.y, 0.56, 0.90).toFixed(3))
+      y: Number(clamp(addrSample.ballPoint.y, 0.56, 0.92).toFixed(3))
     };
   } else {
     const rawOriginX = clamp(
@@ -2101,25 +2956,49 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
     const rawOriginY = clamp(
       Math.max(addrSample?.clubHead?.y ?? 0.819, 0.64),
       0.58,
-      0.90
+      0.92
     );
-    originPoint = { x: Number(rawOriginX.toFixed(3)), y: Number(rawOriginY.toFixed(3)) };
+    fallbackOrigin = { x: Number(rawOriginX.toFixed(3)), y: Number(rawOriginY.toFixed(3)) };
   }
 
+  // 2단계: [4단계 정밀 티 볼 & 스텝-클리프 동기화 엔진]으로 클럽 헤드/티 마커를 배제한 순수 골프공 좌표 및 단일 프레임 임팩트 시각 확정
+  const exactSync = detectExactTeeBallAndImpactFromFrames(samples, keyMoments, fallbackOrigin);
+  const originPoint = (exactSync && exactSync.ballPresenceScore >= 28 && exactSync.originPoint)
+    ? exactSync.originPoint
+    : fallbackOrigin;
+
+  // 확정된 실제 티 볼 좌표(originPoint) 및 다중 프레임(어드레스·임팩트·피니시) 장애물 회피를 적용해 지형 경사(오르막/평지/내리막) 및 잔디 지면(fairwayAnchor) 확정
+  const refinedGroundDetection = detectBallAndFairwayFromAddressFrame(
+    addrSample?.frameCanvas || impSample?.frameCanvas,
+    addrSample,
+    'right',
+    [impSample, finishSample].filter(Boolean),
+    originPoint
+  );
+  const frameDetection = refinedGroundDetection || initialFrameDetection;
   const fairwayAnchor = frameDetection?.fairwayAnchor || opts.fairwayAnchor || null;
 
-  // 2단계: 티 위 골프공 이탈 시각(visualImpTime) 및 임팩트 전후 연속 프레임들에서 실제 날아가는 골프공의 다중 위치 체인 자동 추적
-  const visualImpTime = detectVisualBallLaunchImpactTime(samples, keyMoments, originPoint);
-  const trackedResult = detectRealFlyingBallWaypoints(samples, keyMoments, originPoint, addrSample);
-  const resolvedImpactTime = Number((trackedResult?.trueImpactTime ?? visualImpTime ?? impTime).toFixed(3));
+  const exactImpactTime = exactSync?.impactTime ?? detectVisualBallLaunchImpactTime(samples, keyMoments, originPoint);
+  const trackedResult = detectRealFlyingBallWaypoints(
+    samples,
+    keyMoments,
+    originPoint,
+    addrSample,
+    exactSync?.confident ? exactSync.impactTime : exactImpactTime
+  );
 
-  const impMomentObj = (keyMoments || []).find(m => m.key === 'impact');
-  if (impMomentObj && Number.isFinite(resolvedImpactTime)) {
-    impMomentObj.time = resolvedImpactTime;
-  }
+  const resolvedImpactTime = Number(
+    (exactSync?.confident
+      ? exactSync.impactTime
+      : (trackedResult?.trueImpactTime ?? exactImpactTime ?? impTime)
+    ).toFixed(3)
+  );
+
+  // 검출된 실제 타격 프레임(resolvedImpactTime)에 맞춰 7단계 스윙 시퀀스 전체 타임스탬프를 역전 없이 재동기화
+  reconcileKeyMomentsWithExactImpact(keyMoments, resolvedImpactTime, exactSync?.burstStart ?? null, samples);
 
   const fallbackApex = {
-    x: Number(clamp(originPoint.x - 0.284, 0.14, 0.86).toFixed(3)),
+    x: Number(clamp(originPoint.x - 0.24, 0.14, 0.86).toFixed(3)),
     y: Number(clamp(originPoint.y - 0.427, 0.14, 0.52).toFixed(3))
   };
   const fallbackReg = computeRegularizedMidpoints(originPoint, fallbackApex, 0.035, 0.54);
@@ -2133,7 +3012,7 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
     ? trackedResult.waypoints
     : fallbackReg.waypoints;
 
-  // 3단계: 검출된 다중 프레임 공 위치 변화로부터 APEX 높이(m), 캐리(m), 런(m), 탄도(°), 7구질, 볼 스피드(m/s) 자동 판독 및 등록
+  // 3단계: 검출된 다중 프레임 공 위치 변화 및 지형 경사로부터 APEX 높이(m), 캐리(m), 런(m), 탄도(°), 7구질, 볼 스피드(m/s) 자동 판독 및 등록
   const autoMetrics = estimateShotMetricsFromVideoTrack(
     originPoint,
     {
@@ -2153,11 +3032,13 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
     ...autoMetrics,
     originPoint,
     calibratedImpactTime: resolvedImpactTime,
+    burstStart: exactSync?.burstStart ?? null,
+    cliffScore: exactSync?.cliffScore ?? 0,
     detectedFrameCount: trackedResult?.detectedCount ?? trackedWaypoints.length,
     hasRealBallTrack: Boolean(trackedResult && trackedResult.detectedCount >= 2),
     rawTrackedWaypointsCount: Number(trackedResult?.detectedCount || 0),
-    ballDirectlyDetected: Boolean(frameDetection?.ballDirectlyDetected),
-    ballConfidenceScore: Number(frameDetection?.ballConfidenceScore || 0),
+    ballDirectlyDetected: Boolean((exactSync && exactSync.ballPresenceScore >= 28) || frameDetection?.ballDirectlyDetected),
+    ballConfidenceScore: Number(Math.max(exactSync?.ballPresenceScore || 0, frameDetection?.ballConfidenceScore || 0).toFixed(1)),
     fairwayDirectlyDetected: Boolean(frameDetection?.fairwayDirectlyDetected),
     fairwayWeight: Number(frameDetection?.fairwayWeight || 0),
     autoReadoutSource: 'video-auto',
@@ -2170,7 +3051,7 @@ export function autoCalibrateShotTracerFromVideo(samples, keyMoments, opts = {})
 }
 
 /**
- * 사용자가 구질·캐리·런·APEX 높이·탄도·좌우 휘어짐을 직접 수정하거나 슬라이더를 조작했을 때
+ * 사용자가 구질·지형 경사·캐리·런·APEX 높이·탄도·좌우 휘어짐을 직접 수정하거나 슬라이더를 조작했을 때
  * 화면상 중간점(midPoint1~4), 최고점(apexPoint), 원거리 페어웨이 탄착지점(landingPoint), 최종 정지점(rollEndPoint)이
  * 직각 꺾임 없는 하나의 매끄러운 물리적 포물선 아크를 이루도록 동기화합니다.
  */
@@ -2186,15 +3067,32 @@ export function syncShotGeometryFromMetrics(opts) {
   const fwAnchor = opts.fairwayAnchor || null;
   const isPortrait = Boolean(fwAnchor?.isPortrait || origin.x >= 0.53);
 
+  // 지형 경사(오르막 / 평지 / 내리막) 및 수동 경사 변경에 따른 탄착 고도(Y) 보정
+  const detElev = Number(opts.detectedElevationDeltaMeters ?? fwAnchor?.elevationDeltaMeters ?? 0);
+  const detSlope = opts.detectedTerrainSlope || fwAnchor?.terrainSlopeType || 'flat';
+  const slopeInfo = classifyTerrainSlopeInfo(opts.elevationDeltaMeters ?? detElev, opts.terrainSlopeMode || 'auto', detSlope);
+  const manualElevShift = (opts.terrainSlopeMode && opts.terrainSlopeMode !== 'auto')
+    ? (slopeInfo.elevationDeltaMeters - detElev)
+    : 0;
+
+  let minGrassY = fwAnchor?.minGrassY ?? (isPortrait ? 0.660 : 0.535);
+  let maxGrassY = fwAnchor?.maxGrassY ?? Math.min(isPortrait ? 0.755 : 0.625, origin.y - 0.085);
+  if (slopeInfo.slopeType === 'uphill') {
+    minGrassY = Math.min(minGrassY, isPortrait ? 0.505 : 0.450);
+  } else if (slopeInfo.slopeType === 'downhill') {
+    maxGrassY = Math.max(maxGrassY, Math.min(isPortrait ? 0.758 : 0.635, origin.y - 0.075));
+  }
+
   const distNorm = clamp((carryM - 80) / 180, 0.15, 1.05);
+  const elevYShift = clamp(-manualElevShift * 0.0052, -0.14, 0.08);
   const baseFwY = fwAnchor
-    ? clamp(fwAnchor.y - (distNorm - 0.65) * 0.032, isPortrait ? 0.52 : 0.40, isPortrait ? 0.59 : 0.52)
-    : clamp(origin.y - (isPortrait ? (0.235 + 0.035 * distNorm) : (0.28 + 0.08 * distNorm)), isPortrait ? 0.52 : 0.40, isPortrait ? 0.59 : 0.52);
-  const naturalLandingY = clamp(baseFwY, isPortrait ? 0.52 : 0.40, origin.y - 0.18);
+    ? clamp(fwAnchor.y + elevYShift - (distNorm - 0.65) * 0.020, minGrassY, maxGrassY)
+    : clamp(origin.y - (isPortrait ? (0.125 + 0.025 * distNorm) : (0.18 + 0.05 * distNorm)) + elevYShift, minGrassY, maxGrassY);
+  const naturalLandingY = clamp(baseFwY, minGrassY, maxGrassY);
 
   const heightNorm = clamp(((apexM - 8) / 28) * 0.78 + ((launchDeg - 8) / 18) * 0.22, 0.12, 1.0);
-  const apexRiseSpan = isPortrait ? (0.13 + 0.13 * heightNorm) : (0.13 + 0.19 * heightNorm);
-  const naturalApexY = clamp(naturalLandingY - apexRiseSpan, 0.08, naturalLandingY - 0.09);
+  const apexRiseSpan = isPortrait ? (0.24 + 0.11 * heightNorm) : (0.18 + 0.14 * heightNorm);
+  const naturalApexY = clamp(naturalLandingY - apexRiseSpan, 0.08, Math.min(isPortrait ? 0.44 : 0.40, naturalLandingY - 0.16));
 
   // 7대 구질 및 좌우 휘어짐에 따른 단조 수평 진행(origin.x -> apexX -> landingX) 산출
   const shapeInfo = classifyShotShapeLabel(sideM, launchDirDeg, opts.shotShapeType || 'auto');
@@ -2236,6 +3134,12 @@ export function syncShotGeometryFromMetrics(opts) {
 
   let naturalApexX = clamp(origin.x + climbDx, 0.12, 0.88);
   let naturalLandingX = clamp(naturalApexX + descDx, 0.07, 0.93);
+  if (!isRightArch && fwAnchor && Number.isFinite(fwAnchor.x)) {
+    const curveOffsetX = clamp(sideM * 0.0035, -0.06, 0.06);
+    const targetGrassX = clamp(fwAnchor.x + curveOffsetX, 0.16, Math.min(0.54, origin.x - 0.14));
+    naturalLandingX = clamp(naturalLandingX * 0.35 + targetGrassX * 0.65, 0.10, Math.min(0.56, origin.x - 0.14));
+    naturalApexX = clamp(origin.x + (naturalLandingX - origin.x) * 0.58, 0.12, 0.88);
+  }
 
   const hasPinnedMid = Boolean(opts.midPoint1?.pinned || opts.midPoint2?.pinned || opts.midPoint3?.pinned);
 
@@ -2260,12 +3164,17 @@ export function syncShotGeometryFromMetrics(opts) {
   const reg = computeRegularizedMidpoints(origin, { x: apexX, y: apexY }, baseStepSec, 0.54, opts);
 
   const rollNorm = clamp(rollM / 22, 0, 1.35);
-  const rollDirX = clamp((landingX - apexX) * 0.24, -0.04, 0.04);
+  const rollDirX = clamp((landingX - apexX) * 0.22, -0.035, 0.035);
+  const rollStepY = slopeInfo.slopeType === 'uphill'
+    ? (isPortrait ? 0.008 : 0.011) * rollNorm
+    : (slopeInfo.slopeType === 'downhill' ? (isPortrait ? 0.004 : 0.006) * rollNorm : (isPortrait ? 0.005 : 0.008) * rollNorm);
+  const rollMinY = slopeInfo.slopeType === 'uphill' ? Math.max(0.46, minGrassY - 0.010) : minGrassY;
   const rollEndX = opts.rollEndPoint?.pinned ? opts.rollEndPoint.x : clamp(landingX + rollDirX * rollNorm, 0.06, 0.94);
-  const rollEndY = opts.rollEndPoint?.pinned ? opts.rollEndPoint.y : clamp(landingY - (isPortrait ? 0.016 : 0.026) * rollNorm, 0.32, landingY);
+  const rollEndY = opts.rollEndPoint?.pinned ? opts.rollEndPoint.y : clamp(landingY - rollStepY, rollMinY, landingY);
 
   return {
     ...opts,
+    elevationDeltaMeters: slopeInfo.elevationDeltaMeters,
     originPoint: { ...origin, x: Number(origin.x.toFixed(3)), y: Number(origin.y.toFixed(3)) },
     midPoint1: reg.midPoint1,
     midPoint2: reg.midPoint2,
@@ -2290,9 +3199,9 @@ export function syncShotGeometryFromMetrics(opts) {
  */
 export function buildBallFlightCurveSamples(opts, impactTime, videoDuration) {
   const p0 = opts.originPoint || { x: 0.592, y: 0.819 };
-  const pApex = opts.apexPoint || { x: 0.308, y: 0.392 };
-  const pLand = opts.landingPoint || { x: 0.215, y: 0.566 };
-  const pRoll = opts.rollEndPoint || { x: 0.195, y: 0.550 };
+  const pApex = opts.apexPoint || { x: 0.385, y: 0.385 };
+  const pLand = opts.landingPoint || { x: 0.335, y: 0.688 };
+  const pRoll = opts.rollEndPoint || { x: 0.312, y: 0.682 };
   const isRealTail = (opts.trajectoryMode || 'real-tail') === 'real-tail';
 
   const carryM = Math.max(10, Number(opts.carryMeters ?? 198.5));
@@ -2744,31 +3653,28 @@ export function renderShotTracerOverlay(ctx, width, height, state, currentTime, 
   const dur = Math.max(0.5, Number(state.duration || 3.2));
   const impMomentObj = (state.keyMoments || []).find(m => m.key === 'impact');
   const finMomentObj = (state.keyMoments || []).find(m => m.key === 'finish');
-  const hasExplicitOriginTime = Boolean(stOpts.originPoint?.pinned && Number.isFinite(stOpts.originPoint?.pinnedTime) && stOpts.originPoint.pinnedTime >= 0.65);
+  const isManualLocked = Boolean(stOpts.manualImpactLocked) || (impMomentObj?.source === 'marked');
 
   let rawImpact = (impMomentObj?.source === 'marked')
     ? impMomentObj.time
-    : (hasExplicitOriginTime
-      ? stOpts.originPoint.pinnedTime
+    : (Boolean(stOpts.manualImpactLocked) && Number.isFinite(stOpts.calibratedImpactTime)
+      ? stOpts.calibratedImpactTime
       : (Number.isFinite(stOpts.calibratedImpactTime)
         ? stOpts.calibratedImpactTime
         : (impMomentObj?.time ?? dur * 0.36)));
 
-  // 사용자가 수동 지정하지 않은 자동 임팩트 시각이 스윙 피니시 이후(또는 4.2초 이상 긴 영상의 후반부)로 밀려 있는 경우,
-  // 스윙 도중 실제 타격 구간(피니시 이전)으로 즉시 보정하여 스윙이 끝난 뒤 공이 늦게 출발하는 현상 차단
-  if (impMomentObj?.source !== 'marked' && !hasExplicitOriginTime) {
-    const maxPreFinishImpact = (finMomentObj && finMomentObj.time > 0.9 && finMomentObj.time <= dur * 0.72)
-      ? Math.max(0.55, finMomentObj.time - 0.45)
-      : (dur >= 4.2 ? dur * 0.38 : dur * 0.56);
-    if (rawImpact > maxPreFinishImpact + 0.22) {
-      rawImpact = maxPreFinishImpact;
+  // 사용자가 원터치 수동 고정(isManualLocked)하지 않은 자동 추정치인 경우, 긴 영상(>=4.2초)에서 피니시 이후(2.48초 초과)로 밀리는 현상 방어
+  if (!isManualLocked) {
+    const maxAllowedImpact = dur >= 4.2 ? Math.min(2.48, dur * 0.48) : Math.max(0.85, dur * 0.76);
+    if (rawImpact > maxAllowedImpact) {
+      rawImpact = dur >= 4.2 ? clamp(dur * 0.35, 1.45, 2.15) : clamp(dur * 0.42, 0.55, maxAllowedImpact);
     }
   }
 
   const impactTime = clamp(
     Number(rawImpact),
-    0.15,
-    Math.max(0.5, dur - 0.55)
+    0.08,
+    Math.max(0.35, dur - (isManualLocked ? 0.12 : 0.30))
   );
 
   const curveData = buildBallFlightCurveSamples(stOpts, impactTime, state.duration || 3.2);
@@ -2822,6 +3728,11 @@ export function renderShotTracerOverlay(ctx, width, height, state, currentTime, 
       } else {
         visibleFlight.push(exactTip);
       }
+    } else if (visibleFlight.length < 2 && curveData.flightPoints.length >= 4) {
+      // 원터치로 공 출발 시점(currentTime === impactTime)에 정확히 맞춘 정지 프레임에서도
+      // 티에서 공과 빨간 발사 궤적이 즉각 뻗어나가는 초기 구간을 표시하여 시각적 피드백 제공
+      visibleFlight.length = 0;
+      visibleFlight.push(...curveData.flightPoints.slice(0, 4));
     }
   }
 
@@ -2862,7 +3773,11 @@ export function renderShotTracerOverlay(ctx, width, height, state, currentTime, 
     ctx.restore();
   }
 
-  const isCalibratingOrPinnedPause = Boolean(stOpts.pinTargetMode) || (Boolean(stOpts.calibrationPreviewActive) && !state.playing);
+  // 스튜디오에서 일시정지(!state.playing) 상태로 타임라인을 탐색하거나 공 위치/궤도를 조정할 때는
+  // 임팩트 이전 스윙 구간에서도 언제나 전체 예상 탄도 곡선과 조작 핸들을 함께 표시하여 실제 스윙 영상과 궤도를 한눈에 맞출 수 있게 함
+  const isCalibratingOrPinnedPause = !overrideShotOptions.hideCalibrationPreview && (
+    Boolean(stOpts.pinTargetMode) || !state.playing
+  );
 
   // 4) 공이 맞아 날아가는 메인 궤적(Protracer Trajectory / Real-Tail Comet) 렌더링
   if (isCalibratingOrPinnedPause && curveData.flightPoints.length >= 2) {
@@ -3273,13 +4188,15 @@ function drawLandingAndTotalDistanceMarkers(
   ctx.arc(landPx.x, landPx.y, 3.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // 2) 탄착지점 캐리(Carry) 거리 배지 (좌측 또는 하단 오프셋으로 겹침 방지)
+  // 2) 탄착지점 캐리(Carry) 거리 배지 (좌측 잔디 지면 레벨 배치)
   const carryText = `탄착(캐리) ${carryMeters.toFixed(1)} m`;
   ctx.font = '700 11.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
   const cw = ctx.measureText(carryText).width + 20;
   const ch = 26;
-  const cbx = clamp(landPx.x - cw - 12, 10, width - cw - 10);
-  const cby = clamp(landPx.y - ch / 2, 54, height - ch - 14);
+  const minMarkerX = Math.min(landPx.x, isRollFinished ? rollPx.x : landPx.x);
+  const maxMarkerY = Math.max(landPx.y, isRollFinished ? rollPx.y : landPx.y);
+  const cbx = clamp(minMarkerX - cw - 12, 10, width - cw - 10);
+  const cby = clamp(landPx.y - ch / 2, 54, height - ch - 48);
 
   // 리더 라인
   ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
@@ -3302,7 +4219,7 @@ function drawLandingAndTotalDistanceMarkers(
   ctx.textBaseline = 'middle';
   ctx.fillText(carryText, cbx + cw / 2, cby + ch / 2);
 
-  // 3) 런(Roll) 포함 최종 정지 지점(Total Distance) 말풍선 배지
+  // 3) 런(Roll) 포함 최종 정지 지점(Total Distance) 말풍선 배지 (산림 쪽 위가 아닌 잔디 지면 아래쪽에 배치)
   if (isRollFinished) {
     ctx.fillStyle = '#0F172A';
     ctx.strokeStyle = '#FFFFFF';
@@ -3321,15 +4238,15 @@ function drawLandingAndTotalDistanceMarkers(
 
     const tbw = Math.max(138, tw1 + tw2 + 28);
     const tbh = 30;
-    const tbx = clamp(rollPx.x + 14, 12, width - tbw - 12);
-    const tby = clamp(rollPx.y - tbh - 6, 54, height - tbh - 14);
+    const tbx = clamp(rollPx.x - tbw * 0.5, 10, width - tbw - 10);
+    const tby = clamp(Math.max(maxMarkerY + 9, cby + ch + 5), 54, height - tbh - 14);
 
     // 리더 라인
     ctx.strokeStyle = accentColor;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(rollPx.x, rollPx.y);
-    ctx.lineTo(tbx, tby + tbh / 2);
+    ctx.lineTo(clamp(rollPx.x, tbx + 12, tbx + tbw - 12), tby);
     ctx.stroke();
 
     ctx.fillStyle = '#0F172A';
@@ -3623,6 +4540,11 @@ function drawShotTracerBroadcastHud(
     stOpts.launchDirectionDeg ?? 0,
     stOpts.shotShapeType || 'auto'
   );
+  const slopeClass = classifyTerrainSlopeInfo(
+    stOpts.elevationDeltaMeters ?? 0,
+    stOpts.terrainSlopeMode || 'auto',
+    stOpts.detectedTerrainSlope || 'flat'
+  );
   const speedMps = Number(stOpts.ballSpeedMps || 60.4);
   const speedMph = Math.round(speedMps * 2.23694);
   const accentColor = paletteObj.hex === 'gradient' ? '#DC2626' : (paletteObj.hex === '#F8FAFC' ? '#0F172A' : paletteObj.hex);
@@ -3630,7 +4552,7 @@ function drawShotTracerBroadcastHud(
   ctx.save();
   ctx.globalAlpha = fadeAlpha;
 
-  // 1) 상단 방송용 헤더 스트립 (탄도 · 구질 · 볼스피드 요약)
+  // 1) 상단 방송용 헤더 스트립 (탄도 · 지형 경사 · 구질 · 볼스피드 요약)
   const topBoxH = 42;
   const topBoxW = Math.min(width - pad * 2, 620);
   const topY = pad - Math.round((1 - fadeAlpha) * 8);
@@ -3656,9 +4578,9 @@ function drawShotTracerBroadcastHud(
   ctx.fillText(`탄도 ${Number(stOpts.launchAngleDeg).toFixed(1)}° (${trajClass.labelKo.split(' (')[0]})`, pad + 16, cy);
 
   ctx.textAlign = 'right';
-  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+  ctx.font = '600 11.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
   ctx.fillStyle = '#334155';
-  const topRightStr = `${shapeClass.labelKo}  |  볼스피드 ${speedMps.toFixed(1)} m/s (${speedMph} mph)`;
+  const topRightStr = `${slopeClass.shortKo}  |  ${shapeClass.labelKo}  |  ${speedMps.toFixed(1)}m/s (${speedMph}mph)`;
   ctx.fillText(topRightStr, pad + topBoxW - 14, cy);
 
   // 2) 우측 하단 Toptracer / TrackMan 스타일 종합 샷 데이터 & 측면 탄도 프로파일 카드 (임팩트 후 페이드인 + 슬라이드업)
@@ -3690,9 +4612,14 @@ function drawShotTracerBroadcastHud(
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 11.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+  ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
   ctx.fillStyle = '#0F172A';
-  ctx.fillText('SHOT TRACER · 탄도·비거리 데이터', cardX + 12, cardY + 15);
+  ctx.fillText('SHOT TRACER · 탄도 데이터', cardX + 12, cardY + 15);
+
+  ctx.textAlign = 'right';
+  ctx.font = '700 10.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+  ctx.fillStyle = slopeClass.badgeColor;
+  ctx.fillText(slopeClass.shortKo, cardX + cardW - 12, cardY + 15);
 
   // 4개 핵심 수치 그리드 (1: 탄착 캐리 거리 / 2: 런 포함 최종거리 / 3: APEX 최고높이 / 4: 발사 탄도)
   const displayCarry = curveData.carryMeters;
@@ -3703,6 +4630,7 @@ function drawShotTracerBroadcastHud(
   const row2Y = cardY + 84;
 
   // (1,1) 탄착 캐리 거리 (m)
+  ctx.textAlign = 'left';
   ctx.font = '600 10.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
   ctx.fillStyle = '#64748B';
   ctx.fillText('탄착 거리 (CARRY)', cardX + 12, row1Y);
@@ -3734,7 +4662,7 @@ function drawShotTracerBroadcastHud(
   ctx.fillStyle = trajClass.badgeColor;
   ctx.fillText(`${Number(stOpts.launchAngleDeg).toFixed(1)}° (${shapeClass.shortKo})`, cardX + 12 + colW, row2Y + 17);
 
-  // 3) 카드 하단: 측면 탄도 프로파일 미니 아크 다이어그램 (동영상 내 탄도 시각화)
+  // 3) 카드 하단: 측면 탄도 프로파일 미니 아크 다이어그램 (오르막/평지/내리막 경사 지면선 포함 시각화)
   const profX = cardX + 12;
   const profY = cardY + cardH - 52;
   const profW = cardW - 24;
@@ -3748,47 +4676,50 @@ function drawShotTracerBroadcastHud(
   ctx.fill();
   ctx.stroke();
 
-  const groundLineY = profY + profH - 10;
+  const startGroundY = profY + profH - 10;
+  const slopeVisualDeltaPx = clamp(-slopeClass.elevationDeltaMeters * 0.42, -7.5, 6.0);
+  const endGroundY = startGroundY + slopeVisualDeltaPx;
   const startX = profX + 10;
   const endX = profX + profW - 14;
   const carryRatio = clamp(curveData.carryMeters / Math.max(1, curveData.totalMeters), 0.72, 0.98);
   const carryEndX = startX + (endX - startX) * carryRatio;
+  const carryGroundY = startGroundY + slopeVisualDeltaPx * carryRatio;
   const peakX = startX + (carryEndX - startX) * 0.55;
   const peakHeightRatio = clamp(curveData.apexMeters / 42, 0.25, 0.92);
-  const peakY = groundLineY - (profH - 16) * peakHeightRatio;
+  const peakY = Math.min(startGroundY, carryGroundY) - (profH - 17) * peakHeightRatio;
 
-  // 지면 기준선
-  ctx.strokeStyle = '#CBD5E1';
-  ctx.lineWidth = 1;
+  // 경사 지면 기준선 (오르막은 우상향, 내리막은 우하향, 평지는 수평)
+  ctx.strokeStyle = slopeClass.slopeType === 'flat' ? '#CBD5E1' : slopeClass.badgeColor;
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(startX, groundLineY);
-  ctx.lineTo(endX, groundLineY);
+  ctx.moveTo(startX, startGroundY);
+  ctx.lineTo(endX, endGroundY);
   ctx.stroke();
 
   // 발사각 부채꼴 표시
   ctx.strokeStyle = trajClass.badgeColor;
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(startX, groundLineY, 18, -clamp((stOpts.launchAngleDeg * Math.PI) / 180, 0.12, 0.65), 0);
+  ctx.arc(startX, startGroundY, 18, -clamp((stOpts.launchAngleDeg * Math.PI) / 180, 0.12, 0.65), 0);
   ctx.stroke();
 
-  // 측면 탄도 캐리 아크 (발사 -> APEX -> 탄착)
-  const ctrlY = 2 * peakY - 0.5 * (groundLineY + groundLineY);
+  // 측면 탄도 캐리 아크 (발사 -> APEX -> 경사 탄착면)
+  const ctrlY = 2 * peakY - 0.5 * (startGroundY + carryGroundY);
   ctx.strokeStyle = accentColor;
   ctx.lineWidth = 2.2;
   ctx.beginPath();
-  ctx.moveTo(startX, groundLineY);
-  ctx.quadraticCurveTo(peakX, ctrlY, carryEndX, groundLineY);
+  ctx.moveTo(startX, startGroundY);
+  ctx.quadraticCurveTo(peakX, ctrlY, carryEndX, carryGroundY);
   ctx.stroke();
 
-  // 측면 런(Roll) 점선 구간
+  // 측면 런(Roll) 점선 구간 (경사 지면을 따라 굴러감)
   if (curveData.rollMeters > 0.2) {
     ctx.strokeStyle = '#0F172A';
     ctx.lineWidth = 1.6;
     ctx.setLineDash([2, 2]);
     ctx.beginPath();
-    ctx.moveTo(carryEndX, groundLineY);
-    ctx.lineTo(endX, groundLineY);
+    ctx.moveTo(carryEndX, carryGroundY);
+    ctx.lineTo(endX, endGroundY);
     ctx.stroke();
     ctx.setLineDash([]);
   }

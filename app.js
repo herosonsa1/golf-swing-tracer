@@ -17,11 +17,11 @@ import {
   applyPinnedClubHeadOverrides,
   detectSwingMoments,
   evaluateSwingPhase
-} from './swing-engine.js?v=20261019_06';
+} from './swing-engine.js?v=20261021_03';
 import {
   buildDemoSwingDataset,
   createAddressClubTemplate
-} from './demo-generator.js?v=20261019_06';
+} from './demo-generator.js?v=20261019_09';
 import {
   findNearestSample,
   renderCompositeFrame,
@@ -29,7 +29,7 @@ import {
   exportSequencePanorama,
   exportAfterimageVideo,
   seekVideoSafely
-} from './renderer-exporter.js?v=20261019_06';
+} from './renderer-exporter.js?v=20261021_03';
 import {
   DEFAULT_SHOT_TRACER_OPTIONS,
   SHOT_TRACER_PRESETS,
@@ -38,13 +38,16 @@ import {
   classifyTrajectoryLabel,
   classifyShotShapeLabel,
   applyShotShapeOptionToMetrics,
+  classifyTerrainSlopeInfo,
+  applyTerrainSlopeOptionToMetrics,
   autoCalibrateShotTracerFromVideo,
+  reconcileKeyMomentsWithExactImpact,
   syncShotGeometryFromMetrics,
   recalculateMetricsFromGeometry,
   estimateShotMetricsFromVideoTrack,
   solveApexFromClickedMidpoint,
   applyUserPinnedBallPoint
-} from './shot-tracer-engine.js?v=20261019_06';
+} from './shot-tracer-engine.js?v=20261021_03';
 import {
   DEFAULT_STABILIZATION_OPTIONS,
   extractStabilizationFeatureMap,
@@ -111,6 +114,7 @@ export function createDefaultShotTracerState(enabled = false) {
 }
 
 export const appState = {
+  uiExperienceMode: 'easy', // 'easy' (토스·애플 감성 심플 원터치 모드) | 'advanced' (전문가 스튜디오 전체 모드)
   studioMode: 'afterimage', // 'afterimage' (측면/정면 클럽 잔상) | 'shot-tracer' (후방 공 궤적 샷 트레이서)
   sourceMode: 'demo', // 'demo' | 'video'
   demoPreset: 'driver-fo', // 'driver-fo' | 'iron-dtl' | 'shot-tracer-dtl'
@@ -148,6 +152,9 @@ export const appState = {
   lastHoverNormY: 0.819,
   wasZoomPanDrag: false,
   manualPinMode: false,
+  cleanOriginalViewMode: false,
+  impactBallPinMode: false,
+  impactBallPoint: { x: 0.588, y: 0.819, pinned: false },
   busy: false,
   samples: [],
   keyMoments: [],
@@ -402,6 +409,7 @@ function syncRenderOptionsUI() {
   if ($('chkSwingPlane')) $('chkSwingPlane').checked = Boolean(opts.showSwingPlane);
   if ($('chkSkeleton')) $('chkSkeleton').checked = Boolean(opts.showSkeleton);
   if ($('chkAngles')) $('chkAngles').checked = Boolean(opts.showAngles);
+  syncEasyModeUI();
 }
 
 function syncShotTracerUI() {
@@ -420,6 +428,16 @@ function syncShotTracerUI() {
 
   const trajClass = classifyTrajectoryLabel(launchVal, apexVal);
   const shapeClass = classifyShotShapeLabel(sideVal, st.launchDirectionDeg, st.shotShapeType);
+  const slopeClass = classifyTerrainSlopeInfo(
+    st.elevationDeltaMeters ?? 0,
+    st.terrainSlopeMode || 'auto',
+    st.detectedTerrainSlope || 'flat'
+  );
+  const autoSlopeClass = classifyTerrainSlopeInfo(
+    st.detectedElevationDeltaMeters ?? st.elevationDeltaMeters ?? 0,
+    'auto',
+    st.detectedTerrainSlope || 'flat'
+  );
   const mph = Math.round(speedVal * 2.23694);
 
   if ($('badgeShotTotalReadout')) {
@@ -446,12 +464,12 @@ function syncShotTracerUI() {
 
   if ($('readoutAutoStatusBadge')) {
     if (st.autoReadoutSource === 'manual-edited') {
-      $('readoutAutoStatusBadge').textContent = '사용자 직접 보정 적용됨';
+      $('readoutAutoStatusBadge').textContent = `사용자 직접 보정 (${slopeClass.shortKo})`;
     } else if (st.autoReadoutSource === 'canvas-calibrated') {
-      $('readoutAutoStatusBadge').textContent = '캔버스 궤적 기반 자동 계측';
+      $('readoutAutoStatusBadge').textContent = `캔버스 궤적 계측 (${slopeClass.shortKo})`;
     } else {
       const fCount = Number(st.detectedFrameCount || st.trackedWaypoints?.length || 4);
-      $('readoutAutoStatusBadge').textContent = `연속 ${fCount}프레임 공 추적 완료`;
+      $('readoutAutoStatusBadge').textContent = `${fCount}프레임 공 추적 · ${slopeClass.shortKo}`;
     }
   }
   if ($('readoutAutoApex')) {
@@ -464,7 +482,7 @@ function syncShotTracerUI() {
     $('readoutAutoTotal').textContent = `${totalMeters.toFixed(1)} m (+${rollVal.toFixed(1)}m)`;
   }
   if ($('readoutAutoLaunch')) {
-    $('readoutAutoLaunch').textContent = `${launchVal.toFixed(1)}° (${shapeClass.nameKo})`;
+    $('readoutAutoLaunch').textContent = `${launchVal.toFixed(1)}° (${shapeClass.nameKo} · ${slopeClass.shortKo})`;
   }
   if ($('readoutAutoChainText')) {
     const p0 = st.originPoint || { x: 0.588, y: 0.819 };
@@ -480,6 +498,14 @@ function syncShotTracerUI() {
 
   if ($('selectShotShapeType')) {
     $('selectShotShapeType').value = st.shotShapeType || 'auto';
+  }
+  if ($('selectTerrainSlopeMode')) {
+    const slopeSel = $('selectTerrainSlopeMode');
+    const autoOpt = slopeSel.querySelector('option[value="auto"]');
+    if (autoOpt) {
+      autoOpt.textContent = `자동 판독 (${autoSlopeClass.shortKo})`;
+    }
+    slopeSel.value = st.terrainSlopeMode || 'auto';
   }
   if ($('selectShotTracerPreset') && st.shotPreset) {
     $('selectShotTracerPreset').value = st.shotPreset;
@@ -612,10 +638,533 @@ function syncShotTracerUI() {
   }
 
   renderShotPinRealtimeStatusPanel(st, summary, curFrame);
+  syncOneTouchLaunchTimingUI();
+  syncEasyModeUI();
 
   if (appState.studioMode === 'shot-tracer') {
     renderShotFlightStepsStrip();
   }
+}
+
+/**
+ * 현재 설정된 실제 공 출발 시각(임팩트 시점)과 수동 고정 여부를 반환합니다.
+ */
+function getEffectiveBallLaunchImpactTime() {
+  const dur = Math.max(0.5, Number(appState.duration || 3.2));
+  const stOpts = appState.shotTracerOptions || {};
+  const impMomentObj = (appState.keyMoments || []).find(m => m.key === 'impact');
+  const isManualLocked = Boolean(stOpts.manualImpactLocked) || (impMomentObj?.source === 'marked');
+
+  let rawImpact = (impMomentObj?.source === 'marked')
+    ? impMomentObj.time
+    : (Boolean(stOpts.manualImpactLocked) && Number.isFinite(stOpts.calibratedImpactTime)
+      ? stOpts.calibratedImpactTime
+      : (Number.isFinite(stOpts.calibratedImpactTime)
+        ? stOpts.calibratedImpactTime
+        : (impMomentObj?.time ?? dur * 0.36)));
+
+  if (!isManualLocked) {
+    const maxAllowedImpact = dur >= 4.2 ? Math.min(2.48, dur * 0.48) : Math.max(0.85, dur * 0.76);
+    if (rawImpact > maxAllowedImpact) {
+      rawImpact = dur >= 4.2 ? clamp(dur * 0.35, 1.45, 2.15) : clamp(dur * 0.42, 0.55, maxAllowedImpact);
+    }
+  }
+
+  const impactTime = clamp(
+    Number(rawImpact),
+    0.08,
+    Math.max(0.35, dur - (isManualLocked ? 0.12 : 0.30))
+  );
+  return {
+    impactTime: Number(impactTime.toFixed(3)),
+    isManualLocked: Boolean(isManualLocked)
+  };
+}
+
+/**
+ * 현재 설정된 임팩트 시점의 실제 공 위치(impactBallPoint)를 반환합니다.
+ * 공 궤적(shot-tracer)의 출발점(originPoint)과 스윙 잔상(afterimage)의 클럽 헤드 타격 기준점(impactBallPoint)이
+ * 항상 동일한 좌표를 공유합니다.
+ */
+function getEffectiveImpactBallPoint() {
+  const candidates = [
+    appState.impactBallPoint?.pinned ? appState.impactBallPoint : null,
+    appState.shotTracerOptions?.originPoint?.pinned ? appState.shotTracerOptions.originPoint : null,
+    appState.addressClub?.impactBallPoint?.pinned ? appState.addressClub.impactBallPoint : null,
+    appState.impactBallPoint,
+    appState.shotTracerOptions?.originPoint,
+    appState.addressClub?.impactBallPoint,
+    appState.addressClub?.ballPoint
+  ];
+  for (const pt of candidates) {
+    if (pt && Number.isFinite(pt.x) && Number.isFinite(pt.y)) {
+      return {
+        x: Number(clamp(pt.x, 0.005, 0.995).toFixed(4)),
+        y: Number(clamp(pt.y, 0.005, 0.995).toFixed(4)),
+        pinned: Boolean(pt.pinned)
+      };
+    }
+  }
+  return { x: 0.588, y: 0.819, pinned: false };
+}
+
+/**
+ * 일반 화면, 쉬운 모드 및 전체화면의 [임팩트 시점 원본영상 · 공 위치 지정] 배지와 버튼 상태를 실시간 갱신합니다.
+ */
+function syncOneTouchLaunchTimingUI() {
+  const { impactTime, isManualLocked } = getEffectiveBallLaunchImpactTime();
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  const launchFrame = Math.max(1, Math.round(impactTime * safeFps) + 1);
+  const modeTag = isManualLocked ? '수동고정' : '자동';
+  const ballPt = getEffectiveImpactBallPoint();
+  const ballCoordText = `${(ballPt.x * 100).toFixed(1)}%, ${(ballPt.y * 100).toFixed(1)}%`;
+
+  const mainBadge = $('mainLaunchSyncBadge');
+  if (mainBadge) {
+    mainBadge.textContent = `임팩트 ${impactTime.toFixed(2)}s (F${launchFrame} · ${modeTag})`;
+    mainBadge.classList.toggle('is-manual-locked', isManualLocked);
+  }
+
+  const mainBallBadge = $('mainImpactBallBadge');
+  if (mainBallBadge) {
+    mainBallBadge.textContent = `공 위치 (${ballCoordText})`;
+  }
+
+  const fsBadge = $('fsLaunchSyncBadge');
+  if (fsBadge) {
+    fsBadge.textContent = `임팩트 ${impactTime.toFixed(2)}s (F${launchFrame})`;
+    fsBadge.classList.toggle('is-manual-locked', isManualLocked);
+  }
+
+  const easyBadge = $('easyLaunchSyncStatus');
+  if (easyBadge) {
+    easyBadge.textContent = `공 출발 ${impactTime.toFixed(2)}s (F${launchFrame} · ${modeTag})`;
+    easyBadge.classList.toggle('is-manual-locked', isManualLocked);
+  }
+
+  const easyImpTimeBadge = $('easyImpactTimeBadge');
+  if (easyImpTimeBadge) {
+    easyImpTimeBadge.textContent = `임팩트 ${impactTime.toFixed(2)}s (F${launchFrame} · ${modeTag})`;
+    easyImpTimeBadge.classList.toggle('is-manual-locked', isManualLocked);
+  }
+
+  const easyImpBallBadge = $('easyImpactBallBadge');
+  if (easyImpBallBadge) {
+    easyImpBallBadge.textContent = `공 위치 ${ballCoordText}`;
+  }
+
+  // [원본영상만 보기] 버튼 동기화
+  const isClean = Boolean(appState.cleanOriginalViewMode);
+  const cleanBtn = $('btnCleanOriginalView');
+  if (cleanBtn) {
+    cleanBtn.setAttribute('aria-pressed', String(isClean));
+    cleanBtn.textContent = isClean ? '원본영상만 보기: ON (잔상·궤적 숨김)' : '원본영상만 보기: OFF';
+  }
+  const fsCleanBtn = $('btnFsCleanOriginal');
+  if (fsCleanBtn) {
+    fsCleanBtn.setAttribute('aria-pressed', String(isClean));
+    fsCleanBtn.textContent = isClean ? '원본영상 ON' : '원본영상만';
+  }
+  const swingCleanBtn = $('btnSwingCleanOriginal');
+  if (swingCleanBtn) {
+    swingCleanBtn.setAttribute('aria-pressed', String(isClean));
+    swingCleanBtn.textContent = isClean ? '임팩트 원본영상: ON' : '임팩트 원본영상 보기';
+  }
+  const easyCleanBtn = $('btnEasyCleanOriginal');
+  if (easyCleanBtn) {
+    easyCleanBtn.setAttribute('aria-pressed', String(isClean));
+    easyCleanBtn.textContent = isClean ? '원본 영상만 보기: ON' : '원본 영상만 보기: OFF';
+  }
+  const easyCleanQuickBtn = $('btnEasyCleanOriginalQuick');
+  if (easyCleanQuickBtn) {
+    easyCleanQuickBtn.setAttribute('aria-pressed', String(isClean));
+    easyCleanQuickBtn.textContent = isClean ? '원본만 보기 ON' : '원본만 보기';
+  }
+
+  // [임팩트 공 위치 지정] 통합 핀 버튼 동기화 (공 궤적 + 스윙 잔상 공통)
+  const isPinActive = Boolean(
+    appState.impactBallPinMode ||
+    (appState.studioMode === 'shot-tracer' && appState.shotTracerOptions?.pinTargetMode === 'origin')
+  );
+  const unifiedPinBtn = $('btnPinImpactBallUnified');
+  if (unifiedPinBtn) {
+    unifiedPinBtn.setAttribute('aria-pressed', String(isPinActive));
+    unifiedPinBtn.textContent = isPinActive
+      ? '화면 속 실제 골프공을 클릭/드래그하세요 (대기 중)'
+      : '임팩트 공 위치 클릭 지정 (궤적·잔상 맞춤)';
+  }
+  const fsPinBtn = $('btnFsPinImpactBall');
+  if (fsPinBtn) {
+    fsPinBtn.setAttribute('aria-pressed', String(isPinActive));
+    fsPinBtn.textContent = isPinActive ? '공 터치 대기중' : '임팩트 공위치 지정';
+  }
+  const swingPinBtn = $('btnSwingPinImpactBall');
+  if (swingPinBtn) {
+    swingPinBtn.setAttribute('aria-pressed', String(isPinActive));
+    swingPinBtn.textContent = isPinActive ? '영상 속 공 클릭 대기 중...' : '임팩트 공 위치 지정';
+  }
+  const easyPinBtn = $('btnEasyPinImpactBall');
+  if (easyPinBtn) {
+    easyPinBtn.setAttribute('aria-pressed', String(isPinActive));
+    easyPinBtn.textContent = isPinActive
+      ? '영상 위 실제 골프공을 터치하세요 (대기 중)'
+      : '영상 속 골프공 터치해서 위치 맞추기';
+  }
+}
+
+/**
+ * 잔상·궤적을 잠시 숨기고 깨끗한 임팩트 원본 영상만 보면서 공 위치와 타격 순간을 확인하는 모드를 토글합니다.
+ */
+function toggleCleanOriginalViewMode(forceState = undefined) {
+  const next = typeof forceState === 'boolean' ? forceState : !appState.cleanOriginalViewMode;
+  appState.cleanOriginalViewMode = next;
+  if (next && appState.playing) {
+    stopPlayback();
+  }
+  syncOneTouchLaunchTimingUI();
+  renderMainStage();
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  const curFrame = Math.max(1, Math.round((appState.currentTime || 0) * safeFps) + 1);
+  setStatusMessage(
+    next
+      ? `[임팩트 원본영상만 보기 ON] 잔상·궤적 가림 없이 깨끗한 원본 영상(현재 F${curFrame} · ${(appState.currentTime || 0).toFixed(2)}s)으로 임팩트 순간과 실제 공 위치를 확인 중입니다.`
+      : '[임팩트 원본영상만 보기 OFF] 지정된 임팩트 시점과 공 위치를 기준으로 클럽 잔상 및 공 궤적을 다시 표시합니다.'
+  );
+}
+
+/**
+ * 공 궤적(shot-tracer) 모드와 스윙 클럽 잔상(afterimage) 모드 양쪽 모두에서
+ * 임팩트 순간의 원본 영상 위 공 위치를 클릭(또는 드래그)하여 지정하는 통합 모드를 토글합니다.
+ */
+function toggleUnifiedImpactBallPinMode(forceState = undefined) {
+  const curActive = Boolean(
+    appState.impactBallPinMode ||
+    (appState.studioMode === 'shot-tracer' && appState.shotTracerOptions?.pinTargetMode === 'origin')
+  );
+  const next = typeof forceState === 'boolean' ? forceState : !curActive;
+  stopPlayback();
+
+  appState.impactBallPinMode = next;
+  appState.manualPinMode = false;
+  if (appState.stabilizationOptions) {
+    appState.stabilizationOptions.groundPinMode = false;
+    syncStabilizationUI();
+  }
+  if ($('btnToggleManualPin')) {
+    $('btnToggleManualPin').setAttribute('aria-pressed', 'false');
+    $('btnToggleManualPin').textContent = '헤드 위치 수동 보정';
+  }
+  if (appState.shotTracerOptions) {
+    appState.shotTracerOptions.pinTargetMode = next ? 'origin' : null;
+    appState.shotTracerOptions.hoverNormPoint = null;
+  }
+
+  const canvasEl = $('stageCanvas');
+  if (canvasEl) {
+    canvasEl.style.cursor = next
+      ? 'crosshair'
+      : ((appState.viewportZoom || 1) > 1.01 ? 'grab' : 'default');
+  }
+
+  syncShotTracerUI();
+  syncOneTouchLaunchTimingUI();
+  renderMainStage();
+
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  const curFrame = Math.max(1, Math.round((appState.currentTime || 0) * safeFps) + 1);
+  setStatusMessage(
+    next
+      ? `[임팩트 원본영상 공 위치 지정 모드] 잔상·궤적을 잠시 숨겼습니다. 현재 프레임(F${curFrame} · ${(appState.currentTime || 0).toFixed(2)}s)의 원본 영상 속 골프공을 클릭하면 임팩트 시점, 공 궤적 출발점, 스윙 잔상 타격점이 동시에 맞춰집니다.`
+      : '임팩트 공 위치 지정 모드를 종료했습니다.'
+  );
+}
+
+/**
+ * 사용자가 임팩트 화면에서 지정(클릭 또는 드래그)한 공 좌표(normPt)와 시점을
+ * 1) 후방 공 궤적(shot-tracer)의 공 출발점 및 탄도 아크
+ * 2) 스윙 클럽 잔상(afterimage)의 어드레스·임팩트 클럽 헤드 타격 아크(regularizeSwingWithAddressClub)
+ * 양쪽 모두에 동시에 반영합니다.
+ */
+async function applyUnifiedImpactBallAndTime(normPt, options = {}) {
+  const {
+    lockCurrentTimeAsImpact = true,
+    exitPinModeAfter = true,
+    updateFilmstrip = false,
+    reasonLabel = '임팩트 공 위치 지정'
+  } = options;
+
+  if (!normPt || !Number.isFinite(normPt.x) || !Number.isFinite(normPt.y)) return;
+
+  const dur = Math.max(0.5, Number(appState.duration || 3.2));
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  const pt = {
+    x: Number(clamp(normPt.x, 0.005, 0.995).toFixed(4)),
+    y: Number(clamp(normPt.y, 0.005, 0.995).toFixed(4)),
+    pinned: true
+  };
+
+  const baseImp = lockCurrentTimeAsImpact
+    ? clamp(Number(appState.currentTime || 0), 0.05, Math.max(0.2, dur - 0.05))
+    : getEffectiveBallLaunchImpactTime().impactTime;
+  const impT = Number(baseImp.toFixed(3));
+  const impFrame = Math.max(1, Math.round(impT * safeFps) + 1);
+
+  appState.impactBallPoint = {
+    ...pt,
+    pinnedTime: impT,
+    pinnedFrame: impFrame
+  };
+
+  if (!appState.shotTracerOptions) {
+    appState.shotTracerOptions = createDefaultShotTracerState(appState.studioMode === 'shot-tracer');
+  }
+
+  // 1) 임팩트 시점 고정 및 7단계 스윙 모먼트 정렬
+  if (lockCurrentTimeAsImpact) {
+    appState.shotTracerOptions.calibratedImpactTime = impT;
+    appState.shotTracerOptions.manualImpactLocked = true;
+    if (Array.isArray(appState.keyMoments) && appState.keyMoments.length > 0) {
+      appState.keyMoments = reconcileKeyMomentsWithExactImpact(
+        appState.keyMoments,
+        impT,
+        null,
+        appState.samples,
+        true
+      );
+      const impM = appState.keyMoments.find(m => m.key === 'impact');
+      if (impM) {
+        impM.time = impT;
+        impM.source = 'marked';
+      }
+    }
+    if (appState.stabilizationOptions) {
+      appState.stabilizationOptions.referenceTime = impT;
+    }
+  }
+
+  // 2) 공 궤적 생성(shot-tracer) 출발점 및 탄도 아크 즉시 동기화
+  appState.shotTracerOptions = applyUserPinnedBallPoint(
+    appState.shotTracerOptions,
+    'origin',
+    pt,
+    impT,
+    impT,
+    dur,
+    safeFps
+  );
+
+  // 3) 스윙 클럽 잔상(afterimage) 타격 기준점(addressClub.impactBallPoint) 및 전체 스윙 잔상 아크 재정합
+  if (!appState.addressClub && appState.samples?.length > 0) {
+    const addrMoment = (appState.keyMoments || []).find(m => m.key === 'address');
+    const addrSample = findNearestSample(appState.samples, addrMoment ? addrMoment.time : 0.45) || appState.samples[0];
+    appState.addressClub = createAddressClubTemplate(addrSample, appState.canvasWidth, appState.canvasHeight, {
+      clubType: 'driver',
+      hand: appState.hand
+    });
+  }
+  if (appState.addressClub) {
+    appState.addressClub = {
+      ...appState.addressClub,
+      ballPoint: { ...pt, pinnedTime: impT, pinnedFrame: impFrame },
+      impactBallPoint: { ...pt, pinnedTime: impT, pinnedFrame: impFrame }
+    };
+  }
+  if (appState.addressClub && appState.samples?.length > 0) {
+    appState.samples = regularizeSwingWithAddressClub(
+      appState.samples,
+      appState.keyMoments,
+      appState.addressClub,
+      appState.hand
+    );
+    if (appState.samples.some(s => s?.clubHead?.pinned)) {
+      appState.samples = applyPinnedClubHeadOverrides(appState.samples);
+    }
+  }
+
+  if (exitPinModeAfter) {
+    appState.impactBallPinMode = false;
+    appState.cleanOriginalViewMode = false;
+    if (appState.shotTracerOptions) {
+      appState.shotTracerOptions.pinTargetMode = null;
+    }
+    const canvasEl = $('stageCanvas');
+    if (canvasEl) {
+      canvasEl.style.cursor = (appState.viewportZoom || 1) > 1.01 ? 'grab' : 'default';
+    }
+  }
+
+  persistRealtimePinnedPointsState(appState.shotTracerOptions);
+  saveModeWorkspaceSnapshot(appState.studioMode);
+  syncShotTracerUI();
+  syncOneTouchLaunchTimingUI();
+  renderMainStage();
+  updateMetricsAndCoachingUI();
+
+  if (updateFilmstrip && appState.studioMode === 'afterimage') {
+    await renderPhaseFilmstrip();
+  }
+
+  if (exitPinModeAfter) {
+    setStatusMessage(
+      `[${reasonLabel} 완료] 임팩트 시점 F${impFrame}(${impT.toFixed(2)}s)의 공 위치를 (X ${(pt.x * 100).toFixed(1)}%, Y ${(pt.y * 100).toFixed(1)}%)로 확정하여 공 궤적 출발점과 스윙 클럽 잔상 타격 아크를 동시에 맞췄습니다.`
+    );
+  }
+}
+
+/**
+ * 원터치 버튼([지금 화면을 임팩트 시점으로 고정], [-0.2초 앞당김], [-1F], [+1F], [+0.2초 늦춤], [자동 맞춤])으로
+ * 임팩트 및 공이 날아가는 시기(출발 시점)를 즉시 변경하고 화면·궤적·스윙 잔상을 동기화합니다.
+ */
+async function applyOneTouchBallLaunchTiming(targetImpactTime, options = {}) {
+  const { autoReset = false, setFromCurrentScreen = false, reasonLabel = '' } = options;
+  stopPlayback();
+
+  const dur = Math.max(0.5, Number(appState.duration || 3.2));
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  if (!appState.shotTracerOptions) {
+    appState.shotTracerOptions = createDefaultShotTracerState(appState.studioMode === 'shot-tracer');
+  }
+
+  if (autoReset) {
+    appState.shotTracerOptions.manualImpactLocked = false;
+    appState.impactBallPinMode = false;
+    if (appState.shotTracerOptions.originPoint) {
+      appState.shotTracerOptions.originPoint.pinned = false;
+      delete appState.shotTracerOptions.originPoint.pinnedTime;
+      delete appState.shotTracerOptions.originPoint.pinnedFrame;
+    }
+    if (appState.shotTracerOptions.pinnedPointsStore?.origin) {
+      delete appState.shotTracerOptions.pinnedPointsStore.origin;
+    }
+    for (const m of appState.keyMoments || []) {
+      m.source = 'detected';
+    }
+
+    if (appState.sourceMode === 'video' && appState.samples?.length >= 6) {
+      const videoTiming = estimateSwingTimingFromVideoPixels(appState.samples, dur);
+      appState.keyMoments = detectSwingMoments(appState.samples, 0, dur);
+      appState.shotTracerOptions = autoCalibrateShotTracerFromVideo(
+        appState.samples,
+        appState.keyMoments,
+        { ...appState.shotTracerOptions, manualImpactLocked: false }
+      );
+      const autoImp = Number.isFinite(appState.shotTracerOptions.calibratedImpactTime)
+        ? appState.shotTracerOptions.calibratedImpactTime
+        : videoTiming.impactTime;
+      appState.keyMoments = reconcileKeyMomentsWithExactImpact(
+        appState.keyMoments,
+        autoImp,
+        videoTiming.burstStart,
+        appState.samples,
+        true
+      );
+    } else {
+      const impM = (appState.keyMoments || []).find(m => m.key === 'impact');
+      const fallbackImp = impM ? impM.time : clamp(dur * 0.36, 0.55, dur - 0.5);
+      appState.shotTracerOptions.calibratedImpactTime = Number(fallbackImp.toFixed(3));
+    }
+
+    const autoOrigin = appState.shotTracerOptions?.originPoint || appState.addressClub?.ballPoint || { x: 0.588, y: 0.819 };
+    appState.impactBallPoint = {
+      x: Number(autoOrigin.x.toFixed(4)),
+      y: Number(autoOrigin.y.toFixed(4)),
+      pinned: false
+    };
+    if (appState.addressClub) {
+      appState.addressClub.impactBallPoint = { ...appState.impactBallPoint };
+    }
+
+    if (appState.addressClub && appState.samples?.length > 0) {
+      appState.samples = regularizeSwingWithAddressClub(
+        appState.samples,
+        appState.keyMoments,
+        appState.addressClub,
+        appState.hand
+      );
+    }
+
+    const { impactTime: restoredImp } = getEffectiveBallLaunchImpactTime();
+    const restoredFrame = Math.max(1, Math.round(restoredImp * safeFps) + 1);
+    persistRealtimePinnedPointsState(appState.shotTracerOptions);
+    await seekToTime(clamp(restoredImp, 0.08, Math.max(0.2, dur - 0.05)));
+    syncShotTracerUI();
+    syncOneTouchLaunchTimingUI();
+    renderMainStage();
+    setStatusMessage(
+      `[자동 맞춤 복원] 임팩트 및 공 출발 시점을 AI 자동 분석 시점인 ${restoredImp.toFixed(2)}s (F${restoredFrame})로 복원했습니다.`
+    );
+    return;
+  }
+
+  const nextImpact = Number(
+    clamp(Number(targetImpactTime), 0.08, Math.max(0.25, dur - 0.12)).toFixed(3)
+  );
+  const nextFrame = Math.max(1, Math.round(nextImpact * safeFps) + 1);
+
+  appState.shotTracerOptions.calibratedImpactTime = nextImpact;
+  appState.shotTracerOptions.manualImpactLocked = true;
+  appState.shotTracerOptions.calibrationPreviewActive = true;
+
+  if (appState.shotTracerOptions.originPoint) {
+    appState.shotTracerOptions.originPoint = {
+      ...appState.shotTracerOptions.originPoint,
+      pinnedTime: nextImpact,
+      pinnedFrame: nextFrame
+    };
+  }
+  if (appState.impactBallPoint) {
+    appState.impactBallPoint = {
+      ...appState.impactBallPoint,
+      pinnedTime: nextImpact,
+      pinnedFrame: nextFrame
+    };
+  }
+
+  if (Array.isArray(appState.keyMoments) && appState.keyMoments.length > 0) {
+    appState.keyMoments = reconcileKeyMomentsWithExactImpact(
+      appState.keyMoments,
+      nextImpact,
+      null,
+      appState.samples,
+      true
+    );
+    const impM = appState.keyMoments.find(m => m.key === 'impact');
+    if (impM) {
+      impM.time = nextImpact;
+      impM.source = 'marked';
+    }
+  }
+
+  if (appState.addressClub && appState.samples?.length > 0) {
+    appState.addressClub.impactBallPoint = getEffectiveImpactBallPoint();
+    appState.samples = regularizeSwingWithAddressClub(
+      appState.samples,
+      appState.keyMoments,
+      appState.addressClub,
+      appState.hand
+    );
+  }
+
+  if (appState.stabilizationOptions) {
+    appState.stabilizationOptions.referenceTime = nextImpact;
+    syncStabilizationUI();
+  }
+
+  persistRealtimePinnedPointsState(appState.shotTracerOptions);
+
+  const targetViewTime = setFromCurrentScreen
+    ? nextImpact
+    : clamp(nextImpact, 0.08, Math.max(0.2, dur - 0.05));
+
+  await seekToTime(targetViewTime);
+  syncShotTracerUI();
+  syncOneTouchLaunchTimingUI();
+  renderMainStage();
+
+  const actionNote = reasonLabel || (setFromCurrentScreen ? '지금 화면을 임팩트 시점으로 고정' : '임팩트·공 출발 시점 미세 조정');
+  setStatusMessage(
+    `[임팩트 시점 조정 — ${actionNote}] 임팩트 및 공 출발 시점을 ${nextImpact.toFixed(2)}s (F${nextFrame})로 맞췄습니다. 공 궤적과 스윙 클럽 잔상이 이 시점에 동기화됩니다.`
+  );
 }
 
 const REALTIME_PIN_STORAGE_KEY = 'golfSwing_realtimePinnedPoints_v1';
@@ -633,8 +1182,12 @@ function persistRealtimePinnedPointsState(stOpts = appState.shotTracerOptions) {
     if (raw) {
       allSaved = JSON.parse(raw) || {};
     }
+    const effBallPt = getEffectiveImpactBallPoint();
     allSaved[videoKey] = {
       updatedAt: new Date().toISOString(),
+      calibratedImpactTime: Number.isFinite(stOpts.calibratedImpactTime) ? stOpts.calibratedImpactTime : null,
+      manualImpactLocked: Boolean(stOpts.manualImpactLocked),
+      impactBallPoint: effBallPt ? { ...effBallPt } : null,
       lastPinnedKey: stOpts.lastPinnedKey || null,
       lastPinnedFrame: stOpts.lastPinnedFrame || null,
       lastPinnedTime: stOpts.lastPinnedTime ?? null,
@@ -652,7 +1205,7 @@ function persistRealtimePinnedPointsState(stOpts = appState.shotTracerOptions) {
   } catch {
     // 스토리지 제한 예외 무시
   }
-  saveModeWorkspaceSnapshot('shot-tracer');
+  saveModeWorkspaceSnapshot(appState.studioMode || 'shot-tracer');
 }
 
 /**
@@ -924,6 +1477,314 @@ function syncModeVisibilityUI() {
       applyClipPreset('all');
     }
   }
+
+  syncEasyModeUI();
+}
+
+const UI_EXP_MODE_STORAGE_KEY = 'golfSwing_uiExperienceMode_v1';
+
+function loadSavedUiExperienceMode() {
+  try {
+    const saved = localStorage.getItem(UI_EXP_MODE_STORAGE_KEY);
+    if (saved === 'advanced' || saved === 'easy') {
+      return saved;
+    }
+  } catch {
+    // 스토리지 접근 예외 무시
+  }
+  return 'easy';
+}
+
+function setUiExperienceMode(mode, options = {}) {
+  const { announce = true } = options;
+  const nextMode = mode === 'advanced' ? 'advanced' : 'easy';
+  const isEasy = nextMode === 'easy';
+  appState.uiExperienceMode = nextMode;
+
+  try {
+    localStorage.setItem(UI_EXP_MODE_STORAGE_KEY, nextMode);
+  } catch {
+    // 스토리지 예외 무시
+  }
+
+  document.body.classList.toggle('is-easy-mode', isEasy);
+
+  const topEasyBtn = $('btnTopExpEasy');
+  const topAdvBtn = $('btnTopExpAdvanced');
+  if (topEasyBtn) {
+    topEasyBtn.classList.toggle('is-active', isEasy);
+    topEasyBtn.setAttribute('aria-pressed', String(isEasy));
+  }
+  if (topAdvBtn) {
+    topAdvBtn.classList.toggle('is-active', !isEasy);
+    topAdvBtn.setAttribute('aria-pressed', String(!isEasy));
+  }
+
+  const menuEasyBtn = $('btnMenuExpEasy');
+  const menuAdvBtn = $('btnMenuExpAdvanced');
+  const badgeEasy = $('badgeMenuExpEasy');
+  const badgeAdv = $('badgeMenuExpAdvanced');
+  const switchToggleBtn = $('btnSwitchEasyModeToggle');
+  const switchDescEl = $('labelMenuEasySwitchDesc');
+  if (menuEasyBtn) {
+    menuEasyBtn.classList.toggle('is-active', isEasy);
+    menuEasyBtn.setAttribute('aria-checked', String(isEasy));
+  }
+  if (menuAdvBtn) {
+    menuAdvBtn.classList.toggle('is-active', !isEasy);
+    menuAdvBtn.setAttribute('aria-checked', String(!isEasy));
+  }
+  if (badgeEasy) {
+    badgeEasy.textContent = isEasy ? '적용 중' : '전환하기';
+  }
+  if (badgeAdv) {
+    badgeAdv.textContent = !isEasy ? '적용 중' : '전환하기';
+  }
+  if (switchToggleBtn) {
+    switchToggleBtn.classList.toggle('is-on', isEasy);
+    switchToggleBtn.setAttribute('aria-checked', String(isEasy));
+  }
+  if (switchDescEl) {
+    switchDescEl.textContent = isEasy
+      ? '현재 쉬운 모드가 켜져 있습니다 (토스·애플 미니멀 원터치 화면)'
+      : '현재 고급 모드가 켜져 있습니다 (스위치를 켜면 쉬운 모드로 전환)';
+  }
+
+  syncModeVisibilityUI();
+  syncEasyModeUI();
+
+  requestAnimationFrame(() => {
+    setViewportZoom(appState.viewportZoom || 1.0);
+    renderMainStage();
+    if (!isEasy) {
+      if (appState.studioMode === 'shot-tracer') {
+        renderShotFlightStepsStrip();
+      } else {
+        void renderPhaseFilmstrip();
+      }
+    }
+  });
+
+  if (announce) {
+    setStatusMessage(
+      isEasy
+        ? '쉬운 모드로 전환했습니다. 핵심 비거리·템포 요약과 원터치 타이밍·구질 맞춤을 간편하게 이용할 수 있습니다.'
+        : '고급 모드로 전환했습니다. 기존 스튜디오의 7점 공 위치 보정, 7단계 스윙 시퀀스 및 모든 상세 설정을 그대로 이용할 수 있습니다.'
+    );
+  }
+}
+
+function renderEasyModeMomentChips() {
+  const rowEl = $('easyMomentChipsRow');
+  if (!rowEl) return;
+  rowEl.replaceChildren();
+
+  const dur = Math.max(0.5, Number(appState.duration || 3.2));
+  const isShot = appState.studioMode === 'shot-tracer';
+  let items = [];
+
+  if (isShot) {
+    const { impactTime: impT } = getEffectiveBallLaunchImpactTime();
+    const momentsMap = Object.fromEntries((appState.keyMoments || []).map(m => [m.key, m.time]));
+    const addrT = clamp(Number(momentsMap.address ?? Math.max(0.12, impT - 0.95)), 0, dur);
+    const topT = clamp(Number(momentsMap.top ?? Math.max(0.28, impT - 0.28)), 0, dur);
+    const st = appState.shotTracerOptions || {};
+    const flightDur = Number(st.flightDurationSec || 2.35);
+    const rollDur = Number(st.rollDurationSec || 0.62);
+    items = [
+      { key: 'address', label: '어드레스', time: addrT },
+      { key: 'top', label: '백스윙 탑', time: topT },
+      { key: 'impact', label: '임팩트 (공 출발)', time: clamp(impT, 0, dur) },
+      { key: 'apex', label: '최고점 (APEX)', time: clamp(impT + flightDur * 0.52, 0, dur) },
+      { key: 'landing', label: '탄착 (캐리)', time: clamp(impT + flightDur, 0, dur) },
+      { key: 'roll', label: '최종 정지', time: clamp(impT + flightDur + rollDur, 0, Math.max(0.2, dur - 0.04)) }
+    ];
+  } else {
+    const moments = appState.keyMoments || [];
+    items = moments.map(m => ({
+      key: m.key,
+      label: m.labelKo,
+      time: clamp(Number(m.time || 0), 0, dur)
+    }));
+  }
+
+  let activeItemKey = items[0]?.key || null;
+  let minDiff = Infinity;
+  for (const it of items) {
+    const diff = Math.abs((appState.currentTime || 0) - it.time);
+    if (diff < minDiff) {
+      minDiff = diff;
+      activeItemKey = it.key;
+    }
+  }
+
+  for (const it of items) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn-easy-moment-pill${it.key === activeItemKey ? ' is-active' : ''}`;
+    btn.innerHTML = `<span>${it.label}</span><span class="easy-moment-time-tag">${it.time.toFixed(2)}s</span>`;
+    btn.onclick = () => {
+      stopPlayback();
+      void seekToTime(it.time);
+      setStatusMessage(`[${it.label}] 시점(${it.time.toFixed(2)}s)으로 이동했습니다.`);
+    };
+    rowEl.appendChild(btn);
+  }
+}
+
+function syncEasyModeUI() {
+  const isShot = appState.studioMode === 'shot-tracer';
+  const dur = Math.max(0.5, Number(appState.duration || 3.2));
+  const cur = clamp(Number(appState.currentTime || 0), 0, dur);
+  const safeFps = Math.max(15, Number(appState.fps || 30));
+  const curFrame = Math.max(1, Math.round(cur * safeFps) + 1);
+
+  const playBtn = $('btnEasyPlayPause');
+  if (playBtn) {
+    playBtn.textContent = appState.playing ? '일시정지' : '재생';
+    playBtn.setAttribute('aria-pressed', String(Boolean(appState.playing)));
+  }
+
+  const scrub = $('rangeEasyTimeline');
+  if (scrub) {
+    scrub.max = String(dur);
+    if (document.activeElement !== scrub) {
+      scrub.value = String(cur);
+    }
+  }
+
+  const timeOut = $('easyTimeReadout');
+  if (timeOut) {
+    timeOut.textContent = `${cur.toFixed(2)}s / ${dur.toFixed(2)}s (F${curFrame})`;
+  }
+
+  document.querySelectorAll('.btn-easy-speed').forEach(btn => {
+    const spd = Number(btn.dataset.easySpeed || 0.5);
+    btn.classList.toggle('is-active', Math.abs((appState.playbackSpeed || 0.5) - spd) < 0.04);
+  });
+
+  const saveVidBtn = $('btnEasySaveVideo');
+  if (saveVidBtn && !appState.busy) {
+    saveVidBtn.textContent = isShot ? '공 궤적 동영상 저장하기' : '클럽 잔상 동영상 저장하기';
+  }
+
+  renderEasyModeMomentChips();
+
+  // 1) 공 궤적(shot-tracer) 히어로 지표 및 원터치 칩 동기화
+  const st = appState.shotTracerOptions;
+  if (st) {
+    const carryVal = Number(st.carryMeters || 0);
+    const rollVal = Number(st.rollMeters || 0);
+    const totalVal = carryVal + rollVal;
+    const apexVal = Number(st.apexMeters || 0);
+    const launchVal = Number(st.launchAngleDeg || 13.6);
+    const speedVal = Number(st.ballSpeedMps || 60.4);
+    const shapeInfo = classifyShotShapeLabel(st.sideCurveMeters, st.launchDirectionDeg, st.shotShapeType);
+    const slopeInfo = classifyTerrainSlopeInfo(
+      st.elevationDeltaMeters ?? 0,
+      st.terrainSlopeMode || 'auto',
+      st.detectedTerrainSlope || 'flat'
+    );
+
+    if ($('easyHeroTotalMeters')) $('easyHeroTotalMeters').textContent = `${totalVal.toFixed(1)} m`;
+    if ($('easyHeroRollDelta')) {
+      $('easyHeroRollDelta').textContent = `탄착 캐리 ${carryVal.toFixed(1)} m + 런 ${rollVal.toFixed(1)} m`;
+    }
+    const carryPct = totalVal > 0.1 ? clamp(Math.round((carryVal / totalVal) * 100), 50, 99) : 94;
+    if ($('easyHeroCarryRatioText')) {
+      $('easyHeroCarryRatioText').textContent = `캐리 ${carryPct}% · 런 ${100 - carryPct}%`;
+    }
+    if ($('easyCarryBarFill')) {
+      $('easyCarryBarFill').style.width = `${carryPct}%`;
+    }
+    if ($('easyShotSummaryBadge')) {
+      $('easyShotSummaryBadge').textContent = `${shapeInfo.nameKo} · ${slopeInfo.shortKo}`;
+    }
+    if ($('easyMetricCarry')) $('easyMetricCarry').textContent = `${carryVal.toFixed(1)} m`;
+    if ($('easyMetricApex')) $('easyMetricApex').textContent = `${apexVal.toFixed(1)} m`;
+    if ($('easyMetricLaunchSpeed')) {
+      $('easyMetricLaunchSpeed').textContent = `${launchVal.toFixed(1)}° · ${speedVal.toFixed(1)} m/s`;
+    }
+    if ($('easyDistStepperVal')) {
+      $('easyDistStepperVal').textContent = `${totalVal.toFixed(1)} m`;
+    }
+
+    const curShape = st.shotShapeType || 'auto';
+    document.querySelectorAll('.btn-easy-shape').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.easyShape === curShape);
+    });
+
+    const curSlope = st.terrainSlopeMode || 'auto';
+    document.querySelectorAll('.btn-easy-slope').forEach(btn => {
+      const targetSlope = btn.dataset.easySlope;
+      const isMatch =
+        targetSlope === curSlope ||
+        (targetSlope === 'downhill' && curSlope.startsWith('downhill')) ||
+        (targetSlope === 'uphill' && curSlope.startsWith('uphill'));
+      btn.classList.toggle('is-active', isMatch);
+    });
+
+    document.querySelectorAll('.btn-easy-color').forEach(btn => {
+      const active = btn.dataset.easyColor === st.traceColor;
+      btn.classList.toggle('is-selected', active);
+      if (active && $('easyTraceColorLabel') && btn.dataset.colorLabel) {
+        $('easyTraceColorLabel').textContent = btn.dataset.colorLabel;
+      }
+    });
+
+    const curStyle = st.traceStyle || 'tube';
+    document.querySelectorAll('.btn-easy-trace-style').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.easyStyle === curStyle);
+    });
+
+    const easyPinOriginBtn = $('btnEasyPinOrigin');
+    if (easyPinOriginBtn) {
+      const isOriginPin = st.pinTargetMode === 'origin';
+      easyPinOriginBtn.setAttribute('aria-pressed', String(isOriginPin));
+      easyPinOriginBtn.textContent = isOriginPin
+        ? '1. 시작점(공) 터치 대기 중...'
+        : '1. 시작점(공) 위치 지정';
+    }
+    const easyPinApexBtn = $('btnEasyPinApex');
+    if (easyPinApexBtn) {
+      const isApexPin = st.pinTargetMode === 'apex';
+      easyPinApexBtn.setAttribute('aria-pressed', String(isApexPin));
+      easyPinApexBtn.textContent = isApexPin
+        ? '2. 최고점(APEX) 터치 대기 중...'
+        : '2. 최고점(높이·휨) 지정';
+    }
+    const easyPinLandingBtn = $('btnEasyPinLanding');
+    if (easyPinLandingBtn) {
+      const isLandingPin = st.pinTargetMode === 'landing';
+      easyPinLandingBtn.setAttribute('aria-pressed', String(isLandingPin));
+      easyPinLandingBtn.textContent = isLandingPin
+        ? '3. 탄착지점 터치 대기 중...'
+        : '3. 탄착지점(착지) 지정';
+    }
+  }
+
+  // 2) 클럽 잔상(afterimage) 히어로 지표 및 원터치 설정 동기화
+  const opts = appState.renderOptions || DEFAULT_RENDER_OPTIONS;
+  document.querySelectorAll('.btn-easy-scope-card').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.easyScope === opts.trailScope);
+  });
+  document.querySelectorAll('.btn-easy-strobe-step').forEach(btn => {
+    btn.classList.toggle('is-active', Number(btn.dataset.easyStep) === Number(opts.strobeStep));
+  });
+  document.querySelectorAll('.btn-easy-layer-toggle').forEach(btn => {
+    const key = btn.dataset.easyLayer;
+    const on = Boolean(opts[key]);
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  });
+
+  const easyHeadPinBtn = $('btnEasyManualHeadPin');
+  if (easyHeadPinBtn) {
+    easyHeadPinBtn.setAttribute('aria-pressed', String(Boolean(appState.manualPinMode)));
+    easyHeadPinBtn.textContent = appState.manualPinMode
+      ? '영상 속 클럽 헤드를 터치하세요 (대기 중)'
+      : '클럽 헤드 위치 직접 터치해 보정하기';
+  }
 }
 
 function getVideoFileSignature(file) {
@@ -1041,6 +1902,8 @@ function saveModeWorkspaceSnapshot(mode = appState.studioMode) {
     canvasWidth: appState.canvasWidth || 1280,
     canvasHeight: appState.canvasHeight || 720,
     viewportZoom: appState.viewportZoom || 1.0,
+    cleanOriginalViewMode: Boolean(appState.cleanOriginalViewMode),
+    impactBallPoint: appState.impactBallPoint ? { ...appState.impactBallPoint } : getEffectiveImpactBallPoint(),
     samples: appState.samples || [],
     keyMoments: appState.keyMoments || [],
     addressClub: appState.addressClub || null,
@@ -1108,6 +1971,11 @@ async function restoreModeWorkspace(targetMode) {
   appState.exportSpeedFactor = ws.exportSpeedFactor ?? 0.5;
   appState.canvasWidth = ws.canvasWidth || 1280;
   appState.canvasHeight = ws.canvasHeight || 720;
+  appState.cleanOriginalViewMode = Boolean(ws.cleanOriginalViewMode);
+  appState.impactBallPinMode = false;
+  appState.impactBallPoint = ws.impactBallPoint
+    ? { ...ws.impactBallPoint }
+    : (ws.shotTracerOptions?.originPoint ? { ...ws.shotTracerOptions.originPoint } : { x: 0.588, y: 0.819, pinned: false });
   appState.samples = ws.samples || [];
   appState.keyMoments = ws.keyMoments || [];
   appState.addressClub = ws.addressClub || null;
@@ -1583,6 +2451,10 @@ async function refreshArchiveCountBadge() {
       topCountEl.textContent = String(items.length);
       topCountEl.hidden = items.length <= 0;
     }
+    const easyCountEl = $('badgeEasyArchiveCount');
+    if (easyCountEl) {
+      easyCountEl.textContent = String(items.length);
+    }
     const subEl = $('archiveHeaderSubCount');
     if (subEl) {
       subEl.textContent = `총 ${items.length}건 보관 중 (작업 저장 및 동영상·스냅샷 추출 시 자동 보관됨)`;
@@ -1600,6 +2472,7 @@ function initStudio() {
     afterimage: buildDefaultModeWorkspace('afterimage', 'right'),
     'shot-tracer': buildDefaultModeWorkspace('shot-tracer', 'right')
   };
+  setUiExperienceMode(loadSavedUiExperienceMode(), { announce: false });
   syncModeVisibilityUI();
   syncRenderOptionsUI();
   syncShotTracerUI();
@@ -1684,6 +2557,18 @@ function loadDemoPreset(preset, keepArchiveLink = false) {
   const impMoment = appState.keyMoments.find(m => m.key === 'impact');
   const impT = impMoment ? impMoment.time : (appState.duration * 0.42);
   const flightSpan = Number(appState.shotTracerOptions.flightDurationSec || 2.35) + Number(appState.shotTracerOptions.rollDurationSec || 0.62);
+
+  const demoBallPt = appState.addressClub?.ballPoint || appState.shotTracerOptions?.originPoint || { x: 0.588, y: 0.819 };
+  appState.impactBallPoint = {
+    x: Number((demoBallPt.x ?? 0.588).toFixed(4)),
+    y: Number((demoBallPt.y ?? 0.819).toFixed(4)),
+    pinned: false
+  };
+  if (appState.addressClub) {
+    appState.addressClub.impactBallPoint = { ...appState.impactBallPoint };
+  }
+  appState.cleanOriginalViewMode = false;
+  appState.impactBallPinMode = false;
 
   appState.currentTime = appState.studioMode === 'shot-tracer'
     ? clamp(impT + flightSpan + 0.12, 0.5, Math.max(0.5, appState.duration - 0.08))
@@ -2124,7 +3009,8 @@ async function ensurePoseLandmarker() {
 
 /**
  * 연속된 두 비디오 프레임(currImageData, prevImageData)에서
- * 골퍼 스윙 영역(golferMotion), 하단 타격·볼 출발 영역(strikeMotion), 상단 피니시 영역(upperMotion)의
+ * 우측 배경/하늘 영역 카메라 흔들림 모션(bgMed)을 차감한 뒤,
+ * 순수 골퍼 스윙 영역(golferMotion), 하단 타격·볼 출발 영역(strikeMotion), 상단 피니시 영역(upperMotion)의
  * 실제 픽셀 모션 에너지를 추출합니다.
  */
 function computeFrameRegionalMotion(currData, prevData, width, height) {
@@ -2133,6 +3019,46 @@ function computeFrameRegionalMotion(currData, prevData, width, height) {
   }
   const stepX = Math.max(3, Math.round(width / 120));
   const stepY = Math.max(3, Math.round(height / 120));
+
+  // 1) 우측 배경(중단~하단 산림·잔디) 카메라 흔들림 중앙값 모션 측정
+  // 구름 없는 파란 하늘(y < 0.36)에서는 카메라가 움직여도 픽셀 차분이 0이 되어 후반부 패닝이 스윙 버스트로 오인되므로,
+  // 공간 텍스처 기울기가 존재하는 우측 중단~하단(x 0.72..0.96, y 0.36..0.88) 픽셀만 샘플링
+  const bgStepX = Math.max(4, Math.round(width / 60));
+  const bgStepY = Math.max(4, Math.round(height / 60));
+  const bgDiffs = [];
+  const bgAllDiffs = [];
+  for (let y = Math.floor(height * 0.36); y < Math.floor(height * 0.88); y += bgStepY) {
+    for (let x = Math.floor(width * 0.72); x < Math.floor(width * 0.96); x += bgStepX) {
+      const idx = (y * width + x) * 4;
+      const cLum = (currData[idx] + currData[idx + 1] + currData[idx + 2]) * 0.3333;
+      const pLum = (prevData[idx] + prevData[idx + 1] + prevData[idx + 2]) * 0.3333;
+      const dVal = Math.abs(cLum - pLum);
+      bgAllDiffs.push(dVal);
+
+      const xNext = Math.min(width - 1, x + 2);
+      const xPrev = Math.max(0, x - 2);
+      const yNext = Math.min(height - 1, y + 2);
+      const yPrev = Math.max(0, y - 2);
+      const idxR = (y * width + xNext) * 4;
+      const idxL = (y * width + xPrev) * 4;
+      const idxD = (yNext * width + x) * 4;
+      const idxU = (yPrev * width + x) * 4;
+      const lumR = (currData[idxR] + currData[idxR + 1] + currData[idxR + 2]) * 0.3333;
+      const lumL = (currData[idxL] + currData[idxL + 1] + currData[idxL + 2]) * 0.3333;
+      const lumD = (currData[idxD] + currData[idxD + 1] + currData[idxD + 2]) * 0.3333;
+      const lumU = (currData[idxU] + currData[idxU + 1] + currData[idxU + 2]) * 0.3333;
+      if (Math.abs(lumR - lumL) + Math.abs(lumD - lumU) >= 3.0) {
+        bgDiffs.push(dVal);
+      }
+    }
+  }
+  bgDiffs.sort((a, b) => a - b);
+  bgAllDiffs.sort((a, b) => a - b);
+  const rawBgMed = bgDiffs.length >= 6
+    ? bgDiffs[bgDiffs.length >> 1]
+    : (bgAllDiffs.length ? bgAllDiffs[Math.floor(bgAllDiffs.length * 0.70)] : 0);
+  const bgMed = rawBgMed * 1.25;
+  const panSuppress = rawBgMed > 3.5 ? 1 / (1 + (rawBgMed - 3.5) * 0.45) : 1.0;
 
   let golferSum = 0;
   let golferCnt = 0;
@@ -2144,7 +3070,7 @@ function computeFrameRegionalMotion(currData, prevData, width, height) {
   const yStart = Math.floor(height * 0.14);
   const yEnd = Math.ceil(height * 0.88);
   const xStart = Math.floor(width * 0.16);
-  const xEnd = Math.ceil(width * 0.82);
+  const xEnd = Math.ceil(width * 0.80);
 
   for (let y = yStart; y < yEnd; y += stepY) {
     const ny = y / height;
@@ -2153,21 +3079,23 @@ function computeFrameRegionalMotion(currData, prevData, width, height) {
       const idx = (y * width + x) * 4;
       const cLum = (currData[idx] + currData[idx + 1] + currData[idx + 2]) * 0.3333;
       const pLum = (prevData[idx] + prevData[idx + 1] + prevData[idx + 2]) * 0.3333;
-      const diff = Math.abs(cLum - pLum);
-      const activeDiff = diff > 10 ? diff : diff * 0.25;
+      const netDiff = Math.max(0, Math.abs(cLum - pLum) - bgMed);
+      const activeDiff = netDiff > 8 ? netDiff : netDiff * 0.25;
 
-      golferSum += activeDiff;
-      golferCnt++;
+      if (nx <= 0.66 && ny >= 0.16 && ny <= 0.84) {
+        golferSum += activeDiff;
+        golferCnt++;
+      }
 
       // 하단 타격 및 볼 발사 존 (다운스윙 클럽헤드 통과 및 임팩트 직후 공 이륙 구역)
-      if (nx >= 0.32 && nx <= 0.76 && ny >= 0.50 && ny <= 0.87) {
-        const fastBoost = diff > 22 ? diff * 1.65 : activeDiff;
+      if (nx >= 0.34 && nx <= 0.78 && ny >= 0.50 && ny <= 0.88) {
+        const fastBoost = netDiff > 18 ? netDiff * 1.65 : activeDiff;
         strikeSum += fastBoost;
         strikeCnt++;
       }
 
       // 상단 백스윙 탑 · 팔로우스루 · 피니시 존
-      if (nx >= 0.18 && nx <= 0.68 && ny >= 0.14 && ny <= 0.48) {
+      if (nx >= 0.16 && nx <= 0.66 && ny >= 0.14 && ny <= 0.46) {
         upperSum += activeDiff;
         upperCnt++;
       }
@@ -2175,16 +3103,17 @@ function computeFrameRegionalMotion(currData, prevData, width, height) {
   }
 
   return {
-    golferMotion: golferCnt > 0 ? golferSum / golferCnt : 0,
-    strikeMotion: strikeCnt > 0 ? strikeSum / strikeCnt : 0,
-    upperMotion: upperCnt > 0 ? upperSum / upperCnt : 0
+    golferMotion: (golferCnt > 0 ? golferSum / golferCnt : 0) * panSuppress,
+    strikeMotion: (strikeCnt > 0 ? strikeSum / strikeCnt : 0) * panSuppress,
+    upperMotion: (upperCnt > 0 ? upperSum / upperCnt : 0) * panSuppress
   };
 }
 
 /**
- * 실제 동영상 프레임들의 픽셀 모션 에너지 프로파일을 분석하여,
- * 촬영 시간이 긴 영상(예: 스윙은 2.6초에 끝나고 5.2초까지 공 비행을 찍은 영상)에서도
- * 스윙이 끝난 뒤(피니시 이후)를 임팩트로 착각하지 않고 실제 타격 시점(impactTime)과 피니시(finishTime)를 정확히 산출합니다.
+ * 실제 동영상 프레임들의 픽셀 모션 에너지 프로파일에서
+ * 액티브 스윙 버스트(burstStart: 백스윙 탑 직전 ~ 다운스윙 구간)를 먼저 포착한 뒤,
+ * 테이크어웨이(임팩트 전)나 피니시 이후(스윙 종료 후)를 임팩트로 오인하지 않고
+ * 실제 타격 시점(impactTime)과 피니시(finishTime)를 정확히 산출합니다.
  */
 function estimateSwingTimingFromVideoPixels(rawSamples, duration) {
   const n = rawSamples?.length || 0;
@@ -2210,75 +3139,89 @@ function estimateSwingTimingFromVideoPixels(rawSamples, duration) {
   const stSeries = smooth3(rawSamples.map(s => s.strikeMotion || 0));
   const upSeries = smooth3(rawSamples.map(s => s.upperMotion || 0));
   const mcSeries = rawSamples.map(s => (s.motionCand?.confidence || 0) * (s.motionCand?.motionEnergy || 12));
+  const totalEnergy = rawSamples.map((_, i) => gSeries[i] + upSeries[i] * 1.2 + stSeries[i] * 0.8);
 
-  // 스윙이 촬영된 실제 구간 탐색:
-  // 후방(DTL) 샷 영상은 임팩트 후 공이 날아가는 모습을 2~3초간 계속 촬영하므로,
-  // 실제 임팩트는 항상 영상 초·중반(최대 duration * 0.52 또는 2.35초 이내)의 다운스윙 타격 피크에서 발생함
-  const minImpTime = Math.max(0.45, Math.min(0.85, duration * 0.15));
+  // 1) 0.85초 폭의 최대 골퍼 스윙 에너지 버스트 시작점(burstStart) 탐색
+  // 4.2초 이상 긴 영상은 후반부(2.5초 이후)가 공 비행 및 카메라 패닝 구간이므로 스윙 버스트 탐색을 전반부(<=2.15초)로 제한
+  const minBurstTime = Math.max(0.25, Math.min(0.45, duration * 0.10));
+  const maxBurstTime = duration >= 4.2
+    ? Math.min(2.15, duration * 0.44)
+    : Math.min(2.48, Math.max(1.25, duration * 0.65));
+  let burstStart = Math.min(1.55, duration * 0.30);
+  let bestBurstAvg = -Infinity;
+
+  for (let i = 1; i < n - 3; i++) {
+    const t0 = rawSamples[i].time;
+    if (t0 < minBurstTime || t0 > maxBurstTime) continue;
+    let sum = 0;
+    let cnt = 0;
+    for (let k = i; k < n; k++) {
+      if (rawSamples[k].time - t0 > 0.85) break;
+      sum += totalEnergy[k];
+      cnt++;
+    }
+    if (cnt >= 3) {
+      const earlyBias = 1.0 - Math.max(0, t0 / Math.max(2.0, duration)) * 0.12;
+      const avg = (sum / cnt) * earlyBias;
+      if (avg > bestBurstAvg) {
+        bestBurstAvg = avg;
+        burstStart = t0;
+      }
+    }
+  }
+
+  // 2) 스윙 버스트 내부(burstStart + 0.06s ~ burstStart + 0.65s)에서 실제 타격 피크(bestImpIdx) 탐색
+  const minImpTime = Math.max(0.45, burstStart + 0.06);
   const maxImpTime = duration >= 4.2
-    ? Math.min(2.35, duration * 0.45)
-    : Math.min(duration - 0.48, duration * 0.58);
+    ? Math.min(2.48, duration - 0.35, burstStart + 0.65)
+    : Math.min(duration - 0.35, burstStart + 0.65);
 
-  let bestImpIdx = Math.floor(n * 0.35);
+  let bestImpIdx = Math.floor(n * 0.36);
   let bestScore = -Infinity;
 
   for (let i = 2; i < n - 3; i++) {
     const t = rawSamples[i].time;
     if (t < minImpTime || t > maxImpTime) continue;
 
-    // 1) 현재 프레임 전후의 타격 존(strikeMotion) + 전신 스윙 모션 피크
     const localStrike = Math.max(stSeries[i], stSeries[i - 1] * 0.92, stSeries[i + 1] * 0.92);
     const localGolfer = Math.max(gSeries[i], gSeries[i + 1]);
     const localMc = Math.max(mcSeries[i], mcSeries[i - 1] * 0.85);
 
-    // 2) 직전 백스윙 구간(t - 0.80s ~ t - 0.15s)의 스윙 준비 모션 존재 여부
-    let backSum = 0;
-    let backCnt = 0;
-    for (let k = i - 2; k >= 1; k--) {
-      const dt = t - rawSamples[k].time;
-      if (dt < 0.12) continue;
-      if (dt > 0.82) break;
-      backSum += gSeries[k] + upSeries[k] * 0.6;
-      backCnt++;
-    }
-    const backAvg = backCnt > 0 ? backSum / backCnt : 0;
-
-    // 3) 직후 팔로우스루 구간(t + 0.04s ~ t + 0.48s)의 상단 스윙 모션
+    // 직후 팔로우스루 구간(t + 0.03s ~ t + 0.42s)의 상단 스윙 모션
     let follSum = 0;
     let follCnt = 0;
     for (let k = i + 1; k < n; k++) {
       const dt = rawSamples[k].time - t;
       if (dt < 0.03) continue;
-      if (dt > 0.48) break;
-      follSum += gSeries[k] + upSeries[k] * 0.85;
+      if (dt > 0.42) break;
+      follSum += gSeries[k] + upSeries[k] * 0.95;
       follCnt++;
     }
     const follAvg = follCnt > 0 ? follSum / follCnt : 0;
 
-    // 4) 피니시 홀드 구간(t + 0.68s ~ t + 1.35s)에서 스윙 동작이 마무리되어 모션이 잦아드는지 확인
+    // 피니시 홀드 구간(t + 0.65s ~ t + 1.35s)에서 스윙 동작이 마무리되어 모션이 잦아드는지 확인
     let postFinSum = 0;
     let postFinCnt = 0;
     for (let k = i + 3; k < n; k++) {
       const dt = rawSamples[k].time - t;
-      if (dt < 0.68) continue;
-      if (dt > 1.38) break;
+      if (dt < 0.65) continue;
+      if (dt > 1.35) break;
       postFinSum += gSeries[k] + stSeries[k] * 0.5;
       postFinCnt++;
     }
     const postFinAvg = postFinCnt > 0 ? postFinSum / postFinCnt : localGolfer * 0.5;
     const finishCalmBonus = Math.max(0, (localGolfer + localStrike * 0.5) - postFinAvg * 1.15);
 
-    // 골퍼가 실제로 가장 많이 스윙하는 시점(1.1s ~ 2.05s) 가중치
-    const naturalTimingBonus = Math.max(0, 1.0 - Math.abs(t - Math.min(1.78, duration * 0.35)) / 1.1) * 4.5;
+    // burstStart 직후 0.35초 부근(다운스윙 타격 표준 위치) 중심 가중치
+    const burstAnchorBonus = Math.max(0, 1.0 - Math.abs(t - (burstStart + 0.35)) / 0.35) * 6.5;
 
     const score =
-      localStrike * 2.25 +
+      localStrike * 2.35 +
       localGolfer * 1.35 +
       localMc * 0.15 +
-      backAvg * 0.65 +
-      follAvg * 0.85 +
+      follAvg * 0.95 +
       finishCalmBonus * 0.95 +
-      naturalTimingBonus;
+      burstAnchorBonus;
 
     if (score > bestScore) {
       bestScore = score;
@@ -2286,7 +3229,7 @@ function estimateSwingTimingFromVideoPixels(rawSamples, duration) {
     }
   }
 
-  const impactTime = rawSamples[bestImpIdx]?.time ?? clamp(duration * 0.35, 0.55, 2.10);
+  const impactTime = rawSamples[bestImpIdx]?.time ?? clamp(burstStart + 0.35, 0.55, duration - 0.45);
 
   // 백스윙 탑(topTime): 임팩트 직전 0.18s ~ 0.42s 구간에서 전환점(국소 모션 골짜기 또는 표준 0.28s 전) 탐색
   let topTime = Math.max(0.30, impactTime - 0.28);
@@ -2321,7 +3264,8 @@ function estimateSwingTimingFromVideoPixels(rawSamples, duration) {
     addressTime: Number(addressTime.toFixed(3)),
     topTime: Number(topTime.toFixed(3)),
     impactTime: Number(impactTime.toFixed(3)),
-    finishTime: Number(finishTime.toFixed(3))
+    finishTime: Number(finishTime.toFixed(3)),
+    burstStart: Number(burstStart.toFixed(3))
   };
 }
 
@@ -2610,14 +3554,74 @@ async function analyzeUploadedVideo(reportProgress = () => {}) {
   appState.shotTracerOptions = autoCalibrateShotTracerFromVideo(
     appState.samples,
     appState.keyMoments,
-    appState.shotTracerOptions
+    { ...appState.shotTracerOptions, manualImpactLocked: false }
   );
+  // 동일 영상 파일에 대해 사용자가 이전에 원터치로 고정해 둔 임팩트 시점 및 공 위치가 있으면 자동 복원
+  try {
+    const videoKey = appState.videoFileSignature || appState.videoFileName || 'default';
+    const savedRaw = localStorage.getItem(REALTIME_PIN_STORAGE_KEY);
+    const savedObj = savedRaw ? (JSON.parse(savedRaw)?.[videoKey] || null) : null;
+    if (savedObj?.manualImpactLocked && Number.isFinite(savedObj.calibratedImpactTime)) {
+      appState.shotTracerOptions.calibratedImpactTime = Number(savedObj.calibratedImpactTime);
+      appState.shotTracerOptions.manualImpactLocked = true;
+    }
+    const savedBall = savedObj?.impactBallPoint?.pinned
+      ? savedObj.impactBallPoint
+      : (savedObj?.originPoint?.pinned ? savedObj.originPoint : null);
+    if (savedBall && Number.isFinite(savedBall.x) && Number.isFinite(savedBall.y)) {
+      const impTimeForBall = Number.isFinite(appState.shotTracerOptions.calibratedImpactTime)
+        ? appState.shotTracerOptions.calibratedImpactTime
+        : (appState.keyMoments.find(m => m.key === 'impact')?.time ?? duration * 0.35);
+      appState.shotTracerOptions = applyUserPinnedBallPoint(
+        appState.shotTracerOptions,
+        'origin',
+        { x: Number(savedBall.x), y: Number(savedBall.y), pinned: true },
+        impTimeForBall,
+        impTimeForBall,
+        duration,
+        appState.fps
+      );
+    }
+  } catch {
+    // localStorage 조회 예외 무시
+  }
+
+  // 검출된(또는 저장된) 임팩트 공 위치를 appState.impactBallPoint 및 addressClub.impactBallPoint에 동기화하여
+  // 공 궤적(shot-tracer)과 스윙 클럽 잔상(afterimage) 양쪽 모두 동일한 임팩트 공 위치를 기준으로 정합
+  const syncedBallOrigin = appState.shotTracerOptions?.originPoint || appState.addressClub?.ballPoint || { x: 0.588, y: 0.819 };
+  appState.impactBallPoint = {
+    x: Number(clamp(syncedBallOrigin.x ?? 0.588, 0.005, 0.995).toFixed(4)),
+    y: Number(clamp(syncedBallOrigin.y ?? 0.819, 0.005, 0.995).toFixed(4)),
+    pinned: Boolean(syncedBallOrigin.pinned)
+  };
+  if (appState.addressClub) {
+    appState.addressClub.ballPoint = { ...appState.impactBallPoint };
+    appState.addressClub.impactBallPoint = { ...appState.impactBallPoint };
+  }
+
   if (Number.isFinite(appState.shotTracerOptions.calibratedImpactTime)) {
+    appState.keyMoments = reconcileKeyMomentsWithExactImpact(
+      appState.keyMoments,
+      appState.shotTracerOptions.calibratedImpactTime,
+      videoMotionTiming?.burstStart ?? null,
+      appState.samples,
+      true
+    );
     const impM = appState.keyMoments.find(m => m.key === 'impact');
-    if (impM && impM.source !== 'marked') {
+    if (impM) {
       impM.time = Number(appState.shotTracerOptions.calibratedImpactTime.toFixed(3));
+      if (appState.shotTracerOptions.manualImpactLocked) {
+        impM.source = 'marked';
+      }
     }
   }
+  // 정밀 검출된 실제 임팩트 시점 및 임팩트 공 위치에 맞춰 클럽 헤드 스윙 잔상 아크도 100% 동기화
+  appState.samples = regularizeSwingWithAddressClub(
+    appState.samples,
+    appState.keyMoments,
+    appState.addressClub,
+    appState.hand
+  );
 
   // [핵심] 동영상이 측면(Face-On)인지 후면(DTL)인지 자동 판단하여 잔상분석(afterimage) 또는 후방 공 궤적(shot-tracer) 모드로 자동 전환!
   const autoViewDecision = classifySwingVideoCameraAngleAndMode({
@@ -2684,30 +3688,36 @@ async function analyzeUploadedVideo(reportProgress = () => {}) {
   syncStabilizationUI();
   syncShotTracerUI();
 
-  const fin = appState.keyMoments.find(m => m.key === 'finish') || appState.keyMoments.find(m => m.key === 'impact');
   const imp = appState.keyMoments.find(m => m.key === 'impact');
   const impT = imp ? imp.time : duration * 0.35;
-  const flightSpan = Number(appState.shotTracerOptions.flightDurationSec || 1.55) + Number(appState.shotTracerOptions.rollDurationSec || 0.48);
 
-  appState.currentTime = appState.studioMode === 'shot-tracer'
-    ? clamp(impT + flightSpan + 0.12, 0.5, Math.max(0.5, appState.duration - 0.08))
-    : (fin ? fin.time : duration * 0.82);
-  appState.selectedPhaseKey = fin ? fin.key : 'finish';
+  // 스윙 영상 로드 직후 가장 중요한 [임팩트 순간(impT)]으로 기본 타임라인을 맞춰,
+  // 사용자가 첫 화면에서 즉시 임팩트 원본 영상과 그때의 공 위치를 확인·보정할 수 있게 함
+  appState.cleanOriginalViewMode = false;
+  appState.impactBallPinMode = false;
+  appState.currentTime = clamp(impT, 0.05, Math.max(0.2, appState.duration - 0.05));
+  appState.selectedPhaseKey = 'impact';
   appState.clipStartTime = 0;
   appState.clipEndTime = appState.duration;
   appState.clipPreset = 'all';
   $('timelineRange').value = String(appState.currentTime);
   syncClipRangeUI(true);
+  syncOneTouchLaunchTimingUI();
 
   await seekVideoSafely(video, appState.currentTime);
   progressWrap.hidden = true;
   appState.busy = false;
   const stRes = appState.shotTracerOptions;
   const totM = (Number(stRes.carryMeters || 0) + Number(stRes.rollMeters || 0)).toFixed(1);
+  const slopeRes = classifyTerrainSlopeInfo(
+    stRes.elevationDeltaMeters ?? 0,
+    stRes.terrainSlopeMode || 'auto',
+    stRes.detectedTerrainSlope || 'flat'
+  );
   const shiftPct = (Math.max(finalStabSummary.maxShiftY, finalStabSummary.maxShiftX) * 100).toFixed(1);
   setStatusMessage(
     appState.studioMode === 'shot-tracer'
-      ? `[자동 판독: ${autoViewDecision.viewLabelKo} (${autoViewDecision.confidencePct}%) → 후방 공 궤적 모드 진행] ${autoViewDecision.reasonSummaryKo} · 임팩트 ${impT.toFixed(2)}s · 캐리 ${Number(stRes.carryMeters).toFixed(1)}m (총 ${totM}m)`
+      ? `[자동 판독: ${autoViewDecision.viewLabelKo} (${autoViewDecision.confidencePct}%) → 후방 공 궤적 모드 진행] ${autoViewDecision.reasonSummaryKo} · 지형 ${slopeRes.shortKo} · 임팩트 ${impT.toFixed(2)}s · 캐리 ${Number(stRes.carryMeters).toFixed(1)}m (총 ${totM}m)`
       : `[자동 판독: ${autoViewDecision.viewLabelKo} (${autoViewDecision.confidencePct}%) → 스윙 클럽 잔상 분석 진행] ${autoViewDecision.reasonSummaryKo} · 지면 고정(±${shiftPct}% 흔들림 보정) 완료`
   );
 
@@ -2838,6 +3848,8 @@ function renderMainStage() {
   if ($('badgeCurrentPinFrame')) {
     $('badgeCurrentPinFrame').textContent = `${appState.playing ? '재생 프레임' : '현재 멈춘 프레임'}: F${curFrame} (${appState.currentTime.toFixed(2)}s)`;
   }
+  syncOneTouchLaunchTimingUI();
+  syncEasyModeUI();
 }
 
 function startPlayback(clipOnly = false) {
@@ -2856,6 +3868,10 @@ function startPlayback(clipOnly = false) {
   }
   if ($('btnPinPauseToggle')) {
     $('btnPinPauseToggle').textContent = '영상 멈춤';
+  }
+  if ($('btnEasyPlayPause')) {
+    $('btnEasyPlayPause').textContent = '일시정지';
+    $('btnEasyPlayPause').setAttribute('aria-pressed', 'true');
   }
   const clipPlayBtn = $('btnPlayClipRange');
   if (clipPlayBtn) {
@@ -2977,6 +3993,10 @@ function stopPlayback() {
   }
   if ($('btnPinPauseToggle')) {
     $('btnPinPauseToggle').textContent = '재생/멈춤';
+  }
+  if ($('btnEasyPlayPause')) {
+    $('btnEasyPlayPause').textContent = '재생';
+    $('btnEasyPlayPause').setAttribute('aria-pressed', 'false');
   }
   const clipPlayBtn = $('btnPlayClipRange');
   if (clipPlayBtn) {
@@ -3270,6 +4290,57 @@ function updateMetricsAndCoachingUI() {
         <p>${item.detail}</p>
       `;
       listEl.appendChild(li);
+    }
+  }
+
+  // 쉬운 모드 스윙 핵심 지표 및 1줄 코칭 동기화
+  if ($('easyHeroTempo')) {
+    $('easyHeroTempo').textContent = tempoInfo ? `${tempoInfo.ratio.toFixed(2)} : 1` : '—';
+  }
+  if ($('easyHeroTempoSub')) {
+    $('easyHeroTempoSub').textContent = tempoInfo
+      ? `백스윙 ${tempoInfo.backswingSec.toFixed(2)}s / 다운스윙 ${tempoInfo.downswingSec.toFixed(2)}s`
+      : '어드레스·탑·임팩트 기준';
+  }
+  if (tempoInfo) {
+    const totalSwingSec = Math.max(0.1, tempoInfo.backswingSec + tempoInfo.downswingSec);
+    const backPct = clamp(Math.round((tempoInfo.backswingSec / totalSwingSec) * 100), 40, 88);
+    if ($('easyHeroTempoPctText')) {
+      $('easyHeroTempoPctText').textContent = `백스윙 ${backPct}% · 다운스윙 ${100 - backPct}%`;
+    }
+    if ($('easyTempoBarBack')) {
+      $('easyTempoBarBack').style.width = `${backPct}%`;
+    }
+  }
+  if ($('easyHeroClubSpeed')) {
+    $('easyHeroClubSpeed').textContent = sample.clubSpeed ? `${sample.clubSpeed} mph` : '—';
+  }
+  if ($('easyMetricElbow')) {
+    $('easyMetricElbow').textContent = Number.isFinite(meas.elbow) ? `${Math.round(meas.elbow)}°` : '—';
+  }
+  if ($('easyMetricSpine')) {
+    $('easyMetricSpine').textContent = Number.isFinite(meas.lean) ? `${Math.round(meas.lean)}°` : '—';
+  }
+  if ($('easyMetricWrist')) {
+    $('easyMetricWrist').textContent = Number.isFinite(meas.wrist) ? `${Math.round(meas.wrist)}°` : '—';
+  }
+  if (feedbackItems.length > 0) {
+    const primaryCoach = feedbackItems.find(f => f.status !== 'good') || feedbackItems[0];
+    const hasCheck = feedbackItems.some(f => f.status !== 'good');
+    if ($('easySwingSummaryBadge')) {
+      $('easySwingSummaryBadge').textContent = hasCheck
+        ? `${nearestPhase?.labelKo || '스윙'} · 원포인트 점검`
+        : `${nearestPhase?.labelKo || '스윙'} · 양호`;
+    }
+    if ($('easyCoachingBadge')) {
+      $('easyCoachingBadge').textContent = primaryCoach.status === 'good' ? '핵심 양호' : '원포인트 점검';
+      $('easyCoachingBadge').classList.toggle('is-check', primaryCoach.status !== 'good');
+    }
+    if ($('easyCoachingHeadline')) {
+      $('easyCoachingHeadline').textContent = primaryCoach.title;
+    }
+    if ($('easyCoachingDetail')) {
+      $('easyCoachingDetail').textContent = primaryCoach.detail;
     }
   }
 }
@@ -3834,25 +4905,44 @@ function bindControls() {
     }
   };
 
+  const stepTimelineBy = deltaSec => {
+    stopPlayback();
+    const dur = Math.max(0.5, Number(appState.duration || 3.2));
+    const baseT = Number.isFinite(appState.currentTime) ? appState.currentTime : 0;
+    const nextT = clamp(Number((baseT + deltaSec).toFixed(3)), 0, dur);
+    void seekToTime(nextT);
+  };
+
   $('btnPlayPause').onclick = () => {
     if (appState.playing) stopPlayback();
     else startPlayback();
   };
 
+  if ($('btnStepBack1s')) {
+    $('btnStepBack1s').onclick = () => stepTimelineBy(-1.0);
+  }
+  if ($('btnStepBack01s')) {
+    $('btnStepBack01s').onclick = () => stepTimelineBy(-0.1);
+  }
   $('btnPrevFrame').onclick = () => {
-    stopPlayback();
-    void seekToTime(appState.currentTime - 1 / appState.fps);
+    const step = 1 / Math.max(15, Number(appState.fps || 30));
+    stepTimelineBy(-step);
   };
-
   $('btnNextFrame').onclick = () => {
-    stopPlayback();
-    void seekToTime(appState.currentTime + 1 / appState.fps);
+    const step = 1 / Math.max(15, Number(appState.fps || 30));
+    stepTimelineBy(step);
   };
+  if ($('btnStepFwd01s')) {
+    $('btnStepFwd01s').onclick = () => stepTimelineBy(0.1);
+  }
+  if ($('btnStepFwd1s')) {
+    $('btnStepFwd1s').onclick = () => stepTimelineBy(1.0);
+  }
 
   $('btnJumpImpact').onclick = () => {
     stopPlayback();
-    const imp = appState.keyMoments.find(m => m.key === 'impact');
-    if (imp) void seekToTime(imp.time);
+    const { impactTime } = getEffectiveBallLaunchImpactTime();
+    void seekToTime(impactTime);
   };
 
   $('timelineRange').oninput = e => {
@@ -3863,6 +4953,119 @@ function bindControls() {
   $('selectPlaybackSpeed').onchange = e => {
     applyPlaybackSpeedChange(e.target.value);
   };
+
+  // 원터치 공 날아가는 시기(출발 시점) 즉시 조정 버튼 바인딩 (일반 화면 + 전체화면 공통)
+  // [중요] 이전에 저장된 impactTime이 아니라 항상 사용자가 현재 맞춰둔 타임라인 위치(appState.currentTime)를 기준으로 이동·조정하여
+  // 타임라인을 옮겨둔 뒤 +1s / +0.2s / +1F 등을 눌렀을 때 이전 타임라인으로 되돌아가는 현상을 원천 차단함
+  const shiftLaunchTimingBy = (deltaSec, label) => {
+    const baseTime = Number.isFinite(appState.currentTime)
+      ? appState.currentTime
+      : getEffectiveBallLaunchImpactTime().impactTime;
+    void applyOneTouchBallLaunchTiming(baseTime + deltaSec, {
+      setFromCurrentScreen: false,
+      reasonLabel: label
+    });
+  };
+
+  if ($('btnLaunchEarlier1s')) {
+    $('btnLaunchEarlier1s').onclick = () => shiftLaunchTimingBy(-1.0, '1.0초 앞당김');
+  }
+  if ($('btnFsLaunchEarlier1s')) {
+    $('btnFsLaunchEarlier1s').onclick = () => shiftLaunchTimingBy(-1.0, '1.0초 앞당김');
+  }
+  if ($('btnLaunchEarlierFast')) {
+    $('btnLaunchEarlierFast').onclick = () => shiftLaunchTimingBy(-0.20, '0.20초 앞당김');
+  }
+  if ($('btnFsLaunchEarlierFast')) {
+    $('btnFsLaunchEarlierFast').onclick = () => shiftLaunchTimingBy(-0.20, '0.20초 앞당김');
+  }
+
+  if ($('btnLaunchEarlierFrame')) {
+    $('btnLaunchEarlierFrame').onclick = () => {
+      const frameStep = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(-frameStep, '1프레임 앞당김');
+    };
+  }
+  if ($('btnFsLaunchEarlierFrame')) {
+    $('btnFsLaunchEarlierFrame').onclick = () => {
+      const frameStep = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(-frameStep, '1프레임 앞당김');
+    };
+  }
+
+  if ($('btnCleanOriginalView')) {
+    $('btnCleanOriginalView').onclick = () => toggleCleanOriginalViewMode();
+  }
+  if ($('btnFsCleanOriginal')) {
+    $('btnFsCleanOriginal').onclick = () => toggleCleanOriginalViewMode();
+  }
+  if ($('btnSwingCleanOriginal')) {
+    $('btnSwingCleanOriginal').onclick = () => toggleCleanOriginalViewMode();
+  }
+
+  if ($('btnPinImpactBallUnified')) {
+    $('btnPinImpactBallUnified').onclick = () => toggleUnifiedImpactBallPinMode();
+  }
+  if ($('btnFsPinImpactBall')) {
+    $('btnFsPinImpactBall').onclick = () => toggleUnifiedImpactBallPinMode();
+  }
+  if ($('btnSwingPinImpactBall')) {
+    $('btnSwingPinImpactBall').onclick = () => toggleUnifiedImpactBallPinMode();
+  }
+
+  if ($('btnLaunchSetCurrentFrame')) {
+    $('btnLaunchSetCurrentFrame').onclick = () => {
+      void applyOneTouchBallLaunchTiming(appState.currentTime, {
+        setFromCurrentScreen: true,
+        reasonLabel: '지금 화면을 임팩트 시점으로 고정'
+      });
+    };
+  }
+  if ($('btnFsLaunchSetNow')) {
+    $('btnFsLaunchSetNow').onclick = () => {
+      void applyOneTouchBallLaunchTiming(appState.currentTime, {
+        setFromCurrentScreen: true,
+        reasonLabel: '지금 화면을 임팩트 시점으로 고정'
+      });
+    };
+  }
+
+  if ($('btnLaunchLaterFrame')) {
+    $('btnLaunchLaterFrame').onclick = () => {
+      const frameStep = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(frameStep, '1프레임 늦춤');
+    };
+  }
+  if ($('btnFsLaunchLaterFrame')) {
+    $('btnFsLaunchLaterFrame').onclick = () => {
+      const frameStep = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(frameStep, '1프레임 늦춤');
+    };
+  }
+
+  if ($('btnLaunchLaterFast')) {
+    $('btnLaunchLaterFast').onclick = () => shiftLaunchTimingBy(0.20, '0.20초 늦춤');
+  }
+  if ($('btnFsLaunchLaterFast')) {
+    $('btnFsLaunchLaterFast').onclick = () => shiftLaunchTimingBy(0.20, '0.20초 늦춤');
+  }
+  if ($('btnLaunchLater1s')) {
+    $('btnLaunchLater1s').onclick = () => shiftLaunchTimingBy(1.0, '1.0초 늦춤');
+  }
+  if ($('btnFsLaunchLater1s')) {
+    $('btnFsLaunchLater1s').onclick = () => shiftLaunchTimingBy(1.0, '1.0초 늦춤');
+  }
+
+  if ($('btnLaunchAutoSync')) {
+    $('btnLaunchAutoSync').onclick = () => {
+      void applyOneTouchBallLaunchTiming(0, { autoReset: true });
+    };
+  }
+  if ($('btnFsLaunchAutoReset')) {
+    $('btnFsLaunchAutoReset').onclick = () => {
+      void applyOneTouchBallLaunchTiming(0, { autoReset: true });
+    };
+  }
 
   // 전체화면 재생 진입 / 종료 / 컨트롤 바인딩
   if ($('btnStageFullscreenOverlay')) {
@@ -3909,8 +5112,8 @@ function bindControls() {
   if ($('btnFsJumpImpact')) {
     $('btnFsJumpImpact').onclick = () => {
       stopPlayback();
-      const imp = appState.keyMoments.find(m => m.key === 'impact');
-      if (imp) void seekToTime(imp.time);
+      const { impactTime } = getEffectiveBallLaunchImpactTime();
+      void seekToTime(impactTime);
     };
   }
   if ($('fsTimelineRange')) {
@@ -3958,14 +5161,16 @@ function bindControls() {
     stageResizeObserver.observe($('stageZoomScroll'));
   }
 
-  // 클럽 헤드 위치 수동 보정 토글 및 캔버스 클릭 핸들러 (샷 트레이서 4점 보정과 통합)
+  // 클럽 헤드 위치 수동 보정 토글 및 캔버스 클릭 핸들러 (임팩트 공 위치 지정 및 샷 트레이서 보정과 통합)
   const pinBtn = $('btnToggleManualPin');
   pinBtn.onclick = () => {
     appState.manualPinMode = !appState.manualPinMode;
     if (appState.manualPinMode) {
+      appState.impactBallPinMode = false;
       appState.shotTracerOptions.pinTargetMode = null;
       appState.stabilizationOptions.groundPinMode = false;
       syncShotTracerUI();
+      syncOneTouchLaunchTimingUI();
       syncStabilizationUI();
     }
     pinBtn.setAttribute('aria-pressed', String(appState.manualPinMode));
@@ -3983,24 +5188,176 @@ function bindControls() {
   $('btnResetPins').onclick = () =>
     runWithBusyOverlay(
       {
-        title: '클럽 헤드 궤적 초기화 및 화면 갱신 중',
-        sub: '수동 보정된 클럽 헤드 좌표를 초기 자동 분석 궤적으로 복원하고 있습니다...',
+        title: '임팩트 공 위치 및 클럽 헤드 궤적 초기화 중',
+        sub: '수동 보정된 클럽 헤드 및 임팩트 공 좌표를 초기 자동 분석 궤적으로 복원하고 있습니다...',
         stepText: '궤적 복원 중...'
       },
       async () => {
+        appState.impactBallPinMode = false;
+        appState.cleanOriginalViewMode = false;
+        if (appState.impactBallPoint) {
+          appState.impactBallPoint.pinned = false;
+        }
+        if (appState.addressClub?.ballPoint) {
+          appState.addressClub.impactBallPoint = { ...appState.addressClub.ballPoint, pinned: false };
+        }
         appState.samples = appState.samples.map(s => ({
           ...s,
           clubHead: s.clubHeadBase ? { ...s.clubHeadBase, pinned: false } : s.clubHead
         }));
+        if (appState.addressClub && appState.samples.length > 0) {
+          appState.samples = regularizeSwingWithAddressClub(
+            appState.samples,
+            appState.keyMoments,
+            appState.addressClub,
+            appState.hand
+          );
+        }
+        syncOneTouchLaunchTimingUI();
         renderMainStage();
         await renderPhaseFilmstrip();
-        setStatusMessage('수동 보정된 클럽 헤드 좌표를 초기 자동 분석 궤적으로 복원했습니다.');
+        setStatusMessage('수동 보정된 임팩트 공 위치 및 클럽 헤드 좌표를 초기 자동 분석 궤적으로 복원했습니다.');
       }
     );
 
+  // 캔버스 위 핸들(공 궤적 모드: 1.출발점·중간점1~3·최고점·탄착지점·최종런 / 스윙 잔상 모드: 임팩트 공 위치)을
+  // 마우스나 손가락으로 직접 드래그하여 실시간 조정 지원
+  let activeDragHandleKey = null;
+  let wasHandleDragged = false;
+
+  const findHoveredShotHandleKey = (normX, normY) => {
+    if (appState.playing) return null;
+    if (appState.studioMode === 'afterimage') {
+      const impBall = getEffectiveImpactBallPoint();
+      if (impBall && Number.isFinite(impBall.x) && Number.isFinite(impBall.y)) {
+        const d = Math.hypot(normX - impBall.x, normY - impBall.y);
+        if (d < 0.045) return 'impact-ball';
+      }
+      return null;
+    }
+    const st = appState.shotTracerOptions;
+    if (!st) return null;
+    const isRealTail = (st.trajectoryMode || 'real-tail') !== 'simulation';
+    const candidates = [
+      { key: 'origin', pt: st.originPoint },
+      ...(isRealTail
+        ? [
+            { key: 'mid1', pt: st.midPoint1 },
+            { key: 'mid2', pt: st.midPoint2 },
+            { key: 'mid3', pt: st.midPoint3 }
+          ]
+        : []),
+      { key: 'apex', pt: st.apexPoint },
+      { key: 'landing', pt: st.landingPoint },
+      { key: 'roll', pt: st.rollEndPoint }
+    ];
+    let bestKey = null;
+    let bestDist = 0.042;
+    for (const c of candidates) {
+      if (!c.pt || !Number.isFinite(c.pt.x) || !Number.isFinite(c.pt.y)) continue;
+      const d = Math.hypot(normX - c.pt.x, normY - c.pt.y);
+      if (d < bestDist) {
+        bestDist = d;
+        bestKey = c.key;
+      }
+    }
+    return bestKey;
+  };
+
+  $('stageCanvas').addEventListener('pointerdown', e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (appState.playing) return;
+    if (appState.stabilizationOptions?.groundPinMode || appState.manualPinMode) return;
+    const rect = $('stageCanvas').getBoundingClientRect();
+    const normX = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0.005, 0.995);
+    const normY = clamp((e.clientY - rect.top) / Math.max(1, rect.height), 0.005, 0.995);
+    const hitKey = findHoveredShotHandleKey(normX, normY);
+    if (hitKey) {
+      activeDragHandleKey = hitKey;
+      wasHandleDragged = false;
+      e.stopPropagation();
+      try {
+        $('stageCanvas').setPointerCapture(e.pointerId);
+      } catch {
+        // 포인터 캡처 예외 무시
+      }
+    }
+  });
+
+  $('stageCanvas').addEventListener('pointermove', e => {
+    if (!activeDragHandleKey) return;
+    const rect = $('stageCanvas').getBoundingClientRect();
+    const normX = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0.005, 0.995);
+    const normY = clamp((e.clientY - rect.top) / Math.max(1, rect.height), 0.005, 0.995);
+    wasHandleDragged = true;
+
+    if (activeDragHandleKey === 'origin' || activeDragHandleKey === 'impact-ball') {
+      void applyUnifiedImpactBallAndTime(
+        { x: normX, y: normY },
+        {
+          lockCurrentTimeAsImpact: false,
+          exitPinModeAfter: false,
+          updateFilmstrip: false,
+          reasonLabel: '임팩트 공 위치 드래그 보정'
+        }
+      );
+      return;
+    }
+
+    const { impactTime: impT } = getEffectiveBallLaunchImpactTime();
+    appState.shotTracerOptions = applyUserPinnedBallPoint(
+      appState.shotTracerOptions,
+      activeDragHandleKey,
+      { x: Number(normX.toFixed(4)), y: Number(normY.toFixed(4)) },
+      appState.currentTime,
+      impT,
+      appState.duration,
+      appState.fps
+    );
+    syncShotTracerUI();
+    renderMainStage();
+  });
+
+  const finishHandleDrag = e => {
+    if (!activeDragHandleKey) return;
+    const draggedKey = activeDragHandleKey;
+    activeDragHandleKey = null;
+    try {
+      if (e?.pointerId !== undefined) $('stageCanvas').releasePointerCapture(e.pointerId);
+    } catch {
+      // 무시
+    }
+    if (wasHandleDragged) {
+      persistRealtimePinnedPointsState(appState.shotTracerOptions);
+      syncShotTracerUI();
+      syncOneTouchLaunchTimingUI();
+      renderMainStage();
+      const keyLabelMap = {
+        'impact-ball': '임팩트 공 위치 (궤적·스윙잔상 기준)',
+        origin: '1. 출발점(임팩트 공 위치)',
+        mid1: '2. 중간점 1 (초반)',
+        mid2: '3. 중간점 2 (중반)',
+        mid3: '4. 중간점 3 (상승)',
+        apex: '5. 최고점(APEX)',
+        landing: '6. 탄착지점(캐리)',
+        roll: '7. 최종지점(런)'
+      };
+      setStatusMessage(
+        `[직접 드래그 조정 완료] [${keyLabelMap[draggedKey] || draggedKey}] 위치를 드래그하여 공 궤적 및 스윙 클럽 잔상 아크를 즉시 수정했습니다.`
+      );
+      setTimeout(() => {
+        wasHandleDragged = false;
+      }, 60);
+    }
+  };
+
+  $('stageCanvas').addEventListener('pointerup', finishHandleDrag);
+  $('stageCanvas').addEventListener('pointercancel', finishHandleDrag);
+
   $('stageCanvas').addEventListener('click', async e => {
-    if (appState.wasZoomPanDrag) {
+    if (appState.wasZoomPanDrag || wasHandleDragged) {
       appState.wasZoomPanDrag = false;
+      wasHandleDragged = false;
       return;
     }
     const rect = $('stageCanvas').getBoundingClientRect();
@@ -4026,8 +5383,6 @@ function bindControls() {
           true
         );
       } else {
-        // 흔들린 프레임(예: F82~F84)에서 실제 지면/발 위치를 클릭한 경우:
-        // 현재 렌더링된 화면에서 클릭한 지점(normX, normY)이 기준 지면선(groundAnchorPoint) 위치로 이동하도록 오프셋 보정
         const gAnchor = stab.groundAnchorPoint || { x: 0.48, y: 0.78 };
         const deltaDx = normX - gAnchor.x;
         const deltaDy = normY - gAnchor.y;
@@ -4056,17 +5411,32 @@ function bindControls() {
       return;
     }
 
-    // 1) 샷 트레이서 공 위치(현재 멈춘 프레임 공 위치 / 출발점 / 중간점 1~3 / 최고점 / 탄착지점 / 최종런) 수동 지정 모드일 때
+    // 0.5) [임팩트 공 위치 통합 지정 모드] (공 궤적 + 스윙 클럽 잔상 양쪽 모드 공통)
     const shotPinTarget = appState.shotTracerOptions?.pinTargetMode;
+    if (
+      appState.impactBallPinMode ||
+      (appState.studioMode === 'shot-tracer' && shotPinTarget === 'origin')
+    ) {
+      stopPlayback();
+      await applyUnifiedImpactBallAndTime(
+        { x: normX, y: normY },
+        {
+          lockCurrentTimeAsImpact: true,
+          exitPinModeAfter: true,
+          updateFilmstrip: appState.studioMode === 'afterimage',
+          reasonLabel: '임팩트 시점 원본영상 공 위치 지정'
+        }
+      );
+      return;
+    }
+
+    // 1) 샷 트레이서 공 위치(현재 멈춘 프레임 공 위치 / 중간점 1~3 / 최고점 / 탄착지점 / 최종런) 수동 지정 모드일 때
     if (appState.studioMode === 'shot-tracer' && shotPinTarget) {
       stopPlayback();
       const pt = { x: Number(normX.toFixed(4)), y: Number(normY.toFixed(4)) };
-      const impMoment = appState.keyMoments.find(m => m.key === 'impact');
-      const impT = impMoment ? impMoment.time : (appState.duration * 0.42);
-      const curFrame = Math.max(1, Math.round(appState.currentTime * appState.fps) + 1);
+      const { impactTime: impT } = getEffectiveBallLaunchImpactTime();
+      const curFrame = Math.max(1, Math.round(appState.currentTime * (appState.fps || 30)) + 1);
 
-      // 만약 사용자가 중간점(mid1 또는 mid2)을 이전 프레임에서 이미 찍은 뒤, 영상을 다음 프레임으로 이동시켜
-      // 더 높은 위치의 공을 연속해서 클릭한 경우 자동으로 다음 중간점(mid2, mid3)으로 이어서 배정
       let targetToApply = shotPinTarget;
       if (shotPinTarget === 'mid1' && appState.shotTracerOptions.midPoint1?.pinned) {
         const prevT = appState.shotTracerOptions.midPoint1.pinnedTime ?? -99;
@@ -4092,68 +5462,33 @@ function bindControls() {
         appState.fps
       );
 
-      // 프레임 위치 조정 후 공 위치를 지정하는 즉시 실시간으로 해당 프레임 번호·시간과 좌표를 저장
-      persistRealtimePinnedPointsState(appState.shotTracerOptions);
-
       const pinnedKey = appState.shotTracerOptions.lastPinnedKey || targetToApply;
-      let stabLinkedNote = '';
 
-      await runWithBusyOverlay(
-        {
-          title: '공 위치 지정 및 탄도·지면 고정 화면 갱신 중',
-          sub: `프레임 F${curFrame} 공 위치 실시간 저장 및 궤적 곡선을 갱신하고 있습니다...`,
-          stepText: '탄도 곡선 및 프레임 정합 계산 중...'
-        },
-        async ({ setProgress }) => {
-          // 사용자가 공 출발점(origin) 또는 중간점(mid1~3, frame-ball)을 지정하면,
-          // 해당 공 위치·지면·사람이 서 있는 위치를 기준으로 영상 흔들림 고정(Stay Lock)을 자동 연동·갱신
-          if (appState.sourceMode === 'video' && appState.samples.length > 0 && appState.stabilizationOptions?.enabled) {
-            const stab = appState.stabilizationOptions;
-            const curSample = findNearestSample(appState.samples, appState.currentTime);
-            if (pinnedKey === 'origin') {
-              stab.referenceTime = Number(appState.currentTime.toFixed(3));
-              stab.groundAnchorPoint = {
-                x: clamp(pt.x, 0.15, 0.85),
-                y: clamp(pt.y + 0.015, 0.45, 0.92)
-              };
-              if (curSample?.points) {
-                stab.golferAnchorPoint = extractGolferStanceAnchorFromPoints(curSample.points);
-              }
-              const summary = await recomputeSamplesStabilizationAsync(appState.samples, stab, {
-                forceProfileRecompute: true,
-                onProgress: (pct, stepLabel) => setProgress(pct, stepLabel)
-              });
-              stab.maxDetectedShiftX = summary.maxShiftX;
-              stab.maxDetectedShiftY = summary.maxShiftY;
-              syncStabilizationUI();
-              stabLinkedNote = ` · F${curFrame} 출발 프레임 기준 사람·지면 위치 스테이(Stay) 고정 완료`;
-            } else if (pinnedKey === 'mid1' || pinnedKey === 'mid2' || pinnedKey === 'mid3') {
-              const refAlign = alignFrameToReferenceGround(
-                appState.samples,
-                stab.referenceTime ?? impT,
-                appState.currentTime,
-                stab
-              );
-              if (refAlign && curSample) {
-                curSample.stabOffset = { dx: refAlign.dx, dy: refAlign.dy };
-                const summary = await recomputeSamplesStabilizationAsync(appState.samples, stab, {
-                  forceProfileRecompute: false,
-                  onProgress: (pct, stepLabel) => setProgress(pct, stepLabel)
-                });
-                stab.maxDetectedShiftX = summary.maxShiftX;
-                stab.maxDetectedShiftY = summary.maxShiftY;
-                syncStabilizationUI();
-                stabLinkedNote = ' · 출발 프레임 대비 사람·지면 높이 고정 유지';
-              }
-            }
-          }
-
-          persistRealtimePinnedPointsState(appState.shotTracerOptions);
-          syncShotTracerUI();
-          renderMainStage();
-          await renderPhaseFilmstrip();
+      // 만약 'frame-ball'(자동 연결) 클릭으로 인해 출발점(origin)이 갱신된 경우 스윙 잔상 타격 기준점도 함께 동기화
+      if (pinnedKey === 'origin') {
+        appState.impactBallPoint = { ...pt, pinned: true, pinnedTime: appState.currentTime, pinnedFrame: curFrame };
+        if (appState.addressClub) {
+          appState.addressClub.ballPoint = { ...appState.impactBallPoint };
+          appState.addressClub.impactBallPoint = { ...appState.impactBallPoint };
+          appState.samples = regularizeSwingWithAddressClub(
+            appState.samples,
+            appState.keyMoments,
+            appState.addressClub,
+            appState.hand
+          );
         }
-      );
+      }
+
+      if (pinnedKey === 'origin' || pinnedKey === 'apex' || pinnedKey === 'landing' || pinnedKey === 'roll') {
+        appState.shotTracerOptions.pinTargetMode = null;
+        appState.impactBallPinMode = false;
+        $('stageCanvas').style.cursor = (appState.viewportZoom || 1) > 1.01 ? 'grab' : 'default';
+      }
+
+      persistRealtimePinnedPointsState(appState.shotTracerOptions);
+      syncShotTracerUI();
+      syncOneTouchLaunchTimingUI();
+      renderMainStage();
 
       const keyLabelMap = {
         origin: '1. 출발점(공)',
@@ -4166,7 +5501,7 @@ function bindControls() {
       };
 
       setStatusMessage(
-        `[실시간 위치 저장 완료] 현재 멈춘 프레임(F${curFrame} · ${appState.currentTime.toFixed(2)}s)에서 [${keyLabelMap[pinnedKey] || pinnedKey}] 공 위치를 (X ${(normX * 100).toFixed(1)}%, Y ${(normY * 100).toFixed(1)}%)로 실시간 저장하고 탄도 곡선으로 연결했습니다${stabLinkedNote}.`
+        `[공 위치 즉시 적용 완료] 현재 프레임(F${curFrame} · ${appState.currentTime.toFixed(2)}s)에서 [${keyLabelMap[pinnedKey] || pinnedKey}] 위치를 (X ${(normX * 100).toFixed(1)}%, Y ${(normY * 100).toFixed(1)}%)로 정확히 맞췄습니다. 캔버스 위 포인트를 드래그해 미세 조정할 수도 있습니다.`
       );
       return;
     }
@@ -4280,12 +5615,33 @@ function bindControls() {
     };
   }
 
+  if ($('selectTerrainSlopeMode')) {
+    $('selectTerrainSlopeMode').onchange = e => {
+      const slopeMode = e.target.value;
+      appState.shotTracerOptions = applyTerrainSlopeOptionToMetrics(appState.shotTracerOptions, slopeMode);
+      syncShotTracerUI();
+      renderMainStage();
+      if (appState.studioMode === 'shot-tracer') {
+        renderShotFlightStepsStrip();
+      } else {
+        void renderPhaseFilmstrip();
+      }
+      const slopeInfo = classifyTerrainSlopeInfo(
+        appState.shotTracerOptions.elevationDeltaMeters ?? 0,
+        appState.shotTracerOptions.terrainSlopeMode || 'auto',
+        appState.shotTracerOptions.detectedTerrainSlope || 'flat'
+      );
+      const totM = (Number(appState.shotTracerOptions.carryMeters || 0) + Number(appState.shotTracerOptions.rollMeters || 0)).toFixed(1);
+      setStatusMessage(`코스 지형 경사를 [${slopeInfo.labelKo}]로 반영하여 탄착 고도(Y)·캐리(${Number(appState.shotTracerOptions.carryMeters).toFixed(1)}m)·총거리(${totM}m)를 동기화했습니다.`);
+    };
+  }
+
   if ($('btnReapplyVideoAutoMetrics')) {
     $('btnReapplyVideoAutoMetrics').onclick = () =>
       runWithBusyOverlay(
         {
           title: '영상 판독 자동 계측 데이터 복원 중',
-          sub: '영상 속 공 궤적 좌표를 기반으로 구질·비거리·APEX 높이를 재계산하고 있습니다...',
+          sub: '영상 속 공 궤적 좌표를 기반으로 구질·지형 경사·비거리·APEX 높이를 재계산하고 있습니다...',
           stepText: '자동 계측 수치 산출 중...'
         },
         async () => {
@@ -4293,7 +5649,7 @@ function bindControls() {
             appState.shotTracerOptions = autoCalibrateShotTracerFromVideo(
               appState.samples,
               appState.keyMoments,
-              { ...appState.shotTracerOptions, shotShapeType: 'auto' }
+              { ...appState.shotTracerOptions, shotShapeType: 'auto', terrainSlopeMode: 'auto' }
             );
           } else {
             applyShotTracerPreset(appState.shotTracerOptions.shotPreset || 'driver-draw');
@@ -4301,7 +5657,7 @@ function bindControls() {
           syncShotTracerUI();
           renderMainStage();
           await renderPhaseFilmstrip();
-          setStatusMessage('영상 판독 자동 계측 데이터로 구질·비거리·APEX 높이를 복원했습니다.');
+          setStatusMessage('영상 판독 자동 계측 데이터로 구질·지형 경사·비거리·APEX 높이를 복원했습니다.');
         }
       );
   }
@@ -4445,19 +5801,29 @@ function bindControls() {
     totalInputEl.onchange = handleTotalEdit;
   }
 
+  if ($('btnPinPrev1s')) {
+    $('btnPinPrev1s').onclick = () => stepTimelineBy(-1.0);
+  }
+  if ($('btnPinPrev01s')) {
+    $('btnPinPrev01s').onclick = () => stepTimelineBy(-0.1);
+  }
   if ($('btnPinPrevFrame')) {
     $('btnPinPrevFrame').onclick = () => {
-      stopPlayback();
       const step = 1 / Math.max(15, appState.fps || 30);
-      void seekToTime(clamp(appState.currentTime - step, 0, appState.duration));
+      stepTimelineBy(-step);
     };
   }
   if ($('btnPinNextFrame')) {
     $('btnPinNextFrame').onclick = () => {
-      stopPlayback();
       const step = 1 / Math.max(15, appState.fps || 30);
-      void seekToTime(clamp(appState.currentTime + step, 0, appState.duration));
+      stepTimelineBy(step);
     };
+  }
+  if ($('btnPinNext01s')) {
+    $('btnPinNext01s').onclick = () => stepTimelineBy(0.1);
+  }
+  if ($('btnPinNext1s')) {
+    $('btnPinNext1s').onclick = () => stepTimelineBy(1.0);
   }
   if ($('btnPinPauseToggle')) {
     $('btnPinPauseToggle').onclick = () => {
@@ -4474,36 +5840,18 @@ function bindControls() {
   }
 
   document.querySelectorAll('.btn-shot-pin').forEach(btn => {
-    btn.onclick = async () => {
+    btn.onclick = () => {
       const target = btn.dataset.shotPin;
       const current = appState.shotTracerOptions.pinTargetMode;
       const safeFps = appState.fps || 30;
-      const impMomentForPin = (appState.keyMoments || []).find(m => m.key === 'impact');
-      const impTForPin = impMomentForPin ? impMomentForPin.time : (appState.duration * 0.42);
+      const { impactTime: impTForPin } = getEffectiveBallLaunchImpactTime();
 
-      // 클릭한 지점(target)의 지정 시점 또는 예상 시점 계산
-      const preSummary = getPinnedWorkSummaryForTarget(
-        appState.shotTracerOptions,
-        target,
-        impTForPin,
-        safeFps
-      );
-      const targetEntry = preSummary.targetEntry || preSummary.targetMeta || null;
-      const hasTargetTime = Boolean(
-        target !== 'frame-ball' &&
-        targetEntry &&
-        Number.isFinite(targetEntry.pinnedTime)
-      );
-      const seekTargetTime = hasTargetTime
-        ? clamp(Number(targetEntry.pinnedTime), 0, appState.duration || 10)
-        : appState.currentTime;
-
-      // 이미 선택된 지점 버튼이더라도 현재 타임라인 시점이 해당 지점 시점과 다르면 토글 해제 대신 해당 시점으로 타임라인 이동
-      const isAlreadyAtTargetTime = !hasTargetTime ||
-        Math.abs(appState.currentTime - seekTargetTime) <= (0.55 / safeFps);
-      const nextTarget = (current === target && isAlreadyAtTargetTime) ? null : target;
+      // [중요] 지점 지정 버튼을 눌렀을 때 이전 타임라인(pinnedTime/impactTime)으로 강제 이동하지 않고,
+      // 사용자가 현재 맞춰둔 타임라인 프레임(appState.currentTime)을 그대로 유지한 채 위치 지정 모드만 전환함!
+      const nextTarget = current === target ? null : target;
 
       appState.shotTracerOptions.pinTargetMode = nextTarget;
+      appState.impactBallPinMode = nextTarget === 'origin';
       appState.shotTracerOptions.hoverNormPoint = null;
       appState.manualPinMode = false;
       if (nextTarget && appState.stabilizationOptions) {
@@ -4516,21 +5864,11 @@ function bindControls() {
 
       if (nextTarget) {
         stopPlayback();
-        if (hasTargetTime) {
-          await seekToTime(seekTargetTime);
-        } else {
-          syncShotTracerUI();
-          renderMainStage();
-        }
-      } else {
-        syncShotTracerUI();
-        renderMainStage();
       }
+      syncShotTracerUI();
+      renderMainStage();
 
       if (nextTarget) {
-        if ($('detailsShotPinHistory')) {
-          $('detailsShotPinHistory').open = true;
-        }
         const curFrame = Math.max(1, Math.round(appState.currentTime * safeFps) + 1);
         const labelText = btn.dataset.baseLabel || btn.textContent;
         const summary = getPinnedWorkSummaryForTarget(
@@ -4539,25 +5877,21 @@ function bindControls() {
           impTForPin,
           safeFps
         );
-        const curTargetMeta = summary.targetEntry || summary.targetMeta || null;
         const prevPin = summary.immediatePrevPin || summary.immediatePrevEntry || null;
         const upToList = summary.upToTargetPins || summary.upToPreviousEntries || [];
         const allList = summary.allPinnedList || summary.userPinnedEntries || [];
-
-        const targetMovedText = curTargetMeta
-          ? `타임라인 이동: F${curTargetMeta.pinnedFrame} (${Number(curTargetMeta.pinnedTime || appState.currentTime).toFixed(2)}s) · 위치 (X ${(curTargetMeta.x * 100).toFixed(1)}%, Y ${(curTargetMeta.y * 100).toFixed(1)}%)`
-          : `현재 프레임: F${curFrame} (${appState.currentTime.toFixed(2)}s)`;
+        const currentFrameText = `현재 프레임 유지: F${curFrame} (${appState.currentTime.toFixed(2)}s)`;
 
         if (prevPin) {
           const chainText = (upToList.length > 0 ? upToList : allList)
             .map(p => `${p.shortLabel}[F${p.pinnedFrame}·(${(p.x * 100).toFixed(1)}%,${(p.y * 100).toFixed(1)}%)]`)
             .join(' → ');
           setStatusMessage(
-            `[${labelText}] 선택됨 (${targetMovedText}) — 직전 작업 지점: ${prevPin.label} [F${prevPin.pinnedFrame} · (${(prevPin.x * 100).toFixed(1)}%, ${(prevPin.y * 100).toFixed(1)}%)] · 누적: ${chainText}`
+            `[${labelText}] 선택됨 (${currentFrameText}) — 영상 화면 위 원하는 위치를 클릭하거나 포인트를 드래그하세요. (누적: ${chainText})`
           );
         } else {
           setStatusMessage(
-            `[${labelText}] 선택됨 (${targetMovedText}) — 화면 위 공 위치를 클릭하면 해당 프레임과 좌표가 실시간 저장됩니다.`
+            `[${labelText}] 선택됨 (${currentFrameText}) — 타임라인 이동 없이 현재 화면에서 바로 공 위치를 클릭해 지정하세요.`
           );
         }
       } else {
@@ -5332,6 +6666,370 @@ function bindControls() {
       void handleSaveCurrentTimelineSnapshot();
     }
   });
+
+  // ==========================================================================
+  // 쉬운 모드 (Easy Mode) & 고급 모드 (Advanced Mode) 전환 및 원터치 컨트롤 바인딩
+  // ==========================================================================
+  if ($('btnTopExpEasy')) {
+    $('btnTopExpEasy').onclick = () => {
+      setTopMenuOpen(false);
+      setUiExperienceMode('easy');
+    };
+  }
+  if ($('btnTopExpAdvanced')) {
+    $('btnTopExpAdvanced').onclick = () => {
+      setTopMenuOpen(false);
+      setUiExperienceMode('advanced');
+    };
+  }
+  if ($('btnMenuExpEasy')) {
+    $('btnMenuExpEasy').onclick = () => {
+      setTopMenuOpen(false);
+      setUiExperienceMode('easy');
+    };
+  }
+  if ($('btnMenuExpAdvanced')) {
+    $('btnMenuExpAdvanced').onclick = () => {
+      setTopMenuOpen(false);
+      setUiExperienceMode('advanced');
+    };
+  }
+  if ($('btnSwitchEasyModeToggle')) {
+    $('btnSwitchEasyModeToggle').onclick = () => {
+      const nextMode = appState.uiExperienceMode === 'easy' ? 'advanced' : 'easy';
+      setUiExperienceMode(nextMode);
+    };
+  }
+  if ($('btnEasyCleanOriginalQuick')) {
+    $('btnEasyCleanOriginalQuick').onclick = () => toggleCleanOriginalViewMode();
+  }
+  if ($('btnEasyToAdvanced')) {
+    $('btnEasyToAdvanced').onclick = () => {
+      setUiExperienceMode('advanced');
+    };
+  }
+
+  // 1) 쉬운 모드 재생 · 프레임 이동 · 배속 · 전체화면 컨트롤
+  if ($('btnEasyPlayPause')) {
+    $('btnEasyPlayPause').onclick = () => {
+      if (appState.playing) stopPlayback();
+      else startPlayback();
+    };
+  }
+  if ($('btnEasyStepBack1s')) {
+    $('btnEasyStepBack1s').onclick = () => stepTimelineBy(-1.0);
+  }
+  if ($('btnEasyStepBack01s')) {
+    $('btnEasyStepBack01s').onclick = () => stepTimelineBy(-0.1);
+  }
+  if ($('btnEasyPrevFrame')) {
+    $('btnEasyPrevFrame').onclick = () => {
+      const step = 1 / Math.max(15, appState.fps || 30);
+      stepTimelineBy(-step);
+    };
+  }
+  if ($('btnEasyNextFrame')) {
+    $('btnEasyNextFrame').onclick = () => {
+      const step = 1 / Math.max(15, appState.fps || 30);
+      stepTimelineBy(step);
+    };
+  }
+  if ($('btnEasyStepFwd01s')) {
+    $('btnEasyStepFwd01s').onclick = () => stepTimelineBy(0.1);
+  }
+  if ($('btnEasyStepFwd1s')) {
+    $('btnEasyStepFwd1s').onclick = () => stepTimelineBy(1.0);
+  }
+  if ($('rangeEasyTimeline')) {
+    $('rangeEasyTimeline').oninput = e => {
+      stopPlayback();
+      void seekToTime(Number(e.target.value));
+    };
+  }
+  document.querySelectorAll('.btn-easy-speed').forEach(btn => {
+    btn.onclick = () => {
+      const spd = Number(btn.dataset.easySpeed || 0.5);
+      applyPlaybackSpeedChange(spd);
+      syncEasyModeUI();
+      setStatusMessage(`재생 배속을 ${spd}x로 변경했습니다.`);
+    };
+  });
+  if ($('btnEasyJumpImpact')) {
+    $('btnEasyJumpImpact').onclick = () => {
+      stopPlayback();
+      const { impactTime } = getEffectiveBallLaunchImpactTime();
+      void seekToTime(impactTime);
+    };
+  }
+  if ($('btnEasyFullscreen')) {
+    $('btnEasyFullscreen').onclick = () => {
+      enterStageFullscreen(true);
+    };
+  }
+
+  // 1.5) 쉬운 모드 — [공 궤적 · 스윙 잔상 공통] 임팩트 시점 원본영상 확인 및 그때의 공 위치 지정 카드
+  if ($('btnEasyCleanOriginal')) {
+    $('btnEasyCleanOriginal').onclick = () => toggleCleanOriginalViewMode();
+  }
+  if ($('btnEasyPinImpactBall')) {
+    $('btnEasyPinImpactBall').onclick = () => toggleUnifiedImpactBallPinMode();
+  }
+  if ($('btnEasyLockImpactNow')) {
+    $('btnEasyLockImpactNow').onclick = () => {
+      void applyOneTouchBallLaunchTiming(appState.currentTime, {
+        setFromCurrentScreen: true,
+        reasonLabel: '지금 화면을 임팩트 시점으로 고정'
+      });
+    };
+  }
+  if ($('btnEasyImpactEarly1s')) {
+    $('btnEasyImpactEarly1s').onclick = () => shiftLaunchTimingBy(-1.0, '1.0초 앞당김');
+  }
+  if ($('btnEasyImpactEarlyFast')) {
+    $('btnEasyImpactEarlyFast').onclick = () => shiftLaunchTimingBy(-0.20, '0.20초 앞당김');
+  }
+  if ($('btnEasyImpactEarlyFrame')) {
+    $('btnEasyImpactEarlyFrame').onclick = () => {
+      const step = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(-step, '1프레임 앞당김');
+    };
+  }
+  if ($('btnEasyImpactLateFrame')) {
+    $('btnEasyImpactLateFrame').onclick = () => {
+      const step = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(step, '1프레임 늦춤');
+    };
+  }
+  if ($('btnEasyImpactLateFast')) {
+    $('btnEasyImpactLateFast').onclick = () => shiftLaunchTimingBy(0.20, '0.20초 늦춤');
+  }
+  if ($('btnEasyImpactLate1s')) {
+    $('btnEasyImpactLate1s').onclick = () => shiftLaunchTimingBy(1.0, '1.0초 늦춤');
+  }
+  if ($('btnEasyImpactAutoReset')) {
+    $('btnEasyImpactAutoReset').onclick = () => {
+      void applyOneTouchBallLaunchTiming(0, { autoReset: true });
+    };
+  }
+
+  // 2) 쉬운 모드 — 공 날아가는 시기 원터치 맞춤 및 시작점·최고점·탄착점 직접 지정
+  if ($('btnEasyLaunchEarly1s')) {
+    $('btnEasyLaunchEarly1s').onclick = () => shiftLaunchTimingBy(-1.0, '1.0초 앞당김');
+  }
+  if ($('btnEasyLaunchEarlyFast')) {
+    $('btnEasyLaunchEarlyFast').onclick = () => shiftLaunchTimingBy(-0.20, '0.20초 앞당김');
+  }
+  if ($('btnEasyLaunchLateFast')) {
+    $('btnEasyLaunchLateFast').onclick = () => shiftLaunchTimingBy(0.20, '0.20초 늦춤');
+  }
+  if ($('btnEasyLaunchLate1s')) {
+    $('btnEasyLaunchLate1s').onclick = () => shiftLaunchTimingBy(1.0, '1.0초 늦춤');
+  }
+  if ($('btnEasyLaunchSetNow')) {
+    $('btnEasyLaunchSetNow').onclick = () => {
+      void applyOneTouchBallLaunchTiming(appState.currentTime, {
+        setFromCurrentScreen: true,
+        reasonLabel: '지금 화면 시점으로 공 출발 맞춤'
+      });
+    };
+  }
+  if ($('btnEasyLaunchAuto')) {
+    $('btnEasyLaunchAuto').onclick = () => {
+      void applyOneTouchBallLaunchTiming(0, { autoReset: true });
+    };
+  }
+  if ($('btnEasyLaunchEarlyFrame')) {
+    $('btnEasyLaunchEarlyFrame').onclick = () => {
+      const step = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(-step, '1프레임 앞당김');
+    };
+  }
+  if ($('btnEasyLaunchLateFrame')) {
+    $('btnEasyLaunchLateFrame').onclick = () => {
+      const step = 1 / Math.max(15, Number(appState.fps || 30));
+      shiftLaunchTimingBy(step, '1프레임 늦춤');
+    };
+  }
+  if ($('btnEasyPinOrigin')) {
+    $('btnEasyPinOrigin').onclick = () => {
+      const originPinBtn = document.querySelector('.btn-shot-pin[data-shot-pin="origin"]');
+      if (originPinBtn) {
+        originPinBtn.click();
+      }
+      syncEasyModeUI();
+    };
+  }
+  if ($('btnEasyPinApex')) {
+    $('btnEasyPinApex').onclick = () => {
+      const apexPinBtn = document.querySelector('.btn-shot-pin[data-shot-pin="apex"]');
+      if (apexPinBtn) {
+        apexPinBtn.click();
+      }
+      syncEasyModeUI();
+    };
+  }
+  if ($('btnEasyPinLanding')) {
+    $('btnEasyPinLanding').onclick = () => {
+      const landingPinBtn = document.querySelector('.btn-shot-pin[data-shot-pin="landing"]');
+      if (landingPinBtn) {
+        landingPinBtn.click();
+      }
+      syncEasyModeUI();
+    };
+  }
+
+  // 3) 쉬운 모드 — 구질 · 지형 경사 · 비거리 · 색상 · 궤적 스타일 원터치 조작
+  document.querySelectorAll('.btn-easy-shape').forEach(btn => {
+    btn.onclick = () => {
+      const shapeCode = btn.dataset.easyShape || 'auto';
+      const sel = $('selectShotShapeType');
+      if (sel) {
+        sel.value = shapeCode;
+        sel.dispatchEvent(new Event('change'));
+      }
+      syncEasyModeUI();
+    };
+  });
+
+  document.querySelectorAll('.btn-easy-slope').forEach(btn => {
+    btn.onclick = () => {
+      const slopeCode = btn.dataset.easySlope || 'auto';
+      const sel = $('selectTerrainSlopeMode');
+      if (sel) {
+        sel.value = slopeCode;
+        sel.dispatchEvent(new Event('change'));
+      }
+      syncEasyModeUI();
+    };
+  });
+
+  const adjustEasyTotalDistanceBy = deltaMeters => {
+    const curCarry = Number(appState.shotTracerOptions?.carryMeters || 198.5);
+    const curRoll = Number(appState.shotTracerOptions?.rollMeters || 13.5);
+    const nextTotal = clamp(curCarry + curRoll + deltaMeters, 30, 360);
+    const nextCarry = Number((nextTotal * 0.935).toFixed(1));
+    const nextRoll = Number(Math.max(0, nextTotal - nextCarry).toFixed(1));
+    appState.shotTracerOptions.carryMeters = nextCarry;
+    appState.shotTracerOptions.rollMeters = nextRoll;
+    appState.shotTracerOptions.autoReadoutSource = 'manual-edited';
+    appState.shotTracerOptions.manualLandingPinned = false;
+    appState.shotTracerOptions = syncShotGeometryFromMetrics(appState.shotTracerOptions);
+    syncShotTracerUI();
+    renderMainStage();
+    setStatusMessage(`총 비거리를 ${nextTotal.toFixed(1)}m (탄착 캐리 ${nextCarry.toFixed(1)}m + 런 ${nextRoll.toFixed(1)}m)로 반영했습니다.`);
+  };
+
+  if ($('btnEasyDistMinus10')) $('btnEasyDistMinus10').onclick = () => adjustEasyTotalDistanceBy(-10);
+  if ($('btnEasyDistMinus5')) $('btnEasyDistMinus5').onclick = () => adjustEasyTotalDistanceBy(-5);
+  if ($('btnEasyDistPlus5')) $('btnEasyDistPlus5').onclick = () => adjustEasyTotalDistanceBy(5);
+  if ($('btnEasyDistPlus10')) $('btnEasyDistPlus10').onclick = () => adjustEasyTotalDistanceBy(10);
+  if ($('btnEasyDistAutoReset')) {
+    $('btnEasyDistAutoReset').onclick = () => {
+      if ($('btnReapplyVideoAutoMetrics')) {
+        $('btnReapplyVideoAutoMetrics').click();
+      }
+    };
+  }
+
+  document.querySelectorAll('.btn-easy-color').forEach(btn => {
+    btn.onclick = () => {
+      const color = btn.dataset.easyColor || '#DC2626';
+      appState.shotTracerOptions.traceColor = color;
+      if (color.startsWith('#') && $('inputCustomTraceColor')) {
+        $('inputCustomTraceColor').value = color;
+      }
+      syncShotTracerUI();
+      renderMainStage();
+      setStatusMessage(`공 궤적 색상을 [${btn.dataset.colorLabel || color}]로 변경했습니다.`);
+    };
+  });
+
+  document.querySelectorAll('.btn-easy-trace-style').forEach(btn => {
+    btn.onclick = () => {
+      const style = btn.dataset.easyStyle || 'tube';
+      appState.shotTracerOptions.traceStyle = style;
+      if ($('selectTraceStyle')) {
+        $('selectTraceStyle').value = style;
+      }
+      syncShotTracerUI();
+      renderMainStage();
+      setStatusMessage(`공 궤적 스타일을 [${btn.textContent}]로 변경했습니다.`);
+    };
+  });
+
+  // 4) 쉬운 모드 — 클럽 잔상 스타일 · 간격 · 표시 항목 원터치 조작
+  document.querySelectorAll('.btn-easy-scope-card').forEach(btn => {
+    btn.onclick = () => {
+      const scope = btn.dataset.easyScope || 'full';
+      appState.renderOptions.trailScope = scope;
+      syncRenderOptionsUI();
+      renderMainStage();
+      setStatusMessage(`클럽 헤드 잔상 스타일을 [${btn.querySelector('.easy-scope-card-title')?.textContent || scope}]로 변경했습니다.`);
+    };
+  });
+
+  document.querySelectorAll('.btn-easy-strobe-step').forEach(btn => {
+    btn.onclick = () => {
+      const step = Number(btn.dataset.easyStep || 2);
+      appState.renderOptions.strobeStep = step;
+      syncRenderOptionsUI();
+      renderMainStage();
+      setStatusMessage(`골프채 잔상 간격을 ${step}프레임 간격으로 변경했습니다.`);
+    };
+  });
+
+  document.querySelectorAll('.btn-easy-layer-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.easyLayer;
+      if (!key) return;
+      appState.renderOptions[key] = !appState.renderOptions[key];
+      syncRenderOptionsUI();
+      renderMainStage();
+    };
+  });
+
+  if ($('btnEasyManualHeadPin')) {
+    $('btnEasyManualHeadPin').onclick = () => {
+      if ($('btnToggleManualPin')) {
+        $('btnToggleManualPin').click();
+      }
+      syncEasyModeUI();
+    };
+  }
+  if ($('btnEasyResetHeadPin')) {
+    $('btnEasyResetHeadPin').onclick = () => {
+      if ($('btnResetPins')) {
+        $('btnResetPins').click();
+      }
+    };
+  }
+
+  // 5) 쉬운 모드 하단 프라이머리 액션 바 (영상 열기 · 동영상 저장 · 사진 저장 · 보관함)
+  if ($('btnEasyUploadVideo')) {
+    $('btnEasyUploadVideo').onclick = () => {
+      setTopMenuOpen(false);
+      $('videoFileInput').click();
+    };
+  }
+  if ($('btnEasySaveVideo')) {
+    $('btnEasySaveVideo').onclick = () => {
+      setTopMenuOpen(false);
+      void handleExportTimelineClipVideo();
+    };
+  }
+  if ($('btnEasySaveSnapshot')) {
+    $('btnEasySaveSnapshot').onclick = () => {
+      setTopMenuOpen(false);
+      void handleSaveCurrentTimelineSnapshot();
+    };
+  }
+  if ($('btnEasyOpenArchive')) {
+    $('btnEasyOpenArchive').onclick = () => {
+      setTopMenuOpen(false);
+      stopPlayback();
+      void openSavedArchiveModal(appState.activeArchiveId);
+    };
+  }
 }
 
 // ============================================================================
@@ -5611,8 +7309,7 @@ function hydrateShotTracerPinnedStore(stOpts, keyMoments = [], fps = 30) {
       pt.pinned ||
       store[meta.key]?.pinned ||
       (meta.key === 'apex' && stOpts.manualApexPinned) ||
-      (meta.key === 'landing' && stOpts.manualLandingPinned) ||
-      ((meta.key === 'origin' || meta.key === 'mid1' || meta.key === 'mid2') && stOpts.calibratedFromVideo)
+      (meta.key === 'landing' && stOpts.manualLandingPinned)
     );
     if (!isPinned) continue;
 

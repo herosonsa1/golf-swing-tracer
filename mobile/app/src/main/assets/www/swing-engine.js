@@ -770,9 +770,30 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
     (best, s) => (Math.abs((s.time ?? 0) - tAddr) < Math.abs((best.time ?? 0) - tAddr) ? s : best),
     samples[0]
   );
+  const impSample = samples.reduce(
+    (best, s) => (Math.abs((s.time ?? 0) - tImpact) < Math.abs((best.time ?? 0) - tImpact) ? s : best),
+    samples[0]
+  );
   const addrRawPoints = addrSample?.rawPoints || addrSample?.points;
   const addrGrip = addressClub.grip || addrSample?.rawGrip || addrSample?.grip || { x: 0.47, y: 0.49 };
-  const addrHead = addressClub.clubHead || addrSample?.clubHead || { x: 0.44, y: 0.83 };
+  const dirSign = hand === 'left' ? -1 : 1;
+
+  // 임팩트 시점의 공 위치(impactBallPoint)가 지정되어 있으면 어드레스 및 임팩트 클럽 헤드의 타격 기준점을 공 위치와 정밀 동기화
+  const impactBallPoint = addressClub.impactBallPoint || addressClub.ballPoint || addrSample?.ballPoint || null;
+  const hasImpactBall = Boolean(
+    impactBallPoint &&
+    Number.isFinite(impactBallPoint.x) &&
+    Number.isFinite(impactBallPoint.y)
+  );
+  const rawAddrHead = addressClub.clubHead || addrSample?.clubHead || { x: 0.44, y: 0.83 };
+  const addrHead = (hasImpactBall && addressClub.userPinnedImpactBall)
+    ? {
+        ...rawAddrHead,
+        x: clamp(impactBallPoint.x - dirSign * 0.011, 0.02, 0.98),
+        y: clamp(impactBallPoint.y + 0.001, 0.02, 0.97)
+      }
+    : rawAddrHead;
+
   const dxPxNorm = (addrHead.x - addrGrip.x) * ASPECT;
   const dyPxNorm = addrHead.y - addrGrip.y;
   const addrShaftAngle = Math.atan2(dyPxNorm, dxPxNorm);
@@ -787,7 +808,6 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
     0.345
   );
 
-  const dirSign = hand === 'left' ? -1 : 1;
   const halfPi = Math.PI * 0.5;
   const exactAddrShaftAngle = isDTL
     ? clamp(addrShaftAngle, 0.45, 1.32)
@@ -809,6 +829,49 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
 
   const basePivotX = addrGrip.x - Math.cos(addrGripAngle) * (addrArmLen / ASPECT);
   const basePivotY = addrGrip.y - Math.sin(addrGripAngle) * addrArmLen;
+
+  // 임팩트 시점(tImpact)의 실제 손(그립) 위치에서 임팩트 공 위치(impactBallPoint)를 정확히 타격하는 샤프트 각도 및 도달 거리 산출
+  const impRawPoints = impSample?.rawPoints || impSample?.points;
+  let impPivotX = basePivotX;
+  let impPivotY = basePivotY;
+  if (impRawPoints?.[11] && impRawPoints?.[12] && visible(impRawPoints[11], 0.35) && visible(impRawPoints[12], 0.35)) {
+    impPivotX = basePivotX * 0.45 + ((impRawPoints[11].x + impRawPoints[12].x) * 0.5) * 0.55;
+    impPivotY = basePivotY * 0.45 + ((impRawPoints[11].y + impRawPoints[12].y) * 0.5) * 0.55;
+  }
+  const impGripAngleVal = isDTL ? 0.96 : (halfPi - dirSign * 0.12);
+  const impArmLenVal = baseArmLenY * (isDTL ? 0.98 : 0.94);
+  const impModelGx = impPivotX + Math.cos(impGripAngleVal) * (impArmLenVal / ASPECT);
+  const impModelGy = impPivotY + Math.sin(impGripAngleVal) * impArmLenVal;
+  let impGripX = impModelGx;
+  let impGripY = impModelGy;
+  const impRawGrip = impSample?.rawGrip || impSample?.grip;
+  if (impRawGrip && Number.isFinite(impRawGrip.x) && Number.isFinite(impRawGrip.y)) {
+    const dImpModel = Math.hypot((impRawGrip.x - impModelGx) * ASPECT, impRawGrip.y - impModelGy);
+    const dImpPivot = Math.hypot((impRawGrip.x - impPivotX) * ASPECT, impRawGrip.y - impPivotY);
+    if (dImpModel <= 0.075 && dImpPivot >= 0.095) {
+      const wImp = 0.52 * (1.0 - dImpModel / 0.075);
+      impGripX = impRawGrip.x * wImp + impModelGx * (1 - wImp);
+      impGripY = impRawGrip.y * wImp + impModelGy * (1 - wImp);
+    }
+  }
+
+  const impHeadTarget = hasImpactBall
+    ? {
+        x: clamp(impactBallPoint.x - dirSign * (isDTL ? 0.006 : 0.008), 0.02, 0.98),
+        y: clamp(impactBallPoint.y + 0.001, 0.02, 0.97)
+      }
+    : addrHead;
+  const impDxPxNorm = (impHeadTarget.x - impGripX) * ASPECT;
+  const impDyPxNorm = impHeadTarget.y - impGripY;
+  const rawImpShaftAngle = Math.atan2(impDyPxNorm, impDxPxNorm);
+  const exactImpactShaftAngle = hasImpactBall
+    ? (isDTL
+        ? clamp(rawImpShaftAngle, 0.35, 1.48)
+        : clamp(rawImpShaftAngle, halfPi - 0.42, halfPi + 0.46))
+    : (isDTL ? exactAddrShaftAngle : exactAddrShaftAngle + dirSign * 0.04);
+  const impactDistNorm = hasImpactBall
+    ? clamp(Math.hypot(impDxPxNorm, impDyPxNorm), isDTL ? 0.11 : 0.20, 0.46)
+    : addrDistNorm;
 
   const keyTimes = [
     startT,
@@ -845,7 +908,7 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
       ];
 
   const shaftAngles = isDTL
-    ? [exactAddrShaftAngle, exactAddrShaftAngle, 1.30, 1.96, 4.92, 3.45, 2.18, exactAddrShaftAngle, 0.56, 0.06, -1.65, -4.35, -4.48]
+    ? [exactAddrShaftAngle, exactAddrShaftAngle, 1.30, 1.96, 4.92, 3.45, 2.18, exactImpactShaftAngle, 0.56, 0.06, -1.65, -4.35, -4.48]
     : [
         exactAddrShaftAngle,
         exactAddrShaftAngle,                // 01 어드레스 (실제 골프채 샤프트·헤드 각도와 100% 일치)
@@ -854,7 +917,7 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
         halfPi + dirSign * 4.86,            // 03 백스윙 탑 (+368.5° 머리 뒤로 넘어와 우측 3시 15분 방향 코일링)
         halfPi + dirSign * 3.36,            // 04 다운스윙 (강한 레깅 유지 - 절대 앞서지 않음)
         halfPi + dirSign * 1.62,            // 다운스윙 딜리버리 P6 (샤프트 수평 레깅)
-        exactAddrShaftAngle + dirSign * 0.04, // 05 임팩트 (핸드퍼스트 뒤에서 실제 볼 위치 스퀘어 타격)
+        exactImpactShaftAngle,              // 05 임팩트 (지정된 임팩트 공 위치 스퀘어 타격 100% 일치)
         halfPi - dirSign * 0.78,            // 릴리스 턴오버 (실제 손 위치에서 시원하게 뻗음)
         halfPi - dirSign * (halfPi - 0.06), // 06 팔로우스루 (실제 손 위치에서 지면 수평 방향으로 샤프트 전체 길이만큼 연장)
         halfPi - dirSign * 3.35,            // 팔로우스루 상단: 클럽헤드가 머리 위(12시~11시)를 통과하는 구간
@@ -991,10 +1054,11 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
 
     const effArmLenY = baseArmLenY * armForeshorten;
     const upperEffLenY = baseShaftLenY * shaftForeshorten;
-    // 지면(6시 방향, exactAddrShaftAngle 부근)을 향하는 어드레스 및 임팩트 구간에서는
-    // 타석 매트 위의 실제 볼·클럽헤드 거리(addrDistNorm)까지 정확히 도달하도록 보간
-    const groundReach = Math.pow(Math.max(0, Math.cos(shaftAngle - exactAddrShaftAngle)), 2);
-    const effShaftLenY = upperEffLenY + Math.max(0, addrDistNorm - upperEffLenY) * groundReach;
+    // 어드레스(tAddr)에서는 addrDistNorm, 임팩트(tImpact)에서는 지정된 임팩트 공 위치까지 도달하는 impactDistNorm으로 자연스럽게 연결
+    const targetGroundAngle = evalTime >= tTop ? exactImpactShaftAngle : exactAddrShaftAngle;
+    const targetGroundDist = evalTime >= tTop ? impactDistNorm : addrDistNorm;
+    const groundReach = Math.pow(Math.max(0, Math.cos(shaftAngle - targetGroundAngle)), 2);
+    const effShaftLenY = upperEffLenY + Math.max(0, targetGroundDist - upperEffLenY) * groundReach;
 
     // 매 프레임 실제 골퍼의 양 어깨 중점(rawPoints[11], rawPoints[12])을 반영하여 상체 회전축이 벽면 쪽으로 밀리지 않도록 정합
     let curPivotX = basePivotX;
@@ -1009,11 +1073,6 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
     const modelGx = curPivotX + Math.cos(gripAngle) * (effArmLenY / ASPECT);
     const modelGy = curPivotY + Math.sin(gripAngle) * effArmLenY;
 
-    // 1) 어드레스(time <= tAddr): 실제 인식된 어드레스 손 위치(addrGrip)와 100% 일치
-    // 2) 스윙 구간(time > tAddr):
-    //    - 테이크어웨이/백스윙 ~ 탑(time <= tDown): 실제 감지된 손 위치(rawGrip)를 높은 비중(68%)으로 추종
-    //    - 다운스윙 ~ 임팩트 ~ 팔로우스루 ~ 피니시(time > tDown): 정합된 실제 팔 도달 궤적(modelGx, modelGy)을 기준으로 하되,
-    //      MediaPipe가 감지한 실제 손 위치(rawGrip)가 유효 범위 내에 있을 때 적응형으로 블렌딩하여 원본 영상의 손 위치와 일치시킴
     let gx = modelGx;
     let gy = modelGy;
     if (time <= tAddr + 0.005) {
@@ -1042,12 +1101,26 @@ export function regularizeSwingWithAddressClub(samples, keyMoments, addressClub,
       }
     }
 
-    const hx = time <= tAddr + 0.005
+    let hx = time <= tAddr + 0.005
       ? addrHead.x
       : clamp(gx + Math.cos(shaftAngle) * (effShaftLenY / ASPECT), 0.02, 0.98);
-    const hy = time <= tAddr + 0.005
+    let hy = time <= tAddr + 0.005
       ? addrHead.y
       : clamp(gy + Math.sin(shaftAngle) * effShaftLenY, 0.02, 0.97);
+
+    // 임팩트 순간(tImpact)에 클럽 헤드가 지정된 임팩트 공 위치(impHeadTarget)를 100% 정확히 타격하여 관통하도록 부드러운 가우시안 락 적용
+    if (hasImpactBall && time > tDown && time < tFollow) {
+      const impSigma = time <= tImpact
+        ? Math.max(0.032, (tImpact - tDelivery) * 0.68)
+        : Math.max(0.038, (tRelease - tImpact) * 0.68);
+      const strikeLockW = Math.abs(time - tImpact) <= 0.018
+        ? 1.0
+        : Math.exp(-Math.pow((time - tImpact) / impSigma, 2));
+      if (strikeLockW > 0.01) {
+        hx = clamp(hx * (1 - strikeLockW) + impHeadTarget.x * strikeLockW, 0.02, 0.98);
+        hy = clamp(hy * (1 - strikeLockW) + impHeadTarget.y * strikeLockW, 0.02, 0.97);
+      }
+    }
 
     // 스켈레톤의 양팔(팔꿈치 13·14, 손목 15·16, 손끝 19·20)도 원본 영상과 일치된 손 위치(gx, gy)에 맞춰 동기화
     let updatedPoints = rawPoints ? rawPoints.map(p => (p ? { ...p } : p)) : s.points;
@@ -1331,12 +1404,20 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
   const maxStrikeMotion = Math.max(1e-4, ...metrics.map(m => m.strikeMotion || 0));
   const hintObj = metrics.find(m => m.videoTimingHint)?.videoTimingHint || null;
 
-  const impSearchStart = Math.max(3, Math.floor(metrics.length * 0.12));
+  let impSearchStart = Math.max(3, Math.floor(metrics.length * 0.12));
   let impSearchEnd = Math.min(metrics.length - 4, Math.floor(metrics.length * 0.72));
-  if (hintObj && Number.isFinite(hintObj.finishTime)) {
-    const finBoundIdx = metrics.findIndex(m => m.time >= hintObj.finishTime - 0.08);
-    if (finBoundIdx > impSearchStart + 4) {
-      impSearchEnd = Math.min(impSearchEnd, finBoundIdx);
+  if (hintObj) {
+    if (Number.isFinite(hintObj.burstStart)) {
+      const burstIdx = metrics.findIndex(m => m.time >= hintObj.burstStart - 0.08);
+      if (burstIdx > impSearchStart) {
+        impSearchStart = burstIdx;
+      }
+    }
+    if (Number.isFinite(hintObj.finishTime)) {
+      const finBoundIdx = metrics.findIndex(m => m.time >= hintObj.finishTime - 0.08);
+      if (finBoundIdx > impSearchStart + 4) {
+        impSearchEnd = Math.min(impSearchEnd, finBoundIdx);
+      }
     }
   }
 
@@ -1361,6 +1442,10 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
     }
     if (topCand < 0) continue;
 
+    // 테이크어웨이를 임팩트로 오인하는 현상 방지:
+    // 임팩트 직전의 백스윙 탑(yTopMin)은 반드시 어드레스 베이스라인보다 충분히 높은 정점이어야 함
+    if (addrBaselineY - yTopMin < totalSpread * 0.38) continue;
+
     // (b) 임팩트 직후 0.14s ~ 1.15s 구간에서 팔로우스루·피니시 정점(finCand: ySmooth 최소) 탐색
     let finCand = -1;
     let yFinMin = Infinity;
@@ -1377,7 +1462,7 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
 
     const dropFromTop = yImp - yTopMin;   // 다운스윙 하강 폭
     const riseToFinish = yImp - yFinMin;  // 임팩트 직후 피니시 상승 폭
-    if (dropFromTop < totalSpread * 0.18 || riseToFinish < totalSpread * 0.22) continue;
+    if (dropFromTop < totalSpread * 0.30 || riseToFinish < totalSpread * 0.22) continue;
 
     const dtDown = Math.max(0.11, tImp - metrics[topCand].time);
     const dtUp = Math.max(0.13, metrics[finCand].time - tImp);
@@ -1410,14 +1495,14 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
     const lowHandBonus = (1.0 - clamp(Math.abs(addrBaselineY - yImp) / totalSpread, 0, 1)) * totalSpread * 0.42;
 
     // 실제 영상 픽셀 모션 기반 타격 시점 정합 보너스
-    const videoStrikeBonus = localStrikeRatio * totalSpread * 0.48 +
+    const videoStrikeBonus = localStrikeRatio * totalSpread * 0.55 +
       (hintObj && Number.isFinite(hintObj.impactTime)
-        ? Math.max(0, 1.0 - Math.abs(tImp - hintObj.impactTime) / 0.42) * totalSpread * 0.62
+        ? Math.max(0, 1.0 - Math.abs(tImp - hintObj.impactTime) / 0.38) * totalSpread * 0.85
         : 0);
 
-    // 스윙 종료 후 팔을 내리는 동작보다 영상 전반~중반의 실제 본 스윙을 우선하도록 시간 가중치 부여
+    // 피니시 이후(후반 62% 이후)만 감점하여 어드레스 시간이 긴 영상(임팩트 35~50% 지점)이 불이익을 받지 않도록 함
     const timeRatio = (tImp - metrics[0].time) / totalTimeSpan;
-    const earlySwingBias = -Math.max(0, timeRatio - 0.25) * totalSpread * 0.45;
+    const lateSwingPenalty = -Math.max(0, timeRatio - 0.62) * totalSpread * 0.65;
 
     const triadScore =
       valleyHarmonic * 2.35 +
@@ -1428,7 +1513,7 @@ export function detectSwingMoments(samples, start = 0, end = Infinity) {
       downTempoBonus +
       lowHandBonus +
       videoStrikeBonus +
-      earlySwingBias;
+      lateSwingPenalty;
 
     if (triadScore > bestTriadScore) {
       bestTriadScore = triadScore;

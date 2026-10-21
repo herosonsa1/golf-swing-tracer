@@ -13,16 +13,16 @@ import {
   measurements,
   calculateTempo,
   interpolateCatmullRom
-} from './swing-engine.js?v=20261019_06';
+} from './swing-engine.js?v=20261021_03';
 import {
   drawSynthesizedGolferScene,
   drawRealisticGolfClub,
   computeShaftAxialAlpha
-} from './demo-generator.js?v=20261019_06';
+} from './demo-generator.js?v=20261019_09';
 import {
   drawSynthesizedDtlRangeScene,
   renderShotTracerOverlay
-} from './shot-tracer-engine.js?v=20261019_06';
+} from './shot-tracer-engine.js?v=20261021_03';
 import {
   computeEffectiveStabilizationOffset,
   drawStabilizedVideoFrame
@@ -1069,6 +1069,16 @@ export function renderCompositeFrame(ctx, width, height, state, time, overrideOp
     }
   }
 
+  // [핵심] 사용자가 '임팩트 원본영상만 보기'(cleanOriginalViewMode)를 켜거나 '임팩트 공 위치 지정'(impactBallPinMode) 중일 때:
+  // 잔상이나 궤적 오버레이가 영상 속 골프공과 클럽헤드를 가리지 않도록 깨끗한 원본 영상 위에 정밀 공 위치 타깃만 표시!
+  const isCleanOriginalMode = !overrideOptions.ignoreCleanOriginalView && (
+    Boolean(state.cleanOriginalViewMode) || Boolean(state.impactBallPinMode)
+  );
+  if (isCleanOriginalMode) {
+    drawImpactOriginalBallAnchorOverlay(ctx, width, height, state, effectiveTime, true);
+    return;
+  }
+
   if (isShotTracerMode) {
     if (state.shotTracerOptions?.showClubAfterimageInTracer) {
       renderSwingAfterimageOverlay(ctx, width, height, state, effectiveTime, {
@@ -1079,7 +1089,118 @@ export function renderCompositeFrame(ctx, width, height, state, time, overrideOp
     renderShotTracerOverlay(ctx, width, height, state, effectiveTime, overrideOptions.shotTracerOverride || {});
   } else {
     renderSwingAfterimageOverlay(ctx, width, height, state, effectiveTime, overrideOptions);
+    if (!state.playing && !overrideOptions.hideCalibrationPreview) {
+      drawImpactOriginalBallAnchorOverlay(ctx, width, height, state, effectiveTime, false);
+    }
   }
+}
+
+/**
+ * 임팩트 시점의 원본 영상 확인 및 임팩트 공 위치(타격 기준점 · 출발 기준점) 지정/드래그 마커를 렌더링합니다.
+ * 스윙 잔상(afterimage) 모드와 공 궤적(shot-tracer) 모드 모두에서 동일한 임팩트 공 위치 기준점을 공유합니다.
+ */
+function drawImpactOriginalBallAnchorOverlay(ctx, width, height, state, currentTime, isCleanOriginalActive = false) {
+  const ballPt =
+    state.impactBallPoint ||
+    state.shotTracerOptions?.originPoint ||
+    state.addressClub?.impactBallPoint ||
+    state.addressClub?.ballPoint ||
+    { x: 0.50, y: 0.80 };
+  if (!ballPt || !Number.isFinite(ballPt.x) || !Number.isFinite(ballPt.y)) return;
+
+  const impMoment = (state.keyMoments || []).find(m => m.key === 'impact');
+  const impTime = Number.isFinite(state.shotTracerOptions?.calibratedImpactTime)
+    ? Number(state.shotTracerOptions.calibratedImpactTime)
+    : Number(impMoment?.time ?? 1.72);
+  const safeFps = Math.max(15, Number(state.fps || 30));
+  const impFrame = Math.max(1, Math.round(impTime * safeFps) + 1);
+  const curFrame = Math.max(1, Math.round(currentTime * safeFps) + 1);
+  const isAtImpactFrame = Math.abs(currentTime - impTime) <= (1.1 / safeFps);
+  const isPinMode = Boolean(state.impactBallPinMode) || state.shotTracerOptions?.pinTargetMode === 'origin';
+
+  const bx = clamp(ballPt.x, 0.01, 0.99) * width;
+  const by = clamp(ballPt.y, 0.01, 0.99) * height;
+
+  ctx.save();
+
+  // 십자 에임 가이드 및 타깃 링
+  const accentColor = isPinMode ? '#2563EB' : (isAtImpactFrame ? '#DC2626' : '#059669');
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = isPinMode ? 2.4 : 2.0;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.arc(bx, by, isPinMode ? 16 : 12.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 정밀 십자선
+  const crossR = isPinMode ? 22 : 16;
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(bx - crossR, by);
+  ctx.lineTo(bx - 6, by);
+  ctx.moveTo(bx + 6, by);
+  ctx.lineTo(bx + crossR, by);
+  ctx.moveTo(bx, by - crossR);
+  ctx.lineTo(bx, by - 6);
+  ctx.moveTo(bx, by + 6);
+  ctx.lineTo(bx, by + crossR);
+  ctx.stroke();
+
+  // 중심 골프공 포인트 (원본 영상의 실제 공이 잘 보이도록 반투명 코어 처리)
+  ctx.fillStyle = isCleanOriginalActive ? 'rgba(255, 255, 255, 0.35)' : '#FFFFFF';
+  ctx.strokeStyle = '#0F172A';
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // 배지 라벨
+  const labelText = isPinMode
+    ? `임팩트 공 위치 클릭/드래그 대기 중 · 현재 F${curFrame}(${currentTime.toFixed(2)}s)`
+    : `임팩트 공 위치 (F${impFrame} · ${impTime.toFixed(2)}s) [드래그 가능]`;
+  ctx.font = '700 11px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+  const tw = ctx.measureText(labelText).width + 16;
+  const rx = clamp(bx - tw / 2, 8, width - tw - 8);
+  const ry = clamp(by + 18, 8, height - 28);
+
+  ctx.fillStyle = isPinMode ? '#2563EB' : 'rgba(15, 23, 42, 0.88)';
+  ctx.beginPath();
+  ctx.roundRect(rx, ry, tw, 22, 5);
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(labelText, rx + tw / 2, ry + 11);
+
+  // 원본영상 전용 모드일 때 상단 안내 배너 표시
+  if (isCleanOriginalActive) {
+    const topMsg = isPinMode
+      ? `임팩트 원본영상 공 위치 지정 모드 — 현재 프레임(F${curFrame} · ${currentTime.toFixed(2)}s)의 실제 골프공을 클릭하면 임팩트 시점과 공 위치(궤적·스윙잔상 기준)가 즉시 맞춰집니다`
+      : `임팩트 원본영상 보기 ON — 잔상·궤적 가림 없이 실제 스윙 영상과 공 위치를 확인 중입니다 (F${curFrame} · ${currentTime.toFixed(2)}s / 임팩트 F${impFrame} · ${impTime.toFixed(2)}s)`;
+    ctx.font = '700 11.5px -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif';
+    const bw = clamp(ctx.measureText(topMsg).width + 24, 260, width - 24);
+    const bxTop = (width - bw) / 2;
+    const byTop = 14;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.roundRect(bxTop, byTop, bw, 30, 7);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#0F172A';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(topMsg, width / 2, byTop + 15);
+  }
+
+  ctx.restore();
 }
 
 // ============================================================================
@@ -1113,7 +1234,12 @@ export async function exportStrobeSnapshot(state, overrideOptions = {}, onProgre
   // 사용자가 타임라인을 조정해 맞춘 현재 시점(baseTime)과 잔상 설정(불투명도·지속시간·간격 등)을 그대로 렌더링하여 저장
   renderCompositeFrame(ctx, width, height, state, baseTime, {
     ...state.renderOptions,
-    ...overrideOptions
+    ...overrideOptions,
+    ignoreCleanOriginalView: true,
+    shotTracerOverride: {
+      ...(overrideOptions?.shotTracerOverride || {}),
+      hideCalibrationPreview: true
+    }
   });
 
   if (onProgress) onProgress(75, '고해상도 PNG 이미지 인코딩 중...');
@@ -1210,7 +1336,9 @@ export async function exportSequencePanorama(state, onProgress = null) {
       gripFade: state.renderOptions?.gripFade ?? 0.50,
       showSkeleton: state.renderOptions?.showSkeleton ?? false,
       showAngles: false,
-      showHud: false
+      showHud: false,
+      ignoreCleanOriginalView: true,
+      shotTracerOverride: { hideCalibrationPreview: true }
     });
 
     const sampleAtM = interpolateSampleAtTime(state.samples, m.time) || findNearestSample(state.samples, m.time);
@@ -1344,7 +1472,9 @@ export async function exportAfterimageVideo(state, onProgress = () => {}, clipOp
 
     renderCompositeFrame(ctx, width, height, state, simTime, {
       ...state.renderOptions,
-      showHud: state.renderOptions?.showHud !== false
+      showHud: state.renderOptions?.showHud !== false,
+      ignoreCleanOriginalView: true,
+      shotTracerOverride: { hideCalibrationPreview: true }
     });
 
     const videoTrack = stream.getVideoTracks?.()[0];

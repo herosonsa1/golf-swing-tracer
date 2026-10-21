@@ -8,9 +8,9 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico?v=20261017_04">
   <link rel="icon" type="image/png" href="app-icon.png?v=20261017_04">
   <link rel="apple-touch-icon" href="app-icon.png?v=20261017_04">
-  <link rel="stylesheet" href="styles.css?v=20261019_05">
+  <link rel="stylesheet" href="styles.css?v=20261021_04">
 </head>
-<body>
+<body class="is-easy-mode">
   <header class="top-bar" role="banner">
     <div class="top-bar-main-row">
       <div class="brand-group">
@@ -25,6 +25,11 @@
       </div>
 
       <div class="top-bar-right">
+        <div class="top-exp-mode-switch" role="group" aria-label="화면 사용 모드 전환 (쉬운 모드 / 고급 모드)">
+          <button type="button" id="btnTopExpEasy" class="btn-exp-mode is-active" aria-pressed="true" title="누구나 직관적으로 한눈에 보고 원터치로 조작하는 쉬운 모드">쉬운 모드</button>
+          <button type="button" id="btnTopExpAdvanced" class="btn-exp-mode" aria-pressed="false" title="기존의 모든 정밀 스윙·궤적 보정 도구를 그대로 사용하는 고급 모드">고급 모드</button>
+        </div>
+
         <div class="top-quick-mode-switch" role="group" aria-label="분석 모드 빠른 전환">
           <button type="button" id="btnQuickModeAfterimage" class="btn-quick-mode is-active" title="스윙 클럽 잔상 분석 화면">클럽 잔상</button>
           <button type="button" id="btnQuickModeShotTracer" class="btn-quick-mode" title="후방 공 궤적 샷 트레이서 화면">공 궤적</button>
@@ -39,14 +44,14 @@
           aria-expanded="false"
           aria-controls="topMenuDropdownPanel"
           aria-label="숨겨진 부가 기능 전체 메뉴 열기 및 닫기"
-          title="메뉴를 펼쳐 보관함·내보내기·데모·화면분할 등 부가 기능을 선택합니다"
+          title="메뉴를 펼쳐 쉬운 모드 전환·보관함·내보내기·데모·화면분할 등 설정을 선택합니다"
         >
           <svg class="top-menu-icon-svg" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path class="menu-line line-1" d="M3 5.25H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path class="menu-line line-2" d="M3 10H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path class="menu-line line-3" d="M3 14.75H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="top-menu-toggle-label">메뉴</span>
+          <span class="top-menu-toggle-label">설정·메뉴</span>
           <span id="badgeArchiveCountTop" class="archive-count-pill top-menu-badge" hidden>0</span>
         </button>
       </div>
@@ -57,13 +62,49 @@
     <nav id="topMenuDropdownPanel" class="top-menu-dropdown-panel" aria-label="상단 전체 메뉴 리스트" hidden>
       <div class="top-menu-panel-header">
         <div class="top-menu-panel-title-wrap">
-          <strong class="top-menu-panel-title">전체 메뉴 · 부가 기능 모음</strong>
-          <span class="top-menu-panel-sub">화면 이동, 작업 보관함, 결과물 저장 및 환경 설정을 선택하세요</span>
+          <strong class="top-menu-panel-title">환경 설정 · 전체 메뉴</strong>
+          <span class="top-menu-panel-sub">쉬운 모드 / 고급 모드 전환, 분석 화면 이동, 작업 보관함 및 결과물 저장을 선택하세요</span>
         </div>
         <button type="button" id="btnCloseTopMenu" class="btn-transport btn-close-top-menu" aria-label="메뉴 닫기">닫기</button>
       </div>
 
       <div id="topMenuSectionsWrap" class="top-menu-sections-wrap" tabindex="-1">
+        <div class="top-menu-section">
+          <span class="top-menu-section-label">화면 구성 설정 (쉬운 모드 전환)</span>
+          <div class="top-menu-easy-switch-card">
+            <div class="top-menu-easy-switch-copy">
+              <strong class="top-menu-easy-switch-title">쉬운 모드 전환</strong>
+              <span id="labelMenuEasySwitchDesc" class="top-menu-easy-switch-desc">토스·애플 스타일의 간결한 원터치 화면으로 이용합니다 (끄면 기존 고급 모드 화면)</span>
+            </div>
+            <button
+              type="button"
+              id="btnSwitchEasyModeToggle"
+              class="ios-toggle-switch is-on"
+              role="switch"
+              aria-checked="true"
+              aria-label="쉬운 모드 켜기 및 끄기"
+            >
+              <span class="ios-toggle-thumb"></span>
+            </button>
+          </div>
+          <div class="mode-switch-group top-menu-list-group" role="radiogroup" aria-label="화면 구성 모드 선택">
+            <button type="button" id="btnMenuExpEasy" class="mode-switch-btn top-menu-list-item is-active" data-exp-mode="easy" role="radio" aria-checked="true">
+              <span class="top-menu-item-main">
+                <span class="top-menu-item-title">쉬운 모드 (토스 · 애플 미니멀 UI)</span>
+                <span class="top-menu-item-desc">복잡한 설정을 숨기고 핵심 리포트와 임팩트·공 위치 원터치 맞춤만 깔끔하게 제공합니다</span>
+              </span>
+              <span class="top-menu-item-state" id="badgeMenuExpEasy">적용 중</span>
+            </button>
+            <button type="button" id="btnMenuExpAdvanced" class="mode-switch-btn top-menu-list-item" data-exp-mode="advanced" role="radio" aria-checked="false">
+              <span class="top-menu-item-main">
+                <span class="top-menu-item-title">고급 모드 (기존 전문가 스튜디오 UI)</span>
+                <span class="top-menu-item-desc">기존 화면구성 그대로 7점 공 위치 보정, 7단계 스윙 시퀀스, 구간 편집, 세부 슬라이더를 모두 제공합니다</span>
+              </span>
+              <span class="top-menu-item-state" id="badgeMenuExpAdvanced">전환하기</span>
+            </button>
+          </div>
+        </div>
+
         <div class="top-menu-section">
           <span class="top-menu-section-label">스튜디오 분석 모드 이동</span>
           <div class="mode-switch-group top-menu-list-group" role="tablist" aria-label="스튜디오 분석 모드 전환">
@@ -205,6 +246,19 @@
                 <input type="range" id="fsTimelineRange" class="stage-fs-range" min="0" max="3.2" step="0.005" value="1.78" aria-label="전체화면 스윙 타임라인 탐색">
                 <output id="fsTimeReadout" class="stage-fs-time">1.78s / 3.20s (F107/192)</output>
               </div>
+              <div class="stage-fs-launch-sync-row" role="group" aria-label="전체화면 임팩트 원본영상 및 공 위치·출발 시기 조정">
+                <span id="fsLaunchSyncBadge" class="fs-launch-sync-badge">임팩트 1.78s (F53)</span>
+                <button type="button" id="btnFsCleanOriginal" class="btn-stage-fs-sync" aria-pressed="false" title="잔상·궤적을 잠시 숨기고 깨끗한 원본 영상으로 임팩트 순간과 공 위치를 확인합니다">원본영상만</button>
+                <button type="button" id="btnFsPinImpactBall" class="btn-stage-fs-sync is-highlight-sync" aria-pressed="false" title="현재 화면의 실제 골프공을 터치해 임팩트 시점과 공 위치(궤적·잔상 공통)를 지정합니다">임팩트 공위치 지정</button>
+                <button type="button" id="btnFsLaunchEarlier1s" class="btn-stage-fs-sync" title="현재 타임라인에서 1.0초 앞으로 이동해 임팩트·공 출발 시점을 맞춥니다">-1s</button>
+                <button type="button" id="btnFsLaunchEarlierFast" class="btn-stage-fs-sync" title="현재 타임라인에서 0.2초 앞으로 이동해 임팩트·공 출발 시점을 맞춥니다">-0.2s</button>
+                <button type="button" id="btnFsLaunchEarlierFrame" class="btn-stage-fs-sync" title="현재 타임라인에서 1프레임 앞으로 이동해 임팩트·공 출발 시점을 맞춥니다">-1F</button>
+                <button type="button" id="btnFsLaunchSetNow" class="btn-stage-fs-sync is-highlight-sync" title="현재 보고 있는 화면 시점을 임팩트 및 공 출발 시점으로 맞춥니다">지금 화면 임팩트 고정</button>
+                <button type="button" id="btnFsLaunchLaterFrame" class="btn-stage-fs-sync" title="현재 타임라인에서 1프레임 뒤로 이동해 임팩트·공 출발 시점을 맞춥니다">+1F</button>
+                <button type="button" id="btnFsLaunchLaterFast" class="btn-stage-fs-sync" title="현재 타임라인에서 0.2초 뒤로 이동해 임팩트·공 출발 시점을 맞춥니다">+0.2s</button>
+                <button type="button" id="btnFsLaunchLater1s" class="btn-stage-fs-sync" title="현재 타임라인에서 1.0초 뒤로 이동해 임팩트·공 출발 시점을 맞춥니다">+1s</button>
+                <button type="button" id="btnFsLaunchAutoReset" class="btn-stage-fs-sync is-auto-sync" title="AI 자동 타격 시점으로 복원합니다">자동</button>
+              </div>
               <div class="stage-fs-controls-row">
                 <button type="button" id="btnFsPrevFrame" class="btn-stage-fs-ctrl">이전 프레임</button>
                 <button type="button" id="btnFsPlayPause" class="btn-stage-fs-ctrl is-primary-fs">재생</button>
@@ -225,9 +279,13 @@
 
             <div class="transport-controls">
               <div class="playback-buttons">
-                <button type="button" id="btnPrevFrame" class="btn-transport" title="이전 프레임 (왼쪽 화살표)">이전 프레임</button>
+                <button type="button" id="btnStepBack1s" class="btn-transport" title="현재 타임라인에서 1.0초 뒤로 이동">-1s</button>
+                <button type="button" id="btnStepBack01s" class="btn-transport" title="현재 타임라인에서 0.1초 뒤로 이동">-0.1s</button>
+                <button type="button" id="btnPrevFrame" class="btn-transport" title="이전 프레임 (왼쪽 화살표)">-1F</button>
                 <button type="button" id="btnPlayPause" class="btn-transport btn-play-main" aria-pressed="false" title="재생 / 일시정지 (Space)">재생</button>
-                <button type="button" id="btnNextFrame" class="btn-transport" title="다음 프레임 (오른쪽 화살표)">다음 프레임</button>
+                <button type="button" id="btnNextFrame" class="btn-transport" title="다음 프레임 (오른쪽 화살표)">+1F</button>
+                <button type="button" id="btnStepFwd01s" class="btn-transport" title="현재 타임라인에서 0.1초 앞으로 이동">+0.1s</button>
+                <button type="button" id="btnStepFwd1s" class="btn-transport" title="현재 타임라인에서 1.0초 앞으로 이동">+1s</button>
                 <button type="button" id="btnJumpImpact" class="btn-transport">임팩트 이동</button>
               </div>
 
@@ -235,6 +293,31 @@
                 <button type="button" id="btnFullscreenPlay" class="btn-upload-accent btn-snapshot-compact" title="스윙 영상을 전체화면으로 크게 재생합니다">전체화면 재생</button>
                 <button type="button" id="btnQuickSaveWorkOutside" class="btn-secondary btn-snapshot-compact" title="현재 편집 작업 내용을 보관함에 저장">작업 저장</button>
                 <button type="button" id="btnQuickExportVideoOutside" class="btn-primary btn-snapshot-compact" title="분석 결과 동영상 다운로드">동영상 저장</button>
+              </div>
+            </div>
+
+            <!-- 임팩트 순간 원본영상 확인 및 그때의 공 위치·시점 통합 지정 바 (공 궤적 · 스윙 잔상 공통) -->
+            <div id="oneTouchLaunchSyncBar" class="one-touch-launch-bar" role="group" aria-label="임팩트 순간 원본영상 및 공 위치 핵심 지정">
+              <div class="one-touch-launch-head">
+                <span class="one-touch-launch-title">임팩트 순간 원본영상 · 공 위치 지정 (궤적·스윙잔상 공통)</span>
+                <div class="one-touch-badge-group">
+                  <output id="mainImpactBallBadge" class="one-touch-ball-badge">공 위치 (58.8%, 81.9%)</output>
+                  <output id="mainLaunchSyncBadge" class="one-touch-launch-badge">임팩트 1.78s (F53 · 자동)</output>
+                </div>
+              </div>
+              <div class="one-touch-impact-core-row">
+                <button type="button" id="btnCleanOriginalView" class="btn-launch-sync btn-clean-original-toggle" aria-pressed="false" title="잔상과 궤적 선을 잠시 숨기고 깨끗한 원본 영상만 보면서 임팩트 순간과 실제 공 위치를 정확히 확인합니다">원본영상만 보기: OFF</button>
+                <button type="button" id="btnPinImpactBallUnified" class="btn-launch-sync is-primary-sync" aria-pressed="false" title="현재 임팩트 화면의 실제 골프공을 클릭(또는 드래그)해 공 궤적 출발점과 스윙 클럽 잔상 타격점을 동시에 맞춥니다">임팩트 공 위치 클릭 지정 (궤적·잔상 맞춤)</button>
+                <button type="button" id="btnLaunchSetCurrentFrame" class="btn-launch-sync is-accent-sync" title="현재 보고 있는 타임라인 프레임을 임팩트(타격·공 출발) 시점으로 즉시 고정합니다">지금 화면을 임팩트 시점으로 고정</button>
+              </div>
+              <div class="one-touch-launch-actions">
+                <button type="button" id="btnLaunchEarlier1s" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 1.0초 앞당깁니다">-1s</button>
+                <button type="button" id="btnLaunchEarlierFast" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 0.2초 앞당깁니다">-0.2s</button>
+                <button type="button" id="btnLaunchEarlierFrame" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 1프레임 앞당깁니다">-1F</button>
+                <button type="button" id="btnLaunchLaterFrame" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 1프레임 늦춥니다">+1F</button>
+                <button type="button" id="btnLaunchLaterFast" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 0.2초 늦춥니다">+0.2s</button>
+                <button type="button" id="btnLaunchLater1s" class="btn-launch-sync" title="현재 맞춰둔 타임라인 위치에서 1.0초 늦춥니다">+1s</button>
+                <button type="button" id="btnLaunchAutoSync" class="btn-launch-sync is-auto-reset" title="AI 자동 타격 검출 시점 및 공 위치로 다시 맞춥니다">자동 맞춤</button>
               </div>
             </div>
           </div>
@@ -318,9 +401,13 @@
             <div class="pin-frame-nav-bar" aria-label="공 위치 탐색용 프레임 이동 및 멈춤 컨트롤">
               <span id="badgeCurrentPinFrame" class="pin-frame-badge">현재 멈춘 프레임: F54 (1.78s)</span>
               <div class="pin-frame-step-group">
-                <button type="button" id="btnPinPrevFrame" class="btn-transport btn-pin-step" title="이전 프레임으로 이동">&lt; 1프레임</button>
+                <button type="button" id="btnPinPrev1s" class="btn-transport btn-pin-step" title="현재 타임라인에서 1.0초 뒤로 이동">-1s</button>
+                <button type="button" id="btnPinPrev01s" class="btn-transport btn-pin-step" title="현재 타임라인에서 0.1초 뒤로 이동">-0.1s</button>
+                <button type="button" id="btnPinPrevFrame" class="btn-transport btn-pin-step" title="이전 프레임으로 이동">-1F</button>
                 <button type="button" id="btnPinPauseToggle" class="btn-transport btn-pin-step" title="현재 프레임 멈춤 / 재생">재생/멈춤</button>
-                <button type="button" id="btnPinNextFrame" class="btn-transport btn-pin-step" title="다음 프레임으로 이동">1프레임 &gt;</button>
+                <button type="button" id="btnPinNextFrame" class="btn-transport btn-pin-step" title="다음 프레임으로 이동">+1F</button>
+                <button type="button" id="btnPinNext01s" class="btn-transport btn-pin-step" title="현재 타임라인에서 0.1초 앞으로 이동">+0.1s</button>
+                <button type="button" id="btnPinNext1s" class="btn-transport btn-pin-step" title="현재 타임라인에서 1.0초 앞으로 이동">+1s</button>
               </div>
             </div>
 
@@ -358,17 +445,25 @@
             </details>
           </section>
 
-          <!-- [스윙 클럽 잔상 전용 직결 도구] 꼭 필요한 헤드 보정 버튼과 핵심 지표 2개만 바깥에 노출 -->
+          <!-- [스윙 클럽 잔상 전용 직결 도구] 임팩트 원본영상 공 위치 보정 + 헤드 보정 버튼과 핵심 지표 -->
           <section id="swingMetricsSection" class="inspector-block dock-card-block" data-mode-only="afterimage" aria-labelledby="metricsHeading">
             <div class="block-header">
-              <h2 id="metricsHeading">클럽 헤드 보정 · 핵심 지표</h2>
+              <h2 id="metricsHeading">임팩트 공 위치 · 클럽 헤드 보정</h2>
+            </div>
+
+            <div class="head-pin-quick-bar impact-ball-dock-bar">
+              <span class="head-pin-caption">임팩트 시점 원본영상 &amp; 공 위치 지정 (스윙 잔상 타격점 정합)</span>
+              <div class="calibration-buttons">
+                <button type="button" id="btnSwingCleanOriginal" class="btn-transport btn-clip-mark" aria-pressed="false" title="잔상을 잠시 끄고 임팩트 원본 영상의 공과 클럽 헤드를 선명하게 확인합니다">임팩트 원본영상 보기</button>
+                <button type="button" id="btnSwingPinImpactBall" class="btn-transport btn-clip-mark is-primary-pin-btn" aria-pressed="false" title="임팩트 순간의 실제 골프공 위치를 클릭해 클럽 헤드 잔상이 공을 정확히 타격하도록 맞춥니다">임팩트 공 위치 지정</button>
+              </div>
             </div>
 
             <div class="head-pin-quick-bar">
-              <span class="head-pin-caption">클럽 헤드 위치 클릭 보정</span>
+              <span class="head-pin-caption">프레임별 클럽 헤드 위치 개별 보정</span>
               <div class="calibration-buttons">
                 <button type="button" id="btnToggleManualPin" class="btn-transport btn-clip-mark" aria-pressed="false">헤드 위치 수동 보정</button>
-                <button type="button" id="btnResetPins" class="btn-transport btn-clip-mark">헤드 궤적 초기화</button>
+                <button type="button" id="btnResetPins" class="btn-transport btn-clip-mark">헤드·공 궤적 초기화</button>
               </div>
             </div>
 
@@ -497,6 +592,331 @@
         </div>
       </section>
 
+      <!-- =====================================================================
+           쉬운 모드 (Easy Mode) 전용 워크스페이스 — 토스(Toss TDS) · 애플(Apple HIG) 미니멀 디자인
+           고급 모드(Advanced Mode) 전환 시에는 숨겨지고 기존 화면구성이 100% 그대로 표시됩니다.
+           ===================================================================== -->
+      <section id="easyModeWorkspace" class="easy-mode-workspace" aria-label="쉬운 모드 간편 분석 및 원터치 조작 패널">
+        <!-- 모듈 1. 애플 스타일 통합 타임라인 & 핵심 장면 바로가기 바 -->
+        <div class="easy-surface-module easy-player-strip" role="group" aria-label="쉬운 모드 재생 및 핵심 장면 컨트롤">
+          <div class="easy-moments-strip" aria-label="핵심 스윙 및 비행 순간 바로가기">
+            <div class="easy-moments-header">
+              <span class="easy-section-eyebrow">핵심 장면 이동</span>
+              <span class="easy-section-hint">탭하면 해당 순간으로 즉시 이동합니다</span>
+            </div>
+            <div id="easyMomentChipsRow" class="easy-moment-chips-row" role="list"></div>
+          </div>
+
+          <div class="easy-player-main-row">
+            <button type="button" id="btnEasyPlayPause" class="btn-easy-play-main" aria-pressed="false" title="재생 및 일시정지">재생</button>
+            <div class="easy-scrubber-wrap">
+              <input type="range" id="rangeEasyTimeline" class="easy-timeline-range" min="0" max="3.2" step="0.005" value="1.78" aria-label="쉬운 모드 타임라인 탐색">
+            </div>
+            <output id="easyTimeReadout" class="easy-time-readout">1.78s / 3.20s</output>
+          </div>
+
+          <div class="easy-player-sub-row">
+            <div class="easy-speed-segmented" role="group" aria-label="재생 배속 선택">
+              <button type="button" class="btn-easy-speed" data-easy-speed="0.25">0.25x</button>
+              <button type="button" class="btn-easy-speed is-active" data-easy-speed="0.5">0.5x 슬로우</button>
+              <button type="button" class="btn-easy-speed" data-easy-speed="1">1.0x 정속</button>
+            </div>
+            <div class="easy-player-quick-tools">
+              <button type="button" id="btnEasyCleanOriginalQuick" class="btn-easy-pill-action" aria-pressed="false">원본만 보기</button>
+              <button type="button" id="btnEasyJumpImpact" class="btn-easy-pill-action">임팩트 순간</button>
+              <button type="button" id="btnEasyFullscreen" class="btn-easy-pill-action is-strong">전체화면</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 2-A. [공 궤적 모드] 토스 리포트 스타일 핵심 샷 브리핑 카드 -->
+        <div id="easyHeroShot" class="easy-surface-module easy-hero-card" data-mode-only="shot-tracer" hidden>
+          <div class="easy-hero-top-row">
+            <div class="easy-hero-title-group">
+              <span class="easy-section-eyebrow">샷 리포트</span>
+              <div class="easy-hero-number-line">
+                <strong id="easyHeroTotalMeters" class="easy-hero-big-number">212.0 m</strong>
+                <span class="easy-hero-number-label">총 비거리</span>
+              </div>
+            </div>
+            <span id="easyShotSummaryBadge" class="easy-status-pill">드로우 · 평지</span>
+          </div>
+
+          <div class="easy-data-bar-block" aria-label="캐리 및 런 거리 비율">
+            <div class="easy-data-bar-labels">
+              <span id="easyHeroRollDelta" class="easy-hero-sub-caption">탄착 캐리 198.5 m + 런 13.5 m</span>
+              <span id="easyHeroCarryRatioText" class="easy-data-bar-pct">캐리 94%</span>
+            </div>
+            <div class="easy-data-bar-track">
+              <div id="easyCarryBarFill" class="easy-data-bar-fill is-primary-fill" style="width: 93.6%;"></div>
+            </div>
+          </div>
+
+          <div class="easy-submetric-strip">
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">캐리 (탄착)</span>
+              <strong id="easyMetricCarry" class="easy-submetric-value">198.5 m</strong>
+            </div>
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">최고 높이 (APEX)</span>
+              <strong id="easyMetricApex" class="easy-submetric-value">24.5 m</strong>
+            </div>
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">발사각 · 볼스피드</span>
+              <strong id="easyMetricLaunchSpeed" class="easy-submetric-value">13.6° · 60.4 m/s</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 2-B. [클럽 잔상 모드] 토스 리포트 스타일 핵심 스윙 브리핑 카드 -->
+        <div id="easyHeroSwing" class="easy-surface-module easy-hero-card" data-mode-only="afterimage">
+          <div class="easy-hero-top-row">
+            <div class="easy-hero-title-group">
+              <span class="easy-section-eyebrow">스윙 리포트</span>
+              <div class="easy-hero-dual-numbers">
+                <div class="easy-hero-number-block">
+                  <span class="easy-hero-number-label">스윙 템포</span>
+                  <strong id="easyHeroTempo" class="easy-hero-big-number">3.03 : 1</strong>
+                </div>
+                <div class="easy-hero-number-divider" aria-hidden="true"></div>
+                <div class="easy-hero-number-block">
+                  <span class="easy-hero-number-label">헤드 스피드</span>
+                  <strong id="easyHeroClubSpeed" class="easy-hero-big-number">108 mph</strong>
+                </div>
+              </div>
+            </div>
+            <span id="easySwingSummaryBadge" class="easy-status-pill">안정적 리듬</span>
+          </div>
+
+          <div class="easy-data-bar-block" aria-label="백스윙 대 다운스윙 시간 비율">
+            <div class="easy-data-bar-labels">
+              <span id="easyHeroTempoSub" class="easy-hero-sub-caption">백스윙 1.00s / 다운스윙 0.33s</span>
+              <span id="easyHeroTempoPctText" class="easy-data-bar-pct">백스윙 75% · 다운스윙 25%</span>
+            </div>
+            <div class="easy-data-bar-track is-dual-tone">
+              <div id="easyTempoBarBack" class="easy-data-bar-fill is-primary-fill" style="width: 75.2%;"></div>
+            </div>
+          </div>
+
+          <div class="easy-submetric-strip">
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">리드 팔꿈치</span>
+              <strong id="easyMetricElbow" class="easy-submetric-value">168°</strong>
+            </div>
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">척추 전경</span>
+              <strong id="easyMetricSpine" class="easy-submetric-value">34°</strong>
+            </div>
+            <div class="easy-submetric-item">
+              <span class="easy-submetric-label">손목 코킹</span>
+              <strong id="easyMetricWrist" class="easy-submetric-value">142°</strong>
+            </div>
+          </div>
+
+          <div class="easy-coaching-banner" aria-live="polite">
+            <span id="easyCoachingBadge" class="easy-coaching-tag">핵심 코칭</span>
+            <div class="easy-coaching-text-wrap">
+              <strong id="easyCoachingHeadline" class="easy-coaching-title">이상적인 3:1 리듬에 근접한 스윙 템포입니다</strong>
+              <p id="easyCoachingDetail" class="easy-coaching-desc">백스윙 탑에서 급하지 않게 전환되어 임팩트 구간에서 클럽 헤드 에너지가 효율적으로 전달되고 있습니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 3. [공 궤적 · 스윙 잔상 공통] 토스 2-Step 임팩트 순간 & 공 위치 맞추기 카드 -->
+        <div id="easyImpactCoreCard" class="easy-surface-module easy-impact-core-card" aria-label="임팩트 시점 원본영상 및 공 위치 핵심 지정">
+          <div class="easy-impact-core-head">
+            <div class="easy-impact-core-titles">
+              <span class="easy-section-eyebrow">궤적 · 스윙잔상 공통 기준</span>
+              <h3 class="easy-impact-core-title">임팩트 순간 &amp; 공 위치 맞추기</h3>
+              <p class="easy-impact-core-desc">클럽이 공에 닿는 장면을 맞추고 영상 속 공을 터치하면, 스윙 잔상 타격점과 공 출발 궤적이 한 번에 정렬됩니다.</p>
+            </div>
+            <button type="button" id="btnEasyImpactAutoReset" class="btn-easy-text-link">자동 복원</button>
+          </div>
+
+          <div class="easy-impact-core-badges">
+            <output id="easyImpactTimeBadge" class="easy-sync-readout-pill">임팩트 1.78s (F53 · 자동)</output>
+            <output id="easyImpactBallBadge" class="easy-ball-coord-pill">공 위치 58.8%, 81.9%</output>
+          </div>
+
+          <div class="easy-step-panel">
+            <div class="easy-step-panel-head">
+              <span class="easy-step-num-badge">STEP 1</span>
+              <strong class="easy-step-panel-title">임팩트 순간(원본 영상) 맞추기</strong>
+            </div>
+            <div class="easy-impact-core-primary-row">
+              <button type="button" id="btnEasyCleanOriginal" class="btn-easy-action btn-easy-clean-original" aria-pressed="false">원본 영상만 보기: OFF</button>
+              <button type="button" id="btnEasyLockImpactNow" class="btn-easy-action is-soft-accent">지금 화면을 임팩트로 고정</button>
+            </div>
+            <div class="easy-impact-core-step-row" role="group" aria-label="임팩트 시점 프레임 정밀 조정">
+              <span class="easy-impact-step-label">타이밍 미세 조정</span>
+              <div class="easy-impact-step-btns">
+                <button type="button" id="btnEasyImpactEarly1s" class="btn-easy-fine">-1.0s</button>
+                <button type="button" id="btnEasyImpactEarlyFast" class="btn-easy-fine">-0.2s</button>
+                <button type="button" id="btnEasyImpactEarlyFrame" class="btn-easy-fine">-1F</button>
+                <button type="button" id="btnEasyImpactLateFrame" class="btn-easy-fine">+1F</button>
+                <button type="button" id="btnEasyImpactLateFast" class="btn-easy-fine">+0.2s</button>
+                <button type="button" id="btnEasyImpactLate1s" class="btn-easy-fine">+1.0s</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="easy-step-panel">
+            <div class="easy-step-panel-head">
+              <span class="easy-step-num-badge is-blue">STEP 2</span>
+              <strong class="easy-step-panel-title">그때의 실제 골프공 위치 찍기</strong>
+            </div>
+            <button type="button" id="btnEasyPinImpactBall" class="btn-easy-action is-toss-primary is-full-width-cta" aria-pressed="false">영상 속 골프공 터치해서 위치 맞추기</button>
+            <div class="easy-launch-fine-row" data-mode-only="shot-tracer" hidden>
+              <button type="button" id="btnEasyPinOrigin" class="btn-easy-fine" aria-pressed="false" hidden>1. 시작점(공) 위치 지정</button>
+              <button type="button" id="btnEasyPinApex" class="btn-easy-fine" aria-pressed="false">최고점(높이·휘어짐) 위치 찍기</button>
+              <button type="button" id="btnEasyPinLanding" class="btn-easy-fine" aria-pressed="false">탄착지점(착지) 위치 찍기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 4-A. [공 궤적 모드] 구질 · 비거리 · 색상 간편 맞춤 카드 -->
+        <div id="easyTuningShot" class="easy-surface-module easy-tuning-sheet" data-mode-only="shot-tracer" hidden>
+          <div class="easy-tuning-group">
+            <div class="easy-tuning-group-head">
+              <div>
+                <span class="easy-section-eyebrow">맞춤 설정</span>
+                <h3 class="easy-tuning-title">구질 · 코스 경사 · 비거리</h3>
+              </div>
+              <button type="button" id="btnEasyDistAutoReset" class="btn-easy-text-link">자동 수치 복원</button>
+            </div>
+
+            <div class="easy-control-row">
+              <span class="easy-row-label">구질</span>
+              <div class="easy-pill-Wrap" role="radiogroup" aria-label="쉬운 모드 구질 선택">
+                <button type="button" class="btn-easy-chip btn-easy-shape is-active" data-easy-shape="auto">자동</button>
+                <button type="button" class="btn-easy-chip btn-easy-shape" data-easy-shape="draw">드로우</button>
+                <button type="button" class="btn-easy-chip btn-easy-shape" data-easy-shape="straight">스트레이트</button>
+                <button type="button" class="btn-easy-chip btn-easy-shape" data-easy-shape="fade">페이드</button>
+                <button type="button" class="btn-easy-chip btn-easy-shape" data-easy-shape="hook">훅</button>
+                <button type="button" class="btn-easy-chip btn-easy-shape" data-easy-shape="slice">슬라이스</button>
+              </div>
+            </div>
+
+            <div class="easy-control-row">
+              <span class="easy-row-label">코스 경사</span>
+              <div class="easy-pill-Wrap" role="radiogroup" aria-label="쉬운 모드 코스 경사 선택">
+                <button type="button" class="btn-easy-chip btn-easy-slope is-active" data-easy-slope="auto">자동</button>
+                <button type="button" class="btn-easy-chip btn-easy-slope" data-easy-slope="flat">평지</button>
+                <button type="button" class="btn-easy-chip btn-easy-slope" data-easy-slope="downhill">내리막</button>
+                <button type="button" class="btn-easy-chip btn-easy-slope" data-easy-slope="uphill">오르막</button>
+              </div>
+            </div>
+
+            <div class="easy-control-row">
+              <span class="easy-row-label">비거리 보정</span>
+              <div class="easy-distance-stepper" role="group" aria-label="총 비거리 원터치 조정">
+                <button type="button" id="btnEasyDistMinus10" class="btn-easy-stepper">-10m</button>
+                <button type="button" id="btnEasyDistMinus5" class="btn-easy-stepper">-5m</button>
+                <strong id="easyDistStepperVal" class="easy-stepper-readout">212.0 m</strong>
+                <button type="button" id="btnEasyDistPlus5" class="btn-easy-stepper">+5m</button>
+                <button type="button" id="btnEasyDistPlus10" class="btn-easy-stepper">+10m</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="easy-tuning-group">
+            <div class="easy-tuning-group-head">
+              <div>
+                <h3 class="easy-tuning-title">궤적 색상 · 모양</h3>
+              </div>
+              <span id="easyTraceColorLabel" class="easy-subtle-tag">투어 레드</span>
+            </div>
+
+            <div class="easy-color-and-style-row">
+              <div class="easy-color-swatches" role="radiogroup" aria-label="쉬운 모드 궤적 색상 선택">
+                <button type="button" class="btn-easy-color is-selected" data-easy-color="#DC2626" data-color-label="투어 레드" style="background:#DC2626" title="투어 레드"></button>
+                <button type="button" class="btn-easy-color" data-easy-color="#EA580C" data-color-label="프로 오렌지" style="background:#EA580C" title="프로 오렌지"></button>
+                <button type="button" class="btn-easy-color" data-easy-color="#0284C7" data-color-label="스카이 시안" style="background:#0284C7" title="스카이 시안"></button>
+                <button type="button" class="btn-easy-color" data-easy-color="#059669" data-color-label="에메랄드" style="background:#059669" title="에메랄드"></button>
+                <button type="button" class="btn-easy-color" data-easy-color="#D97706" data-color-label="로열 골드" style="background:#D97706" title="로열 골드"></button>
+                <button type="button" class="btn-easy-color" data-easy-color="#F8FAFC" data-color-label="TV 화이트" style="background:#F8FAFC;border-color:#94A3B8" title="TV 화이트"></button>
+                <button type="button" class="btn-easy-color is-gradient-swatch" data-easy-color="gradient" data-color-label="속도 그라데이션" title="속도 그라데이션"></button>
+              </div>
+
+              <div class="easy-pill-Wrap" role="radiogroup" aria-label="쉬운 모드 궤적 모양 선택">
+                <button type="button" class="btn-easy-chip btn-easy-trace-style is-active" data-easy-style="tube">입체 튜브</button>
+                <button type="button" class="btn-easy-chip btn-easy-trace-style" data-easy-style="beam">레이저 빔</button>
+                <button type="button" class="btn-easy-chip btn-easy-trace-style" data-easy-style="strobe-ball">골프공 잔상</button>
+                <button type="button" class="btn-easy-chip btn-easy-trace-style" data-easy-style="ribbon">심플 라인</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 4-B. [클럽 잔상 모드] 잔상 스타일 · 표시 항목 간편 맞춤 카드 -->
+        <div id="easyTuningSwing" class="easy-surface-module easy-tuning-sheet" data-mode-only="afterimage">
+          <div class="easy-tuning-group">
+            <div class="easy-tuning-group-head">
+              <div>
+                <span class="easy-section-eyebrow">맞춤 설정</span>
+                <h3 class="easy-tuning-title">클럽 잔상 스타일 · 표시 항목</h3>
+              </div>
+              <button type="button" id="btnEasyResetHeadPin" class="btn-easy-text-link">자동 궤적 복원</button>
+            </div>
+
+            <div class="easy-scope-card-grid" role="radiogroup" aria-label="잔상 유지 방식 선택">
+              <button type="button" class="btn-easy-scope-card is-active" data-easy-scope="full">
+                <strong class="easy-scope-card-title">선명한 궤도 유지</strong>
+                <span class="easy-scope-card-sub">다운스윙~피니시 선명 유지</span>
+              </button>
+              <button type="button" class="btn-easy-scope-card" data-easy-scope="comet">
+                <strong class="easy-scope-card-title">혜성 꼬리 잔상</strong>
+                <span class="easy-scope-card-sub">헤드를 따라 부드럽게 감쇠</span>
+              </button>
+              <button type="button" class="btn-easy-scope-card" data-easy-scope="all-swing">
+                <strong class="easy-scope-card-title">전체 아크 고정</strong>
+                <span class="easy-scope-card-sub">탑~피니시 전체 중첩 비교</span>
+              </button>
+            </div>
+
+            <div class="easy-control-row">
+              <span class="easy-row-label">잔상 간격</span>
+              <div class="easy-pill-Wrap" role="radiogroup" aria-label="골프채 잔상 촘촘함 선택">
+                <button type="button" class="btn-easy-chip btn-easy-strobe-step" data-easy-step="1">촘촘하게</button>
+                <button type="button" class="btn-easy-chip btn-easy-strobe-step is-active" data-easy-step="2">표준</button>
+                <button type="button" class="btn-easy-chip btn-easy-strobe-step" data-easy-step="4">간결하게</button>
+              </div>
+            </div>
+
+            <div class="easy-control-row">
+              <span class="easy-row-label">화면 표시</span>
+              <div class="easy-pill-Wrap" role="group" aria-label="화면 오버레이 표시 토글">
+                <button type="button" class="btn-easy-chip btn-easy-layer-toggle is-active" data-easy-layer="showStrobeGhosts" aria-pressed="true">골프채 잔상</button>
+                <button type="button" class="btn-easy-chip btn-easy-layer-toggle is-active" data-easy-layer="showShaftGlint" aria-pressed="true">샤프트 빛반사</button>
+                <button type="button" class="btn-easy-chip btn-easy-layer-toggle is-active" data-easy-layer="showHandPath" aria-pressed="true">손목 궤적선</button>
+                <button type="button" class="btn-easy-chip btn-easy-layer-toggle is-active" data-easy-layer="showSwingPlane" aria-pressed="true">스윙 플레인</button>
+                <button type="button" class="btn-easy-chip btn-easy-layer-toggle is-active" data-easy-layer="showAngles" aria-pressed="true">관절 각도</button>
+              </div>
+            </div>
+
+            <div class="easy-launch-fine-row">
+              <button type="button" id="btnEasyManualHeadPin" class="btn-easy-fine" aria-pressed="false">프레임별 클럽 헤드 위치 직접 터치 보정</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모듈 5. 토스 스타일 하단 프라이머리 액션 독 -->
+        <div class="easy-surface-module easy-bottom-cta-bar" role="group" aria-label="결과물 저장 및 고급 모드 전환">
+          <div class="easy-cta-primary-row">
+            <button type="button" id="btnEasyUploadVideo" class="btn-easy-cta-secondary">내 스윙 영상 열기</button>
+            <button type="button" id="btnEasySaveVideo" class="btn-easy-cta-primary">분석 동영상 저장하기</button>
+          </div>
+          <div class="easy-cta-secondary-row">
+            <button type="button" id="btnEasySaveSnapshot" class="btn-easy-sub-action">현재 화면 사진 저장 (PNG)</button>
+            <button type="button" id="btnEasyOpenArchive" class="btn-easy-sub-action">
+              <span>작업 보관함</span>
+              <span id="badgeEasyArchiveCount" class="easy-archive-pill">0</span>
+            </button>
+            <button type="button" id="btnEasyToAdvanced" class="btn-easy-sub-action is-mode-switch-link">고급 모드로 전환</button>
+          </div>
+        </div>
+      </section>
+
       <!-- 하단 와이드 영역: 분할하지 않고 넓은 가로 폭을 100% 활용하여 7단계 시퀀스 및 5단계 비행 시점을 한눈에 표시 -->
       <section class="stage-bottom-wide" aria-label="스윙 시퀀스 및 공 비행 단계 와이드 패널">
         <!-- 스윙 클럽 잔상 전용: 7단계 스윙 시퀀스 와이드 파노라마 필름스트립 -->
@@ -539,8 +959,8 @@
                 <strong id="readoutAutoTotal" class="auto-readout-val">212.0 m (+13.5m)</strong>
               </div>
               <div class="auto-readout-item">
-                <span class="auto-readout-label">발사 탄도 · 구질 판독</span>
-                <strong id="readoutAutoLaunch" class="auto-readout-val">13.6° (드로우)</strong>
+                <span class="auto-readout-label">발사 탄도 · 구질 · 지형 경사</span>
+                <strong id="readoutAutoLaunch" class="auto-readout-val">13.6° (드로우 · 평지)</strong>
               </div>
             </div>
             <div id="readoutAutoChainText" class="auto-readout-chain">
@@ -639,7 +1059,7 @@
           <summary class="collapsible-menu-summary">
             <span class="collapsible-summary-left">
               <span class="collapsible-menu-icon" aria-hidden="true">☰</span>
-              <span class="collapsible-summary-title">구질 · 비거리 · 탄도 수치 상세 수정</span>
+              <span class="collapsible-summary-title">구질 · 지형 경사 · 비거리 · 탄도 수정</span>
             </span>
             <span class="collapsible-summary-badges">
               <span class="collapsible-chevron" aria-hidden="true">▾</span>
@@ -648,7 +1068,7 @@
           <div class="collapsible-menu-body">
             <div id="simulationManualControlsWrap" class="simulation-manual-wrap">
               <div class="manual-edit-banner">
-                <span class="manual-edit-title">샷 정보 및 구질 직접 수정 (즉시 반영)</span>
+                <span class="manual-edit-title">샷 정보 · 구질 · 지형 경사 수정 (즉시 반영)</span>
                 <button type="button" id="btnReapplyVideoAutoMetrics" class="btn-GhostSmall" style="width:auto;padding:2px 8px;">자동판독 복원</button>
               </div>
 
@@ -663,6 +1083,20 @@
                   <option value="push">푸쉬 (Push · 우측 직선 탄도)</option>
                   <option value="hook">훅 (Hook · 강한 좌측 급격 낙하)</option>
                   <option value="slice">슬라이스 (Slice · 강한 우측 급격 낙하)</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <label for="selectTerrainSlopeMode">코스 지형 경사 (오르막 · 평지 · 내리막)</label>
+                <select id="selectTerrainSlopeMode" class="control-select" autocomplete="off">
+                  <option value="auto" selected>자동 판독 (지형 경사 · 고도차 분석)</option>
+                  <option value="flat">평지 (Flat · 고도차 0.0m)</option>
+                  <option value="downhill-mild">완만한 내리막 (-5.5m · 캐리/런 증가)</option>
+                  <option value="downhill">내리막 (-10.5m · 캐리/런 증가)</option>
+                  <option value="downhill-steep">급내리막 (-16.5m · 골짜기 탄착)</option>
+                  <option value="uphill-mild">완만한 오르막 (+5.5m · 오르막 사면 탄착)</option>
+                  <option value="uphill">오르막 (+10.5m · 캐리/런 감소)</option>
+                  <option value="uphill-steep">급오르막 (+16.5m · 고지대 사면 탄착)</option>
                 </select>
               </div>
 
@@ -1000,6 +1434,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=20261019_06"></script>
+  <script type="module" src="app.js?v=20261021_04"></script>
 </body>
 </html>

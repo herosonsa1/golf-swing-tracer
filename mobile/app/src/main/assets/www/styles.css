@@ -3822,3 +3822,1626 @@ body.is-stage-fullscreen-lock {
     font-size: 11.5px;
   }
 }
+
+/* ============================================================================
+ * 원터치 공 날아가는 시기(출발 시점) 즉시 조정 바 (일반 화면 + 전체화면 공통)
+ * ============================================================================ */
+
+.one-touch-launch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+}
+
+.one-touch-launch-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.one-touch-launch-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0F172A;
+  white-space: nowrap;
+}
+
+.one-touch-launch-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1D4ED8;
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.one-touch-launch-badge.is-manual-locked {
+  color: #B91C1C;
+  background-color: #FEF2F2;
+  border-color: #FECACA;
+}
+
+.one-touch-launch-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.btn-launch-sync {
+  height: 30px;
+  padding: 0 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E293B;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.btn-launch-sync:hover {
+  background-color: #F1F5F9;
+  border-color: #94A3B8;
+}
+
+.btn-launch-sync:active {
+  transform: translateY(1px);
+}
+
+.btn-launch-sync.is-primary-sync {
+  background-color: #DC2626;
+  border-color: #B91C1C;
+  color: #FFFFFF;
+  font-weight: 800;
+  padding: 0 11px;
+}
+
+.btn-launch-sync.is-primary-sync:hover {
+  background-color: #B91C1C;
+  border-color: #991B1B;
+}
+
+.btn-launch-sync.is-auto-reset {
+  background-color: #EFF6FF;
+  border-color: #93C5FD;
+  color: #1D4ED8;
+}
+
+.btn-launch-sync.is-auto-reset:hover {
+  background-color: #DBEAFE;
+  border-color: #60A5FA;
+}
+
+/* 전체화면 하단 바 내 원터치 공 출발 시기 조정 줄 */
+.stage-fs-launch-sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 4px 6px;
+  background-color: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 7px;
+}
+
+.fs-launch-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #F8FAFC;
+  background-color: rgba(37, 99, 235, 0.38);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  border-radius: 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fs-launch-sync-badge.is-manual-locked {
+  background-color: rgba(220, 38, 38, 0.48);
+  border-color: rgba(252, 165, 165, 0.65);
+  color: #FFFFFF;
+}
+
+.btn-stage-fs-sync {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #F8FAFC;
+  background-color: rgba(30, 41, 59, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-stage-fs-sync:hover {
+  background-color: rgba(51, 65, 85, 0.95);
+  border-color: rgba(203, 213, 225, 0.65);
+}
+
+.btn-stage-fs-sync.is-highlight-sync {
+  background-color: #DC2626;
+  border-color: #F87171;
+  color: #FFFFFF;
+  font-weight: 800;
+  padding: 0 10px;
+}
+
+.btn-stage-fs-sync.is-highlight-sync:hover {
+  background-color: #B91C1C;
+}
+
+.btn-stage-fs-sync.is-auto-sync {
+  background-color: rgba(37, 99, 235, 0.45);
+  border-color: rgba(147, 197, 253, 0.55);
+  color: #EFF6FF;
+}
+
+@media (max-width: 640px) {
+  .one-touch-launch-bar {
+    padding: 7px 8px;
+    gap: 6px;
+  }
+
+  .one-touch-launch-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .btn-launch-sync.is-primary-sync {
+    grid-column: 1 / -1;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .stage-fs-launch-sync-row {
+    gap: 4px;
+    padding: 4px 5px;
+  }
+
+  .btn-stage-fs-sync {
+    height: 25px;
+    padding: 0 6px;
+    font-size: 10.5px;
+  }
+}
+
+/* ============================================================================
+ * 쉬운 모드 (Easy Mode) & 고급 모드 (Advanced Mode) 전환 스위치 +
+ * 토스(Toss) · 애플(Apple HIG) 감성 쉬운 모드 전용 디자인 시스템
+ * - Card Hell(중첩 박스 남발) 배제: 단일 کل린 시트(#FFFFFF) 내부를 여백과 1px 구분선(#F2F4F6)으로 정돈
+ * - 명확한 타이포그래피 스케일(tabular-nums) 및 5초 인지 규칙 준수
+ * - 고급 모드(body:not(.is-easy-mode))일 때는 기존 스튜디오 UI가 100% 그대로 유지됨
+ * ============================================================================ */
+
+:root {
+  --easy-canvas-bg: #F2F4F6;
+  --easy-sheet-bg: #FFFFFF;
+  --easy-subtle-bg: #F9FAFB;
+  --easy-pill-bg: #F2F4F6;
+  --easy-border: #E5E8EB;
+  --easy-divider: #F2F4F6;
+  --easy-ink-primary: #191F28;
+  --easy-ink-secondary: #4E5968;
+  --easy-ink-muted: #8B95A1;
+  --easy-toss-blue: #3182F6;
+  --easy-toss-blue-hover: #1B64DA;
+  --easy-toss-blue-soft: #E8F3FF;
+}
+
+/* 상단 헤더: 애플 iOS / 토스 세그먼트 컨트롤 스타일 */
+.top-exp-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  background-color: #F2F4F6;
+  border: none;
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-exp-mode {
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #6B7684;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-exp-mode:hover {
+  color: #191F28;
+}
+
+.btn-exp-mode.is-active {
+  background-color: #FFFFFF;
+  color: #191F28;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10);
+}
+
+/* 설정 메뉴 내 "쉬운 모드 전환" iOS/Toss 슬라이딩 스위치 카드 */
+.top-menu-easy-switch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background-color: #F9FAFB;
+  border: 1px solid #E5E8EB;
+}
+
+.top-menu-easy-switch-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.top-menu-easy-switch-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #191F28;
+  letter-spacing: -0.02em;
+}
+
+.top-menu-easy-switch-desc {
+  font-size: 12px;
+  color: #6B7684;
+  line-height: 1.4;
+}
+
+.ios-toggle-switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background-color: #D1D6DB;
+  padding: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ios-toggle-switch.is-on {
+  background-color: var(--easy-toss-blue);
+}
+
+.ios-toggle-thumb {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.20);
+  transform: translateX(0);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ios-toggle-switch.is-on .ios-toggle-thumb {
+  transform: translateX(22px);
+}
+
+/* 고급 모드일 때는 쉬운 모드 워크스페이스를 완전히 숨김 (기존 화면구성 100% 유지) */
+body:not(.is-easy-mode) #easyModeWorkspace {
+  display: none !important;
+}
+
+/* ============================================================================
+ * 쉬운 모드 활성화 시(body.is-easy-mode) — 토스(TDS) & 애플(HIG) 미니멀 아키텍처
+ * ============================================================================ */
+body.is-easy-mode {
+  background-color: var(--easy-canvas-bg);
+  color: var(--easy-ink-primary);
+  height: auto !important;
+  overflow-y: auto !important;
+}
+
+body.is-easy-mode .top-bar {
+  background-color: rgba(255, 255, 255, 0.90);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(25, 31, 40, 0.06);
+}
+
+body.is-easy-mode .top-bar-main-row {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 10px 16px;
+}
+
+body.is-easy-mode .top-quick-mode-switch {
+  background-color: #F2F4F6;
+  border: none;
+  border-radius: 999px;
+  padding: 3px;
+}
+
+body.is-easy-mode .btn-quick-mode {
+  border-radius: 999px;
+  border: none;
+  height: 30px;
+  padding: 0 13px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6B7684;
+  background: transparent;
+}
+
+body.is-easy-mode .btn-quick-mode.is-active {
+  background-color: #FFFFFF;
+  color: #191F28;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10);
+}
+
+body.is-easy-mode .btn-quick-upload {
+  border-radius: 999px;
+  border: none;
+  background-color: var(--easy-toss-blue);
+  color: #FFFFFF;
+  height: 34px;
+  padding: 0 15px;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+body.is-easy-mode .btn-top-menu-toggle {
+  border-radius: 999px;
+  border: none;
+  background-color: #F2F4F6;
+  color: #191F28;
+  height: 34px;
+  padding: 0 13px;
+}
+
+body.is-easy-mode .status-strip {
+  max-width: 760px;
+  margin: 12px auto 0;
+  border-radius: 14px;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.86);
+  padding: 8px 16px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.025);
+}
+
+body.is-easy-mode .studio-layout {
+  display: block !important;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 12px 16px 56px;
+  height: auto !important;
+  min-height: calc(100vh - 70px);
+  overflow: visible !important;
+}
+
+body.is-easy-mode .main-workspace-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: auto !important;
+  overflow: visible !important;
+  background: transparent;
+  border-right: none;
+}
+
+body.is-easy-mode .stage-hero-split {
+  display: block !important;
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+body.is-easy-mode .stage-video-pane {
+  overflow: visible;
+}
+
+body.is-easy-mode .stage-viewport {
+  border-radius: 24px;
+  border: none;
+  background-color: #0F172A;
+  min-height: 320px;
+  height: clamp(290px, 50vh, 480px);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+}
+
+body.is-easy-mode .studio-layout.is-portrait-video .stage-viewport {
+  height: clamp(360px, 58vh, 560px);
+}
+
+/* 쉬운 모드에서는 복잡한 전문가용 패널들을 숨기고 깔끔한 단일 흐름 유지 */
+body.is-easy-mode .transport-bar,
+body.is-easy-mode #detailsViewportAuxMenu,
+body.is-easy-mode .stage-dock-pane,
+body.is-easy-mode .stage-bottom-wide,
+body.is-easy-mode .inspector-column {
+  display: none !important;
+}
+
+/* 쉬운 모드 워크스페이스: 거대한 단일 박스 대신 여백으로 분리된 토스·애플 화이트 서피스 모듈 스택 */
+.easy-mode-workspace {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.easy-surface-module {
+  background-color: #FFFFFF;
+  border-radius: 24px;
+  border: none;
+  padding: 24px;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.035);
+}
+
+/* 모듈 1. 애플 스타일 통합 타임라인 & 핵심 장면 바로가기 바 */
+.easy-player-strip {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.easy-moments-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--easy-divider);
+}
+
+.easy-moments-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.easy-section-eyebrow {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--easy-toss-blue);
+  letter-spacing: -0.015em;
+}
+
+.easy-section-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--easy-ink-muted);
+}
+
+.easy-moment-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.easy-moment-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+.btn-easy-moment-pill {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--easy-pill-bg);
+  color: var(--easy-ink-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.1s ease;
+}
+
+.btn-easy-moment-pill:hover {
+  background-color: #E5E8EB;
+  color: var(--easy-ink-primary);
+}
+
+.btn-easy-moment-pill.is-active {
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+}
+
+.easy-moment-time-tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
+}
+
+.easy-player-main-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-easy-play-main {
+  height: 40px;
+  min-width: 78px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-easy-play-main:hover {
+  background-color: #333D4B;
+}
+
+.btn-easy-play-main[aria-pressed="true"] {
+  background-color: var(--easy-toss-blue);
+}
+
+.easy-scrubber-wrap {
+  flex: 1;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.easy-timeline-range {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--easy-toss-blue);
+  cursor: pointer;
+}
+
+.easy-time-readout {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--easy-ink-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.easy-player-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.easy-speed-segmented {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--easy-pill-bg);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.btn-easy-speed {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #6B7684;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.btn-easy-speed.is-active {
+  background-color: #FFFFFF;
+  color: var(--easy-ink-primary);
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.easy-player-quick-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-easy-pill-action {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--easy-pill-bg);
+  color: var(--easy-ink-secondary);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-easy-pill-action:hover {
+  background-color: #E5E8EB;
+  color: var(--easy-ink-primary);
+}
+
+.btn-easy-pill-action[aria-pressed="true"] {
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+}
+
+.btn-easy-pill-action.is-strong {
+  background-color: var(--easy-toss-blue-soft);
+  color: var(--easy-toss-blue);
+  font-weight: 800;
+}
+
+/* 모듈 2. 토스 리포트 스타일 핵심 지표 브리핑 카드 */
+.easy-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.easy-hero-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.easy-hero-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.easy-hero-number-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.easy-hero-number-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--easy-ink-muted);
+}
+
+.easy-hero-big-number {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
+}
+
+.easy-hero-sub-caption {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--easy-ink-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.easy-hero-dual-numbers {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.easy-hero-number-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.easy-hero-number-divider {
+  width: 1px;
+  height: 42px;
+  background-color: var(--easy-border);
+}
+
+.easy-status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background-color: var(--easy-toss-blue-soft);
+  color: var(--easy-toss-blue);
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 토스 스타일 수평 비율 데이터 바 (캐리/런, 백스윙/다운스윙) */
+.easy-data-bar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.easy-data-bar-labels {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.easy-data-bar-pct {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--easy-toss-blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.easy-data-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background-color: #E5E8EB;
+  overflow: hidden;
+}
+
+.easy-data-bar-track.is-dual-tone {
+  background-color: #333D4B;
+}
+
+.easy-data-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--easy-toss-blue);
+  transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 보조 지표 소프트 틴트 서브 카드 (테두리 없음) */
+.easy-submetric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background-color: var(--easy-pill-bg);
+}
+
+.easy-submetric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.easy-submetric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--easy-ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.easy-submetric-value {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+}
+
+.easy-coaching-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 18px;
+  border-radius: 18px;
+  background-color: var(--easy-subtle-bg);
+  border: none;
+}
+
+.easy-coaching-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.easy-coaching-tag.is-check {
+  background-color: #D97706;
+}
+
+.easy-coaching-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.easy-coaching-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.015em;
+}
+
+.easy-coaching-desc {
+  font-size: 12.5px;
+  color: var(--easy-ink-secondary);
+  line-height: 1.48;
+}
+
+/* 모듈 3. 토스 2-Step "임팩트 순간 & 공 위치 맞추기" 통합 카드 */
+.easy-impact-core-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.easy-impact-core-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.easy-impact-core-titles {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.easy-impact-core-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.025em;
+}
+
+.easy-impact-core-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.48;
+  color: var(--easy-ink-secondary);
+}
+
+.easy-impact-core-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.easy-sync-readout-pill,
+.easy-ball-coord-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: var(--easy-pill-bg);
+  border: none;
+  color: var(--easy-ink-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.easy-sync-readout-pill.is-manual-locked {
+  background-color: var(--easy-toss-blue-soft);
+  color: var(--easy-toss-blue);
+  font-weight: 800;
+}
+
+.easy-step-panel {
+  background-color: var(--easy-subtle-bg);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.easy-step-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.easy-step-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.easy-step-num-badge.is-blue {
+  background-color: var(--easy-toss-blue);
+}
+
+.easy-step-panel-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.02em;
+}
+
+.easy-impact-core-primary-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.btn-easy-action {
+  height: 46px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: none;
+  background-color: #FFFFFF;
+  color: var(--easy-ink-primary);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.08s ease;
+}
+
+.btn-easy-action:hover {
+  background-color: #E5E8EB;
+}
+
+.btn-easy-action:active {
+  transform: scale(0.99);
+}
+
+.btn-easy-action.is-toss-primary {
+  background-color: var(--easy-toss-blue);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 800;
+  height: 52px;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.btn-easy-action.is-toss-primary:hover {
+  background-color: var(--easy-toss-blue-hover);
+}
+
+.btn-easy-action.is-toss-primary[aria-pressed="true"] {
+  background-color: var(--easy-ink-primary) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-easy-action.is-full-width-cta {
+  width: 100%;
+}
+
+.btn-easy-action.is-soft-accent {
+  background-color: var(--easy-toss-blue-soft);
+  color: var(--easy-toss-blue);
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.btn-easy-action.is-soft-accent:hover {
+  background-color: #D4E8FF;
+}
+
+.btn-easy-clean-original[aria-pressed="true"] {
+  background-color: var(--easy-ink-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+}
+
+.easy-impact-core-step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.easy-impact-step-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--easy-ink-secondary);
+}
+
+.easy-impact-step-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.easy-launch-fine-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-easy-fine {
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: none;
+  background-color: #FFFFFF;
+  color: var(--easy-ink-secondary);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.btn-easy-fine:hover {
+  background-color: #E5E8EB;
+  color: var(--easy-ink-primary);
+}
+
+.btn-easy-fine.is-pin-highlight,
+.btn-easy-fine[aria-pressed="true"] {
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+  font-weight: 800;
+}
+
+.btn-easy-text-link {
+  border: none;
+  background: transparent;
+  color: var(--easy-toss-blue);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.btn-easy-text-link:hover {
+  background-color: var(--easy-toss-blue-soft);
+}
+
+/* 모듈 4. 애플 iOS 설정 시트 스타일 맞춤 옵션 카드 */
+.easy-tuning-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.easy-tuning-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.easy-tuning-group + .easy-tuning-group {
+  padding-top: 18px;
+  border-top: 1px solid var(--easy-divider);
+}
+
+.easy-tuning-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.easy-tuning-title {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.025em;
+}
+
+.easy-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.easy-row-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--easy-ink-secondary);
+  min-width: 92px;
+}
+
+.easy-pill-Wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.btn-easy-chip {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background-color: var(--easy-pill-bg);
+  color: var(--easy-ink-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-easy-chip:hover {
+  background-color: #E5E8EB;
+  color: var(--easy-ink-primary);
+}
+
+.btn-easy-chip.is-active {
+  background-color: var(--easy-ink-primary);
+  color: #FFFFFF;
+}
+
+.easy-distance-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--easy-pill-bg);
+  border: none;
+  border-radius: 14px;
+  padding: 4px 6px;
+}
+
+.btn-easy-stepper {
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 10px;
+  border: none;
+  background-color: #FFFFFF;
+  color: var(--easy-ink-primary);
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.btn-easy-stepper:hover {
+  background-color: #E5E8EB;
+}
+
+.easy-stepper-readout {
+  min-width: 82px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--easy-toss-blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.easy-color-and-style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.easy-color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-easy-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(15, 23, 42, 0.10);
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.btn-easy-color.is-gradient-swatch {
+  background: linear-gradient(135deg, #DC2626 0%, #F59E0B 50%, #0284C7 100%);
+}
+
+.btn-easy-color.is-selected {
+  transform: scale(1.12);
+  border-color: var(--easy-ink-primary);
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--easy-ink-primary);
+}
+
+.easy-subtle-tag {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--easy-ink-secondary);
+}
+
+/* 클럽 잔상 스타일 3열 미니멀 선택 카드 */
+.easy-scope-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.btn-easy-scope-card {
+  padding: 15px 16px;
+  border-radius: 16px;
+  border: none;
+  background-color: var(--easy-pill-bg);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.btn-easy-scope-card:hover {
+  background-color: #E5E8EB;
+}
+
+.btn-easy-scope-card.is-active {
+  background-color: var(--easy-toss-blue-soft);
+  box-shadow: inset 0 0 0 1.5px var(--easy-toss-blue);
+}
+
+.easy-scope-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--easy-ink-primary);
+  letter-spacing: -0.02em;
+}
+
+.btn-easy-scope-card.is-active .easy-scope-card-title {
+  color: var(--easy-toss-blue);
+}
+
+.easy-scope-card-sub {
+  font-size: 12px;
+  color: var(--easy-ink-secondary);
+  line-height: 1.38;
+}
+
+/* 모듈 5. 토스 스타일 하단 프라이머리 액션 독 */
+.easy-bottom-cta-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.easy-cta-primary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+}
+
+.btn-easy-cta-primary {
+  height: 54px;
+  padding: 0 22px;
+  border-radius: 16px;
+  border: none;
+  background-color: var(--easy-toss-blue);
+  color: #FFFFFF;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.08s ease;
+}
+
+.btn-easy-cta-primary:hover {
+  background-color: var(--easy-toss-blue-hover);
+}
+
+.btn-easy-cta-primary:active {
+  transform: scale(0.99);
+}
+
+.btn-easy-cta-secondary {
+  height: 54px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border: none;
+  background-color: var(--easy-pill-bg);
+  color: var(--easy-ink-primary);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-easy-cta-secondary:hover {
+  background-color: #E5E8EB;
+}
+
+.easy-cta-secondary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-easy-sub-action {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: none;
+  background-color: var(--easy-subtle-bg);
+  color: var(--easy-ink-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-easy-sub-action:hover {
+  background-color: var(--easy-pill-bg);
+  color: var(--easy-ink-primary);
+}
+
+.btn-easy-sub-action.is-mode-switch-link {
+  margin-left: auto;
+  background: transparent;
+  color: var(--easy-ink-muted);
+}
+
+.btn-easy-sub-action.is-mode-switch-link:hover {
+  color: var(--easy-ink-primary);
+  background-color: var(--easy-pill-bg);
+}
+
+.easy-archive-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: var(--easy-toss-blue-soft);
+  color: var(--easy-toss-blue);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 680px) {
+  .top-exp-mode-switch {
+    padding: 2px;
+  }
+
+  .btn-exp-mode {
+    height: 28px;
+    padding: 0 9px;
+    font-size: 11.5px;
+  }
+
+  body.is-easy-mode .studio-layout {
+    padding: 10px 12px 44px;
+  }
+
+  body.is-easy-mode .stage-viewport {
+    min-height: 245px;
+    height: clamp(240px, 42vh, 360px);
+    border-radius: 20px;
+  }
+
+  .easy-surface-module {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+
+  .easy-hero-big-number {
+    font-size: 32px;
+  }
+
+  .easy-submetric-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px 13px;
+  }
+
+  .easy-submetric-value {
+    font-size: 14.5px;
+  }
+
+  .easy-impact-core-primary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .easy-scope-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .easy-cta-primary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-easy-cta-primary {
+    order: -1;
+  }
+}
+
+/* ============================================================================
+ * 고급 모드 & 메인 플레이어 하단 임팩트 순간 원본영상 · 공 위치 지정 바 스타일
+ * ============================================================================ */
+
+.one-touch-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.one-touch-ball-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background-color: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #0F172A;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.one-touch-impact-core-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+
+.btn-clean-original-toggle {
+  border-color: #CBD5E1;
+  background-color: #FFFFFF;
+  color: #0F172A;
+  font-weight: 700;
+}
+
+.btn-clean-original-toggle[aria-pressed="true"],
+.btn-stage-fs-sync[aria-pressed="true"] {
+  background-color: #0F172A !important;
+  border-color: #0F172A !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+}
+
+.btn-launch-sync.is-primary-sync[aria-pressed="true"] {
+  background-color: #1D4ED8 !important;
+  border-color: #1E3A8A !important;
+  color: #FFFFFF !important;
+  outline: 2px solid #93C5FD;
+}
+
+.btn-launch-sync.is-accent-sync {
+  border-color: #93C5FD;
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+  font-weight: 700;
+}
+
+.btn-launch-sync.is-accent-sync:hover {
+  background-color: #DBEAFE;
+}
+
+.impact-ball-dock-bar {
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.is-primary-pin-btn {
+  background-color: #2563EB;
+  border-color: #2563EB;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.is-primary-pin-btn:hover {
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+}
+
+.is-primary-pin-btn[aria-pressed="true"] {
+  background-color: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+}
+
+
+
+
+
